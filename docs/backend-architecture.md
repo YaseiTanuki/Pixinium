@@ -4,6 +4,11 @@ Supabase owns authentication, sessions, and data needed by Supabase features.
 Neon owns website content, including the existing archive. Content queries remain
 in `server/repositories` and use the server-only `DATABASE_URL`.
 
+The extensible catalog schema, entity relationships, migration workflow, and
+runtime ownership rules are documented in [entity-model.md](./entity-model.md).
+Its additive migration and TypeScript contracts are implemented; the current
+archive UI continues using the legacy table until the documented cutover.
+
 ## Supabase clients
 
 - Client Components: import `createClient` from `@/lib/supabase/client`.
