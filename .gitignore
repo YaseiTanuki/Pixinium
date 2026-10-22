@@ -17,3 +17,4 @@ node_modules
 
 # Local browser verification artifacts
 .tmp/home-review/
+.playwright-mcp/

@@ -1,6 +1,20 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { DM_Sans, Nunito } from 'next/font/google'
 import './globals.css'
+
+// Change these two font loaders to try a different pairing site-wide.
+const contentFont = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-content',
+  display: 'swap',
+})
+
+const headingFont = Nunito({
+  subsets: ['latin'],
+  variable: '--font-heading',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'pixinium. — your little archive',
@@ -39,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${contentFont.variable} ${headingFont.variable}`}>
       <body className="antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
