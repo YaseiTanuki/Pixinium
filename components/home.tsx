@@ -3,10 +3,11 @@
 import { ArchiveImage } from '@/components/archive-image'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { startTransition, useState, ViewTransition } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Gamepad2, Heart, Image as ImageIcon, LayoutGrid, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
-import { ArchiveCard, ItemPreview } from '@/components/archive-item'
-import { filters, stickerSheet, type ArchiveItem } from '@/lib/archive'
+import { ArchiveCard } from '@/components/archive-item'
+import { filters, itemHref, stickerSheet, type ArchiveItem } from '@/lib/archive'
 import { useSavedItems } from '@/lib/saved-items'
 
 const categories = [
@@ -15,9 +16,9 @@ const categories = [
   { name: 'Games', icon: Gamepad2, note: 'A small escape. A new adventure.', className: 'category-games' },
 ]
 
-export default function Home({ items }: { items: ArchiveItem[] }) {
-  const [filter, setFilter] = useState('All items')
-  const [selected, setSelected] = useState<ArchiveItem | null>(null)
+export default function Home({ items, initialFilter = 'All items' }: { items: ArchiveItem[]; initialFilter?: string }) {
+  const [filter, setFilter] = useState(initialFilter)
+  const router = useRouter()
   const { saved } = useSavedItems()
   const visible = items.filter((item) => filter === 'Saved' ? saved.includes(item.title) : filter === 'All items' || item.category === filter)
 
@@ -42,14 +43,14 @@ export default function Home({ items }: { items: ArchiveItem[] }) {
       </section>
 
       <section className="feature-grid" aria-label="Featured discoveries">
-        <button className="feature-main" onClick={() => setSelected(items[0] ?? null)}>
+        <Link className="feature-main" href={items[0] ? itemHref(items[0]) : "/search"}>
           <div className="feature-topline"><span className="feature-label"><Sparkles size={13} aria-hidden="true" /> THE SPOTLIGHT</span><span className="edition">NO. 001 / CHARACTER CLUB</span></div>
           <div className="feature-art"><div className="feature-orbit" /><ArchiveImage src={stickerSheet} width={650} height={400} fetchPriority="high" alt="Expressive chibi werewolf characters in a playful sticker collection" /><span className="art-stamp">SMALL GUY.<br />BIG ENERGY.<Sparkles size={17} aria-hidden="true" /></span></div>
           <div className="feature-main-bottom"><div><p>WALLPAPER COLLECTION</p><h2>A little wild.<br />A lot to love.</h2><span>Meet Exploding Werewolf. Your desktop’s new personality.</span></div><span className="round-arrow"><ArrowUpRight size={25} aria-hidden="true" /></span></div>
-        </button>
+        </Link>
         <div className="feature-side">
-          <button className="feature-music" onClick={() => setSelected(items.find((item) => item.category === 'Music') ?? null)}><div><p className="feature-label"><Music2 size={13} aria-hidden="true" /> ON THE RECORD</p><h2>Stay in.<br />Tune out.</h2><p className="music-description">Velvet After Dark<br /><span>8 tracks · 32 minutes of your own</span></p><span className="text-action">Explore the mix <ArrowUpRight size={16} aria-hidden="true" /></span></div><div className="hero-record" aria-hidden="true"><div className="record-disc"><span><Moon size={28} fill="currentColor" /></span></div></div><span className="music-index" aria-hidden="true">SIDE A — AFTER HOURS</span></button>
-          <div className="feature-surprise"><span className="surprise-icon"><Shuffle size={22} aria-hidden="true" /></span><div><p className="eyebrow">LET CURIOSITY PICK</p><h2>No plan? Perfect.</h2><p>Your next favorite could be a happy accident.</p></div><button onClick={() => setSelected(items[Math.floor(Math.random() * items.length)] ?? null)} className="surprise-button">Surprise me <ArrowUpRight size={17} aria-hidden="true" /></button></div>
+          <Link className="feature-music" href={items.find((item) => item.category === 'Music') ? itemHref(items.find((item) => item.category === 'Music')!) : "/search?category=Music"}><div><p className="feature-label"><Music2 size={13} aria-hidden="true" /> ON THE RECORD</p><h2>Stay in.<br />Tune out.</h2><p className="music-description">Velvet After Dark<br /><span>8 tracks · 32 minutes of your own</span></p><span className="text-action">Explore the mix <ArrowUpRight size={16} aria-hidden="true" /></span></div><div className="hero-record" aria-hidden="true"><div className="record-disc"><span><Moon size={28} fill="currentColor" /></span></div></div><span className="music-index" aria-hidden="true">SIDE A — AFTER HOURS</span></Link>
+          <div className="feature-surprise"><span className="surprise-icon"><Shuffle size={22} aria-hidden="true" /></span><div><p className="eyebrow">LET CURIOSITY PICK</p><h2>No plan? Perfect.</h2><p>Your next favorite could be a happy accident.</p></div><button onClick={() => { const item = items[Math.floor(Math.random() * items.length)]; if (item) router.push(itemHref(item)) }} disabled={!items.length} className="surprise-button">Surprise me <ArrowUpRight size={17} aria-hidden="true" /></button></div>
         </div>
       </section>
 
@@ -58,13 +59,12 @@ export default function Home({ items }: { items: ArchiveItem[] }) {
       <section className="discover-section" id="discover" aria-labelledby="discover-title">
         <div className="section-heading"><div><p className="eyebrow">WORTH A LITTLE LOOK</p><h2 id="discover-title">Good things, right this way<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the whole archive <ArrowUpRight size={16} aria-hidden="true" /></Link></div>
         <div className="discovery-toolbar"><div className="discovery-filters" aria-label="Filter discoveries">{[...filters, 'Saved'].map((label) => <button key={label} aria-pressed={filter === label} className={filter === label ? 'active' : ''} onClick={() => chooseFilter(label)}>{label === 'All items' && <LayoutGrid size={13} aria-hidden="true" />}{label === 'Saved' && <Heart size={13} aria-hidden="true" />}{label}{label === 'Saved' && <span>{saved.length}</span>}</button>)}</div><p role="status">{visible.length} little {visible.length === 1 ? 'find' : 'finds'} <ArrowDown size={12} aria-hidden="true" /></p></div>
-        <div className="discovery-grid">{visible.map((item) => <ViewTransition key={item.title} enter="home-fade" exit="home-fade"><ArchiveCard item={item} onOpen={() => setSelected(item)} /></ViewTransition>)}</div>
+        <div className="discovery-grid">{visible.map((item) => <ViewTransition key={item.title} enter="home-fade" exit="home-fade"><ArchiveCard item={item} /></ViewTransition>)}</div>
         {visible.length === 0 && <div className="collection-empty"><Heart size={30} aria-hidden="true" /><h3>A little space for your favorites.</h3><p>Tap the heart on any find to keep it here for later.</p><button className="primary-button" onClick={() => chooseFilter('All items')}>Find something to love <ArrowRight size={16} aria-hidden="true" /></button></div>}
       </section>
 
       <ViewTransition><section className="mood-section" aria-labelledby="mood-title"><div><p className="eyebrow">FOLLOW YOUR FEELING</p><h2 id="mood-title">There’s a find for every mood.</h2><p>No need to know exactly what you’re looking for.</p></div><div className="mood-links"><Link href="/search?q=cozy"><Sun size={18} aria-hidden="true" /><span>A cozy moment<small>Slow down a little</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/search?q=night"><Moon size={18} aria-hidden="true" /><span>After hours<small>For the night owls</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/search?q=chaos"><Zap size={18} aria-hidden="true" /><span>A little chaos<small>Embrace the fun</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link></div></section></ViewTransition>
     </main>
     <footer className="home-footer home-shell"><Link href="/" className="footer-logo">pixinium<span>.</span></Link><p>A little archive. A lot to love.</p><a href="#main">Back to the good stuff ↑</a></footer>
-    <ItemPreview item={selected} onClose={() => setSelected(null)} />
   </div>
 }

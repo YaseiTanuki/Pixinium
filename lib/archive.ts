@@ -26,3 +26,7 @@ export type ArchiveItem = {
 export function isArchiveCategory(value: string): value is ArchiveItem['category'] {
   return value === 'Wallpapers' || value === 'Music' || value === 'Games'
 }
+
+export function itemHref(item: ArchiveItem): string {
+  return `/items/${encodeURIComponent(item.title)}`
+}

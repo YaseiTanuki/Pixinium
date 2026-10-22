@@ -125,13 +125,13 @@
 .record-caption { writing-mode: vertical-rl; font-size: 7px; letter-spacing: 1.6px; color: #e1bfb8; }
 .discovery-card-copy { padding: 17px 15px 13px; }
 .discovery-card h3 { font-size: 13px; font-weight: 800; }
-.discovery-card h3 button { text-align: left; }
-.discovery-card h3 button:hover { color: #b83333; }
+.discovery-card h3 a { text-align: left; }
+.discovery-card h3 a:hover { color: #b83333; }
 .discovery-card-copy > p { margin-top: 5px; font-size: 10px; color: #7c6c62; }
 .discovery-card-bottom { display: flex; justify-content: space-between; gap: 8px; align-items: center; border-top: 1px solid #eee5de; margin-top: 17px; padding-top: 12px; }
 .discovery-card-bottom > span { font-size: 8px; font-weight: 700; letter-spacing: 1px; color: #887567; }
-.discovery-card-bottom button { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: #b83232; }
-.discovery-card-bottom button:hover { text-decoration: underline; }
+.discovery-card-bottom a { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: #b83232; }
+.discovery-card-bottom a:hover { text-decoration: underline; }
 .collection-empty { display: flex; flex-direction: column; align-items: center; padding: 45px 20px; border: 1px dashed #cebbae; border-radius: 14px; text-align: center; }
 .collection-empty > svg { color: #ba5b50; margin-bottom: 15px; }
 .collection-empty h3 { font-size: 22px; font-weight: 800; }
