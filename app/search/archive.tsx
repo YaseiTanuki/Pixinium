@@ -20,21 +20,21 @@ import {
   X,
 } from 'lucide-react'
 
-import { filters, results } from '@/lib/archive'
+import { filters, type ArchiveItem } from '@/lib/archive'
 import { useSavedItems } from '@/lib/saved-items'
 import { ItemPreview } from '@/components/archive-item'
 
-export default function Archive({ initialFilter = 'All items', initialQuery = '' }: { initialFilter?: string; initialQuery?: string }) {
+export default function Archive({ items, initialFilter = 'All items', initialQuery = '' }: { items: ArchiveItem[]; initialFilter?: string; initialQuery?: string }) {
   const [activeFilter, setActiveFilter] = useState(initialFilter)
   const [query, setQuery] = useState(initialQuery)
   const { saved, toggleSaved } = useSavedItems()
-  const [selected, setSelected] = useState<typeof results[number] | null>(null)
+  const [selected, setSelected] = useState<ArchiveItem | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const visibleResults = useMemo(() => results.filter((item) => {
+  const visibleResults = useMemo(() => items.filter((item) => {
     const matchesFilter = activeFilter === 'All items' || item.category === activeFilter
     const matchesQuery = !query || `${item.title} ${item.category}`.toLowerCase().includes(query.toLowerCase())
     return matchesFilter && matchesQuery
-  }), [activeFilter, query])
+  }), [activeFilter, items, query])
 
   return (
     <main className="min-h-screen bg-[#f8f5f1] text-[#211d20]">
@@ -76,7 +76,6 @@ export default function Archive({ initialFilter = 'All items', initialQuery = ''
   )
 }
 
-function ResultCard({ item, saved, onSave, onOpen }: { item: typeof results[number]; saved: boolean; onSave: () => void; onOpen: () => void }) {
+function ResultCard({ item, saved, onSave, onOpen }: { item: ArchiveItem; saved: boolean; onSave: () => void; onOpen: () => void }) {
   return <article className="group overflow-hidden rounded-[18px] border border-[#e7ddd7] bg-[#fffdfb] transition-transform hover:-translate-y-1 hover:shadow-[4px_4px_0_#e94343]"><div className={`relative flex h-[178px] items-center justify-center overflow-hidden ${item.color}`}>{item.image ? <ArchiveImage src={item.image} alt={item.title} className={`h-full w-full object-cover ${item.crop}`} /> : <div className="flex flex-col items-center"><div className="mb-3 flex size-16 items-center justify-center rounded-[20px] border-2 border-[#f55b58] bg-[#211d20] text-[#f55b58] shadow-[3px_3px_0_#f55b58]"><Music2 size={30} /></div><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#f3d5cc]">side b / 07</span></div>}<span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-[#766d68]">{item.category}</span><button onClick={onSave} aria-label={`${saved ? 'Remove' : 'Save'} ${item.title}`} className={`absolute right-3 top-3 rounded-lg p-2 ${saved ? 'bg-[#e94343] text-white' : 'bg-white/90 text-[#766d68] transition-opacity md:opacity-0 md:group-hover:opacity-100 focus:opacity-100'}`}><Heart size={15} fill={saved ? 'currentColor' : 'none'} /></button></div><div className="p-4"><div className="flex items-start justify-between gap-2"><div><h2 className="text-sm font-black">{item.title}</h2><p className="mt-1 text-[11px] text-[#a29a95]">{item.meta}</p></div><span className="text-lg text-[#e94343]">✦</span></div><div className="mt-4 flex items-center justify-between border-t border-[#f0e8e3] pt-3"><span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#b1a6a0]">Pixinium pick</span><button onClick={onOpen} className="text-xs font-bold text-[#e94343]">View item</button></div></div></article>
 }
-

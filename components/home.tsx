@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { startTransition, useState, ViewTransition } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Gamepad2, Heart, Image as ImageIcon, LayoutGrid, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
 import { ArchiveCard, ItemPreview } from '@/components/archive-item'
-import { filters, results, stickerSheet, type ArchiveItem } from '@/lib/archive'
+import { filters, stickerSheet, type ArchiveItem } from '@/lib/archive'
 import { useSavedItems } from '@/lib/saved-items'
 
 const categories = [
@@ -15,11 +15,11 @@ const categories = [
   { name: 'Games', icon: Gamepad2, note: 'A small escape. A new adventure.', className: 'category-games' },
 ]
 
-export default function Home() {
+export default function Home({ items }: { items: ArchiveItem[] }) {
   const [filter, setFilter] = useState('All items')
   const [selected, setSelected] = useState<ArchiveItem | null>(null)
   const { saved } = useSavedItems()
-  const visible = results.filter((item) => filter === 'Saved' ? saved.includes(item.title) : filter === 'All items' || item.category === filter)
+  const visible = items.filter((item) => filter === 'Saved' ? saved.includes(item.title) : filter === 'All items' || item.category === filter)
 
   function chooseFilter(value: string) {
     startTransition(() => setFilter(value))
@@ -42,18 +42,18 @@ export default function Home() {
       </section>
 
       <section className="feature-grid" aria-label="Featured discoveries">
-        <button className="feature-main" onClick={() => setSelected(results[0])}>
+        <button className="feature-main" onClick={() => setSelected(items[0] ?? null)}>
           <div className="feature-topline"><span className="feature-label"><Sparkles size={13} aria-hidden="true" /> THE SPOTLIGHT</span><span className="edition">NO. 001 / CHARACTER CLUB</span></div>
           <div className="feature-art"><div className="feature-orbit" /><ArchiveImage src={stickerSheet} width={650} height={400} fetchPriority="high" alt="Expressive chibi werewolf characters in a playful sticker collection" /><span className="art-stamp">SMALL GUY.<br />BIG ENERGY.<Sparkles size={17} aria-hidden="true" /></span></div>
           <div className="feature-main-bottom"><div><p>WALLPAPER COLLECTION</p><h2>A little wild.<br />A lot to love.</h2><span>Meet Exploding Werewolf. Your desktop’s new personality.</span></div><span className="round-arrow"><ArrowUpRight size={25} aria-hidden="true" /></span></div>
         </button>
         <div className="feature-side">
-          <button className="feature-music" onClick={() => setSelected(results[2])}><div><p className="feature-label"><Music2 size={13} aria-hidden="true" /> ON THE RECORD</p><h2>Stay in.<br />Tune out.</h2><p className="music-description">Velvet After Dark<br /><span>8 tracks · 32 minutes of your own</span></p><span className="text-action">Explore the mix <ArrowUpRight size={16} aria-hidden="true" /></span></div><div className="hero-record" aria-hidden="true"><div className="record-disc"><span><Moon size={28} fill="currentColor" /></span></div></div><span className="music-index" aria-hidden="true">SIDE A — AFTER HOURS</span></button>
-          <div className="feature-surprise"><span className="surprise-icon"><Shuffle size={22} aria-hidden="true" /></span><div><p className="eyebrow">LET CURIOSITY PICK</p><h2>No plan? Perfect.</h2><p>Your next favorite could be a happy accident.</p></div><button onClick={() => setSelected(results[Math.floor(Math.random() * results.length)])} className="surprise-button">Surprise me <ArrowUpRight size={17} aria-hidden="true" /></button></div>
+          <button className="feature-music" onClick={() => setSelected(items.find((item) => item.category === 'Music') ?? null)}><div><p className="feature-label"><Music2 size={13} aria-hidden="true" /> ON THE RECORD</p><h2>Stay in.<br />Tune out.</h2><p className="music-description">Velvet After Dark<br /><span>8 tracks · 32 minutes of your own</span></p><span className="text-action">Explore the mix <ArrowUpRight size={16} aria-hidden="true" /></span></div><div className="hero-record" aria-hidden="true"><div className="record-disc"><span><Moon size={28} fill="currentColor" /></span></div></div><span className="music-index" aria-hidden="true">SIDE A — AFTER HOURS</span></button>
+          <div className="feature-surprise"><span className="surprise-icon"><Shuffle size={22} aria-hidden="true" /></span><div><p className="eyebrow">LET CURIOSITY PICK</p><h2>No plan? Perfect.</h2><p>Your next favorite could be a happy accident.</p></div><button onClick={() => setSelected(items[Math.floor(Math.random() * items.length)] ?? null)} className="surprise-button">Surprise me <ArrowUpRight size={17} aria-hidden="true" /></button></div>
         </div>
       </section>
 
-      <section className="category-grid" aria-label="Explore by category">{categories.map(({ name, icon: Icon, note, className }, index) => <Link key={name} href={`/search?category=${name}`} className={`category-door ${className}`}><span className="category-icon"><Icon size={23} strokeWidth={1.6} aria-hidden="true" /></span><div><h2>{name}<span>{String(results.filter((item) => item.category === name).length).padStart(2, '0')}</span></h2><p>{note}</p></div><ArrowUpRight className="category-arrow" size={19} aria-hidden="true" /><span className="category-number" aria-hidden="true">0{index + 1}</span></Link>)}</section>
+      <section className="category-grid" aria-label="Explore by category">{categories.map(({ name, icon: Icon, note, className }, index) => <Link key={name} href={`/search?category=${name}`} className={`category-door ${className}`}><span className="category-icon"><Icon size={23} strokeWidth={1.6} aria-hidden="true" /></span><div><h2>{name}<span>{String(items.filter((item) => item.category === name).length).padStart(2, '0')}</span></h2><p>{note}</p></div><ArrowUpRight className="category-arrow" size={19} aria-hidden="true" /><span className="category-number" aria-hidden="true">0{index + 1}</span></Link>)}</section>
 
       <section className="discover-section" id="discover" aria-labelledby="discover-title">
         <div className="section-heading"><div><p className="eyebrow">WORTH A LITTLE LOOK</p><h2 id="discover-title">Good things, right this way<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the whole archive <ArrowUpRight size={16} aria-hidden="true" /></Link></div>

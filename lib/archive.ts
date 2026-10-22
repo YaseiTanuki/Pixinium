@@ -13,4 +13,16 @@ export const results = [
   { title: 'Little chaos pack', category: 'Wallpapers', meta: '1080p · 16 images', image: stickerSheet, crop: 'object-[50%_24%]', color: 'bg-[#f3e9e2]' },
 ]
 
-export type ArchiveItem = typeof results[number]
+export type ArchiveItem = {
+  title: string
+  category: 'Wallpapers' | 'Music' | 'Games'
+  meta: string
+  image?: string
+  crop?: string
+  color: string
+  accent?: 'music'
+}
+
+export function isArchiveCategory(value: string): value is ArchiveItem['category'] {
+  return value === 'Wallpapers' || value === 'Music' || value === 'Games'
+}
