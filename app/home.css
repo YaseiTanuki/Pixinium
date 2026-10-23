@@ -42,7 +42,7 @@
 .home-search > svg { color: #8c7b70; flex-shrink: 0; }
 .home-search:focus-within { border-color: var(--red); }
 .home-search input { min-width: 0; flex: 1; height: 40px; font-size: 12px; background: transparent; }
-.home-search input:focus-visible { outline-offset: 0; border-radius: 4px; }
+.home-page .home-search input:focus-visible { outline: none; }
 .home-search input::placeholder { color: #82766d; }
 .home-search button { display: grid; place-items: center; flex-shrink: 0; height: 40px; width: 42px; border-radius: 8px; background: var(--ink); color: white; }
 .home-search button:hover { background: var(--red); }
