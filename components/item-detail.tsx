@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { SiteHeader } from '@/components/site-header'
 import { useState } from 'react'
 import { ArrowLeft, ArrowUpRight, Check, ChevronRight, Heart, Maximize2, Moon, Music2, Sparkles, Link2 } from 'lucide-react'
 import { ArchiveCard } from '@/components/archive-item'
@@ -32,11 +33,7 @@ export default function ItemDetail({ item, related }: { item: ArchiveItem; relat
 
   return <div className="home-page item-detail-page">
     <a className="skip-home" href="#item-main">Skip to content</a>
-    <header className="home-header"><div className="home-shell header-inner">
-      <Link href="/" aria-label="Pixinium home" className="home-logo"><span className="logo-symbol"><Sparkles size={18} fill="currentColor" aria-hidden="true" /></span>pixinium<span className="logo-dot">.</span></Link>
-      <nav className="home-navigation" aria-label="Main navigation"><Link href="/">Discover</Link><Link href="/search">The archive <ArrowUpRight size={13} aria-hidden="true" /></Link></nav>
-      <Link href="/?collection=saved#discover" className="collection-link"><Heart size={16} aria-hidden="true" /><span>Your collection</span><span className="collection-count">{saved.length}</span></Link>
-    </div></header>
+    <SiteHeader activeFilter={item.category} />
 
     <main id="item-main" className="home-shell">
       <nav className="detail-breadcrumb" aria-label="Breadcrumb"><Link href="/search"><ArrowLeft size={14} aria-hidden="true" /> The archive</Link><ChevronRight size={12} aria-hidden="true" /><Link href={`/search?category=${item.category}`}>{item.category}</Link><ChevronRight size={12} aria-hidden="true" /><span aria-current="page">{item.title}</span></nav>

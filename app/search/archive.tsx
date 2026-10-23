@@ -1,5 +1,6 @@
 'use client'
 
+import { SiteHeader } from '@/components/site-header'
 import { ArchiveImage } from '@/components/archive-image'
 
 import { useMemo, useState } from 'react'
@@ -54,11 +55,7 @@ export default function Archive({ items, initialFilter = 'All items', initialQue
         </aside>
 
         <section className="min-w-0 flex-1">
-          <header className="flex min-h-[76px] flex-wrap items-center gap-3 border-b border-[#e9e1db] bg-[#f8f5f1]/90 px-5 py-3 backdrop-blur md:px-10">
-            <a href="/" className="mr-3 font-display text-xl font-black tracking-[-0.03em]" aria-label="Pixinium home">pixinium<span className="text-[#e94343]">.</span></a><div className="relative min-w-[190px] flex-1 md:max-w-[360px]"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a29a95]" size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Search the archive" name="q" type="search" placeholder="Search wallpapers, music, games?" className="h-10 w-full rounded-xl border border-[#e4dad4] bg-white pl-10 pr-4 text-sm outline-none placeholder:text-[#b2aaa5] focus:border-[#e94343]" /></div>
-            <nav className="order-3 flex w-full flex-wrap items-center gap-1 md:order-2 md:w-auto md:flex-1" aria-label="Archive categories">{filters.map((label, index) => { const Icon = index === 0 ? LayoutGrid : index === 1 ? ImageIcon : index === 2 ? Music2 : Gamepad2; return <button key={label} onClick={() => setActiveFilter(label)} aria-label={label} aria-pressed={activeFilter === label} title={label} className={`flex size-11 shrink-0 items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition-colors lg:h-auto lg:w-auto lg:px-2.5 lg:py-2 ${activeFilter === label ? 'bg-[#211d20] text-white shadow-[2px_2px_0_#e94343]' : 'text-[#766d68] hover:bg-white'}`}><Icon size={14} aria-hidden="true" /><span className="hidden lg:inline">{label}</span></button> })}</nav>
-            <div className="ml-4 flex items-center gap-3"><button className="relative rounded-xl p-2.5 text-[#766d68] hover:bg-white" aria-label="Notifications"><Bell size={18} /><span className="absolute right-2 top-2 size-1.5 rounded-full bg-[#e94343]" /></button><div className="hidden h-7 w-px bg-[#e5dbd5] sm:block" /><button className="flex items-center gap-2 rounded-xl p-1.5 pr-2 hover:bg-white"><span className="flex size-8 items-center justify-center rounded-full bg-[#211d20] text-xs font-black text-white">P</span><span className="hidden text-left sm:block"><span className="block text-xs font-bold">pomu</span><span className="block text-[10px] text-[#a29a95]">collector</span></span><ChevronDown size={14} className="hidden text-[#a29a95] sm:block" /></button></div>
-          </header>
+          <SiteHeader activeFilter={activeFilter} query={query} onQueryChange={setQuery} onFilterChange={setActiveFilter} />
 
           <div className="px-5 py-8 md:px-10 md:py-10">
             <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[#e94343]">Archive search</p><h1 className="text-3xl font-black tracking-[-0.035em] md:text-[42px]">Your little <span className="relative inline-block">treasure pile<span className="absolute -bottom-1 left-0 h-1 w-full rotate-[-2deg] rounded-full bg-[#e94343]" /></span>.</h1><p className="mt-3 text-sm text-[#a29a95]">{visibleResults.length} lovely things found in the archive</p></div><button className="flex w-fit items-center gap-2 rounded-xl border border-[#e4dad4] bg-white px-4 py-2.5 text-sm font-bold text-[#766d68] hover:border-[#e94343] hover:text-[#e94343]"><SlidersHorizontal size={16} /> Sort: newest</button></div>

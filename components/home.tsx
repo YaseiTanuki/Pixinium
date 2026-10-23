@@ -3,6 +3,7 @@
 import { ArchiveImage } from '@/components/archive-image'
 
 import Link from 'next/link'
+import { SiteHeader } from '@/components/site-header'
 import { useRouter } from 'next/navigation'
 import { startTransition, useState, ViewTransition } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Gamepad2, Heart, Image as ImageIcon, LayoutGrid, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
@@ -28,13 +29,7 @@ export default function Home({ items, initialFilter = 'All items' }: { items: Ar
 
   return <div className="home-page">
     <a className="skip-home" href="#main">Skip to content</a>
-    <header className="home-header">
-      <div className="home-shell header-inner">
-        <Link href="/" aria-label="Pixinium home" className="home-logo"><span className="logo-symbol"><Sparkles size={18} fill="currentColor" aria-hidden="true" /></span>pixinium<span className="logo-dot">.</span></Link>
-        <nav aria-label="Main navigation" className="home-navigation"><Link href="/" aria-current="page">Discover</Link><Link href="/search">The archive <ArrowUpRight size={13} aria-hidden="true" /></Link></nav>
-        <a href="#discover" className="collection-link" onClick={() => chooseFilter('Saved')}><Heart size={16} aria-hidden="true" /><span>Your collection</span><span className="collection-count">{saved.length}</span></a>
-      </div>
-    </header>
+    <SiteHeader />
 
     <main id="main" className="home-shell">
       <section className="home-intro" aria-labelledby="home-title">
