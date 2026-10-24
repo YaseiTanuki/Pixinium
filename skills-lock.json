@@ -13,6 +13,12 @@
       "skillPath": "skills/neon-postgres/SKILL.md",
       "computedHash": "31be95961c771eec138b41489ef0c77e3a99c221aca0618af87cbbc59d8cdc8e"
     },
+    "security-audit": {
+      "source": "cloudflare/security-audit-skill",
+      "sourceType": "github",
+      "skillPath": "skills/security-audit/SKILL.md",
+      "computedHash": "e6b2e317de75da97e9de18d842982994803f3a67a4a6d8154a82323dc3de8528"
+    },
     "supabase": {
       "source": "supabase/agent-skills",
       "sourceType": "github",
