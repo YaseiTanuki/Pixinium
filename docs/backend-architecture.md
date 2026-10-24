@@ -6,8 +6,8 @@ in `server/repositories` and use the server-only `DATABASE_URL`.
 
 The extensible catalog schema, entity relationships, migration workflow, and
 runtime ownership rules are documented in [entity-model.md](./entity-model.md).
-Its additive migration and TypeScript contracts are implemented; the current
-archive UI continues using the legacy table until the documented cutover.
+The application uses canonical catalog entities for all content reads.
+The legacy archive table is retained only as migration history.
 
 ## Supabase clients
 

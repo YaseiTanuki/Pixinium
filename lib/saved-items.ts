@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react'
 
-const key = 'pixinium:saved-items'
+const key = 'pixinium:saved-catalog-ids'
 const empty: string[] = []
 let cachedRaw: string | null = null
 let cachedItems = empty
@@ -32,9 +32,9 @@ function subscribe(notify: () => void) {
 
 export function useSavedItems() {
   const saved = useSyncExternalStore(subscribe, snapshot, () => empty)
-  function toggleSaved(title: string) {
+  function toggleSaved(id: string) {
     const current = snapshot()
-    cachedItems = current.includes(title) ? current.filter((item) => item !== title) : [...current, title]
+    cachedItems = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
     try {
       const raw = JSON.stringify(cachedItems)
       localStorage.setItem(key, raw)

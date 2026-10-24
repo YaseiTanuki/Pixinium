@@ -5,11 +5,11 @@ sessions, and authentication. Media can live in Supabase Storage or Cloudflare R
 its bucket/path reference. Existing externally hosted artwork remains supported.
 There is no second copy of passwords, sessions, or auth users in Neon.
 
-This implementation adds an isolated `catalog` schema, an additive backfill,
-TypeScript contracts in `lib/entities/catalog.ts`, a transactional migration
-runner, and local Postgres tests. It does **not** switch the current screens away
-from `public.archive_items`, provision storage buckets, or deploy a database change.
-The schema is the foundation for that application cutover.
+The application reads the canonical catalog through `server/services/catalog.service.ts`.
+Home, search, `/api/catalog`, and item details use catalog entities. Item URLs are
+`/items/{categorySlug}/{itemSlug}`; titles are display text only. Published items
+in active categories are the only content returned, even with an owner connection.
+There is no legacy runtime fallback or demo bootstrap command.
 
 ```mermaid
 erDiagram
@@ -47,7 +47,7 @@ decimal strings in JSON/TypeScript to avoid JavaScript's integer precision limit
 Profile/owner IDs use the Supabase `uuid` without generating a second identity.
 Timestamps use `timestamptz`. Titles are editable and are neither primary keys
 nor unique identifiers. Item slugs use `UNIQUE(category_id, slug)`; category slugs
-are globally unique. Future URLs must include both category and item slugs
+are globally unique. URLs include both category and item slugs
 (for example `/items/music/night` and `/items/wallpapers/night`) or a stable item
 ID. Never resolve an item by its slug alone. Keep slugs stable after publication.
 
@@ -113,12 +113,9 @@ range filters, indexes, relationships, or stronger constraints. Do not build an
 untyped relationship model inside JSON. The backfilled `metadata.legacy` object
 is a transition snapshot, not a second source of truth.
 
-The frontend still has three hardcoded category choices today. During cutover,
-load the category list from Neon, use slug/ID for filtering, render facts directly,
-and resolve `icon_key` through an allowlisted registry with a grid fallback.
-Use `accent_color` as a validated CSS color, not a database-generated Tailwind
-class. Unknown category names work with the generic detail layout; adding a new
-media renderer (for example an interactive 3D viewer) is a separate UI feature.
+The frontend loads active categories from Neon and filters by category slug.
+Facts render their stored labels and values; accent colors and cover focal points
+are applied as styles. The generic detail layout supports new category rows.
 
 ## Hybrid ownership and access
 
@@ -198,40 +195,26 @@ unreferenced assets and their remote files after a retention window. Upload and
 deletion operations span providers, so use retries and orphan cleanup instead
 of pretending there is one cross-provider transaction.
 
-## Migration and cutover
+## Migration and runtime
 
-1. Test on an isolated Neon branch with production-like data. Set its direct URL
-   as `DATABASE_URL_UNPOOLED`; never use a pooled URL for the migration runner.
-2. Run `pnpm test:db` locally, then `pnpm db:migrate` on that branch. The migration
-   runner uses one transaction, an advisory lock, and a checksum ledger. Re-running
-   skips applied files; changing an applied migration fails instead of replaying it.
-3. Migration `0002` copies the legacy archive into normalized entities. It preserves
-   all original rows, splits display facts, deduplicates artwork, and converts crop
-   percentages. Imported slugs include a numeric suffix to avoid collisions after
-   normalization. The legacy-title map resolves the current URLs after cutover.
-   Migration `0003` scopes item slugs by category, adds R2, profile ownership,
-   versioned metadata schema keys, ordering checks, and ordered-read indexes.
-4. Verify row counts and previews, then wire `CatalogCard`/`CatalogDetail` adapters
-   into the existing repository/service boundary. Query an item by ID or category+slug
-   and use bounded pagination for lists; do not load the entire catalog per detail
-   request. Introduce indexed text search when catalog size and query patterns
-   justify it. Current `is_featured` supports a simple spotlight; editorial
-   collections provide multiple ordered shelves when needed.
-5. Switch item links, React keys, and saved-item storage to stable IDs. Migrate
-   legacy localStorage titles through `legacy_item_keys`; preserve unmatched titles
-   for recovery. Guest favorites can stay local; authenticated collections use the
-   verified identity workflow above. No login or cloud-save endpoint is added here.
-6. Until cutover, `public.archive_items` remains the live source. The backfill is
-   a one-time snapshot, not dual-write synchronization. If legacy content changes
-   before cutover, reconcile it on a branch with a new migration. Freeze edits
-   during the final copy/switch; do not silently maintain two writable catalogs.
-7. Retire the old table only in a later reviewed migration after consumers have
-   moved. Application rollback before cutover simply keeps using the legacy table.
+Run `pnpm db:migrate` with a direct `DATABASE_URL_UNPOOLED` after testing on an
+isolated branch. Existing migration files remain immutable history: they can
+backfill existing archive rows, while a fresh database needs no demo data.
+The app requires migrations 0001?0003 and queries only `catalog.*`.
 
-For a fresh demo database, run the existing `db:setup` **before** `db:migrate` so
-the sample rows are present for backfill. `db:setup` is a legacy bootstrap command
-and should not be run as part of deployment. An empty database can migrate
-without sample content. Do not re-run bootstrap after catalog cutover.
+The old `/api/archive` endpoint and title-based item URLs are removed.
+`public.archive_items` and `catalog.legacy_item_keys` are retained in the database
+for migration history only; dropping persisted tables requires a separate migration.
+Legacy examples live exclusively in test fixtures for backfill regression tests.
+
+Saved items remain guest, device-local favorites, now keyed by canonical item IDs
+under `pixinium:saved-catalog-ids`. Old title-based localStorage is not read or
+converted. No authenticated cloud-save workflow is introduced.
+
+External HTTPS media URLs are supported directly. For public storage objects,
+set `CATALOG_PUBLIC_ASSET_ORIGINS` to a JSON map of `provider:bucket` to an HTTPS
+bucket base URL. Missing origins fail explicitly; no placeholder artwork or fake
+content is substituted. Private objects require a signed-URL resolver before use.
 
 The local suite uses PGlite to execute real Postgres SQL and checks backfill,
 fresh installs, repeatability, rollback, constraints, new categories, private

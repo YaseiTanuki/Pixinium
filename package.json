@@ -7,7 +7,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "db:setup": "node --env-file=.env.local --import tsx scripts/setup-database.ts",
     "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate-database.ts",
     "db:audit": "node --env-file=.env.local --import tsx scripts/audit-database.ts",
     "test:db": "node --import tsx --test tests/catalog-schema.test.ts"

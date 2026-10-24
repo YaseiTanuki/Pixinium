@@ -102,8 +102,6 @@ export interface CollectionItem {
   addedAt: Timestamp
 }
 
-export interface LegacyItemKey { legacyTitle: string; itemId: EntityId }
-
 export interface Profile {
   id: UserId
   /** Lowercase, unique; null until onboarding has chosen a username. */

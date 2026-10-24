@@ -3,9 +3,12 @@ import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { migrate, type MigrationConnection } from '../scripts/migrations'
-import { results } from '../lib/archive'
+import { results } from './fixtures/legacy-archive'
 import { parseCategoryMetadata } from '../lib/entities/metadata'
 import { updateItemMetadata } from '../server/services/catalog-metadata'
+import { cardsQuery } from '../server/repositories/catalog.queries'
+import { itemHref } from '../lib/catalog'
+import type { CatalogCard } from '../lib/entities/catalog'
 
 const alice = '00000000-0000-4000-8000-000000000001'
 const bob = '00000000-0000-4000-8000-000000000002'
@@ -28,6 +31,26 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
   try {
     await seedLegacy(db)
     assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql'])
+
+    await t.test('application query returns canonical identities, facts and assets, and enforces visibility without RLS', async () => {
+      const rows = (await db.query<CatalogCard & { assets: unknown[] }>(cardsQuery, [null, null, null])).rows
+      assert.equal(rows.length, 8)
+      assert.equal(rows[0].item.id, '1')
+      assert.equal(rows[0].category.slug, 'wallpapers')
+      assert.equal(rows[0].facts[0].label, 'Resolution')
+      assert.equal(rows[0].assets.length, 1)
+      assert.equal(itemHref(rows[0]), `/items/wallpapers/${rows[0].item.slug}`)
+      assert.equal((await db.query(cardsQuery, ['music', rows[0].item.slug, null])).rows.length, 0)
+      assert.equal((await db.query(cardsQuery, ['wallpapers', rows[0].item.slug, null])).rows.length, 1)
+      await db.exec('BEGIN')
+      try {
+        await db.exec(`UPDATE catalog.items SET status = 'draft' WHERE id = 1`)
+        assert.equal((await db.query(cardsQuery, ['wallpapers', rows[0].item.slug, null])).rows.length, 0)
+        await db.exec(`UPDATE catalog.categories SET is_active = false WHERE slug = 'music'`)
+        assert.equal((await db.query(cardsQuery, ['music', null, null])).rows.length, 0)
+      } finally { await db.exec('ROLLBACK') }
+      assert.equal((await db.query(cardsQuery, [null, null, '%werewolf%'])).rows.length, 1)
+    })
 
     await t.test('backfill preserves the archive, splits facts, deduplicates assets, and preserves focal points', async () => {
       assert.equal((await db.query('SELECT * FROM archive_items')).rows.length, 8)
