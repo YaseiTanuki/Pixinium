@@ -1,4 +1,5 @@
 import CatalogSearch from './catalog-search'
+import './search.css'
 import { listCatalogItems, listCategories } from '@/server/services/catalog.service'
 export const dynamic = 'force-dynamic'
 export default async function Page({ searchParams }: { searchParams: Promise<{ category?: string; q?: string }> }) {

@@ -1,0 +1,18 @@
+/* Fit more results without squeezing cards below a readable width. */
+.search-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+}
+
+.search-results .item-artwork { height: 150px; }
+.search-results .discovery-card-copy { padding: 12px 13px; }
+.search-results .discovery-card h3 { font-size: 13px; overflow-wrap: anywhere; }
+.search-results .discovery-card-copy > p { font-size: 11px; overflow-wrap: anywhere; }
+.search-results .discovery-card-bottom { margin-top: 10px; padding-top: 8px; }
+.search-results .discovery-card-bottom a { min-height: 28px; }
+.search-results .save-item { width: 36px; height: 36px; }
+
+@media (pointer: coarse) {
+  .search-results .save-item { width: 44px; height: 44px; }
+}

@@ -1,3 +1,13 @@
+/* Shared gutters keep every route aligned from phones through widescreen. */
+:root {
+  --page-max-width: 1760px;
+  --page-gutter: clamp(18px, 3vw, 56px);
+}
+.page-shell, .home-shell {
+  width: min(var(--page-max-width), calc(100% - 2 * var(--page-gutter)));
+  margin-inline: auto;
+}
+
 .home-page {
   --paper: #f8f5f1;
   --ink: #211d20;
@@ -10,7 +20,6 @@
   color-scheme: light;
 }
 .home-page ::selection { background: #f5b5aa; }
-.home-shell { width: min(1280px, calc(100% - 80px)); margin-inline: auto; }
 .home-page button, .item-preview button { cursor: pointer; touch-action: manipulation; }
 .home-page :is(a, button, input):focus-visible, .item-preview button:focus-visible { outline: 2px solid #c93636; outline-offset: 5px; }
 .home-page h1, .home-page h2 { text-wrap: balance; }
@@ -109,7 +118,7 @@
 .discovery-filters button.active { border-color: #211d20; background: #211d20; color: white; }
 .discovery-filters button span { font-size: 10px; opacity: .7; }
 .discovery-toolbar > p { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 10px; color: var(--muted); }
-.discovery-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.discovery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 16px; }
 .discovery-card { min-width: 0; overflow: hidden; border: 1px solid #e3d8cf; border-radius: 14px; background: #fffdfb; transition: transform 180ms ease, box-shadow 180ms ease; }
 .discovery-card:hover { transform: translateY(-4px); box-shadow: 3px 4px 0 #e94343; }
 .artwork-button { display: block; width: 100%; }
@@ -163,9 +172,36 @@
 @keyframes home-fade { from { opacity: 0; } to { opacity: 1; } }
 ::view-transition-old(.home-fade) { animation: home-fade 130ms ease reverse; }
 ::view-transition-new(.home-fade) { animation: home-fade 190ms ease both; }
-@media (min-width: 1440px) { .feature-main { min-height: 485px; } }
+@media (min-width: 1024px) {
+  .home-intro { gap: 48px; padding: 20px 0; }
+  .home-intro h1 { margin-top: 10px; font-size: clamp(42px, 2.6vw, 48px); }
+  .intro-description { margin-top: 10px; line-height: 1.7; }
+  .intro-description .desktop-break { display: none; }
+  .intro-search { padding-top: 0; max-width: 620px; width: 100%; justify-self: end; }
+  .feature-main { min-height: 360px; }
+  .feature-topline { padding: 16px 22px; }
+  .feature-art { inset: 54px 0 100px; }
+  .feature-main-bottom { padding: 20px 22px; }
+  .feature-main-bottom h2 { font-size: 34px; margin-block: 8px; }
+  .feature-side { gap: 14px; }
+  .feature-music { min-height: 240px; padding: 22px; }
+  .feature-music h2 { font-size: 32px; margin-top: 15px; }
+  .music-description { margin-top: 10px; }
+  .text-action { margin-top: 12px; }
+  .feature-surprise { min-height: 106px; padding: 17px 20px; }
+  .category-grid { margin-top: 16px; }
+  .category-door { padding: 16px 20px; }
+  .discover-section { padding-top: 30px; }
+  .section-heading h2 { font-size: 28px; margin-top: 8px; }
+  .discovery-toolbar { margin-block: 16px; }
+  .mood-section { margin-block: 32px; padding: 24px; }
+}
+@media (min-width: 1280px) {
+  .discover-section { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 18px 24px; }
+  .discover-section .discovery-toolbar { margin: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .discover-section .discovery-grid, .discover-section .collection-empty { grid-column: 1 / -1; }
+}
 @media (max-width: 1150px) {
-  .home-shell { width: calc(100% - 56px); }
   .home-intro { gap: 40px; }
   .feature-grid { grid-template-columns: 1.2fr 1fr; }
   .feature-surprise { gap: 12px; padding: 20px 17px; }
@@ -202,7 +238,6 @@
   .section-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
 }
 @media (max-width: 580px) {
-  .home-shell { width: calc(100% - 36px); }
   .header-inner { flex-wrap: wrap; gap: 0; padding-top: 18px; padding-bottom: 10px; }
   .home-logo { font-size: 23px; }
   .home-navigation { order: 3; width: 100%; gap: 24px; margin-top: 12px; }
