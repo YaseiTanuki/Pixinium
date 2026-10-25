@@ -80,6 +80,8 @@ export interface ItemAsset {
 
 export interface Tag { id: EntityId; slug: string; name: string }
 export interface ItemTag { itemId: EntityId; tagId: EntityId }
+export interface ContentUse { slug: string; name: string }
+export interface ItemUse { itemId: EntityId; useSlug: string }
 
 type CollectionOwnership =
   | { kind: 'saved'; ownerUserId: UserId; isPublic: false }
@@ -122,6 +124,7 @@ export interface CatalogCard {
 }
 
 export interface CatalogDetail extends CatalogCard {
+  uses: ContentUse[]
   description: string
   tags: Tag[]
   /** URLs are resolved per request; signed Supabase URLs must never be persisted. */

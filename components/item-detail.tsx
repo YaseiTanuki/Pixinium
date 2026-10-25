@@ -25,10 +25,10 @@ export default function ItemDetail({ item, related, categories }: { item: Catalo
 
   return <div className="home-page item-detail-page">
     <a className="skip-home" href="#item-main">Skip to content</a>
-    <SiteHeader categories={categories} activeFilter={item.category.slug} />
+    <SiteHeader />
 
     <main id="item-main" className="home-shell">
-      <nav className="detail-breadcrumb" aria-label="Breadcrumb"><Link href="/search"><ArrowLeft size={14} aria-hidden="true" /> The archive</Link><ChevronRight size={12} aria-hidden="true" /><Link href={`/search?category=${item.category.slug}`}>{item.category.name}</Link><ChevronRight size={12} aria-hidden="true" /><span aria-current="page">{item.item.title}</span></nav>
+      <nav className="detail-breadcrumb" aria-label="Breadcrumb"><Link href="/search"><ArrowLeft size={14} aria-hidden="true" /> The archive</Link><ChevronRight size={12} aria-hidden="true" /><Link href={`/search?use=${item.category.slug}`}>{item.category.name}</Link><ChevronRight size={12} aria-hidden="true" /><span aria-current="page">{item.item.title}</span></nav>
 
       <div className="detail-hero">
         <section className={`detail-preview ${item.category.artworkStyle === 'record' ? 'detail-preview-music' : ''}`} aria-label={`${item.item.title} artwork`}>
@@ -42,10 +42,11 @@ export default function ItemDetail({ item, related, categories }: { item: Catalo
 
         <section className="detail-copy" aria-labelledby="item-title">
           <p className="eyebrow"><span className="status-dot" />{item.category.name}</p>
-          <div className="detail-tags"><Link href={`/search?category=${item.category.slug}`}>{item.category.name}</Link>{item.item.isFeatured && <span><Sparkles size={12} aria-hidden="true" /> Pixinium pick</span>}{item.tags.map(tag => <span key={tag.id}>{tag.name}</span>)}</div>
+          <div className="detail-tags"><Link href={`/search?use=${item.category.slug}`}>{item.category.name}</Link>{item.item.isFeatured && <span><Sparkles size={12} aria-hidden="true" /> Pixinium pick</span>}{item.tags.map(tag => <span key={tag.id}>{tag.name}</span>)}</div>
           <h1 id="item-title">{item.item.title}<span>.</span></h1>
           <p className="detail-intro">{item.item.summary}</p>
           <p className="detail-description">{item.description}</p>
+          {item.uses.length > 0 && <div className="detail-tags" aria-label="Suitable for">{item.uses.map(use => <Link key={use.slug} href={`/search?use=${encodeURIComponent(use.slug)}`}>{use.name}</Link>)}</div>}
           <dl className="detail-facts">{item.facts.map((fact) => <div key={fact.key}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}</dl>
           <button className={`detail-save ${isSaved ? 'detail-saved' : ''}`} onClick={() => toggleSaved(item.item.id)} aria-pressed={isSaved}>{isSaved ? <Check size={19} aria-hidden="true" /> : <Heart size={19} aria-hidden="true" />}{isSaved ? 'Saved on this device' : 'Save on this device'}<span aria-hidden="true">{isSaved ? '♥' : '+'}</span></button>
           <p className="detail-save-note">A little keeper. Find it in your collection on this device.</p>
@@ -55,7 +56,7 @@ export default function ItemDetail({ item, related, categories }: { item: Catalo
         </section>
       </div>
 
-      <section className="detail-about" aria-labelledby="about-title"><div><p className="eyebrow">ABOUT THIS FIND</p><h2 id="about-title">{item.item.title}</h2></div><div><p>{item.description || item.item.summary}</p><Link href={`/search?category=${item.category.slug}`}>Explore more {item.category.name.toLowerCase()} <ArrowUpRight size={15} aria-hidden="true" /></Link></div></section>
+      <section className="detail-about" aria-labelledby="about-title"><div><p className="eyebrow">ABOUT THIS FIND</p><h2 id="about-title">{item.item.title}</h2></div><div><p>{item.description || item.item.summary}</p><Link href={`/search?use=${item.category.slug}`}>Explore more {item.category.name.toLowerCase()} <ArrowUpRight size={15} aria-hidden="true" /></Link></div></section>
 
       {item.media.some(asset => asset.role !== 'cover') && <section className="detail-about" aria-label="Item media"><h2>Explore this find</h2><div>{item.media.filter(asset => asset.role !== 'cover').map(asset => <p key={asset.id}><a href={asset.url} target="_blank" rel="noreferrer">{asset.altText || asset.role}</a></p>)}</div></section>}
 

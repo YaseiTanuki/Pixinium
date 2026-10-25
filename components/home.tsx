@@ -9,17 +9,17 @@ import { startTransition, useState, ViewTransition } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Heart, LayoutGrid, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
 import { itemHref } from '@/lib/catalog'
-import type { CatalogDetail, Category } from '@/lib/entities/catalog'
+import type { CatalogDetail, Category, ContentUse } from '@/lib/entities/catalog'
 import { categoryIcon } from '@/lib/category-icons'
 import { useSavedItems } from '@/lib/saved-items'
 
-export default function Home({ items, categories, initialFilter = '', initialQuery = '' }: { items: CatalogDetail[]; categories: Category[]; initialFilter?: string; initialQuery?: string }) {
+export default function Home({ items, categories, uses, initialFilter = '', initialQuery = '' }: { items: CatalogDetail[]; categories: Category[]; uses: ContentUse[]; initialFilter?: string; initialQuery?: string }) {
   const [filter, setFilter] = useState(initialFilter)
   const router = useRouter()
   const { saved } = useSavedItems()
-  const filters = [{ slug: '', name: 'All items' }, ...categories, { slug: 'saved', name: 'Saved' }]
+  const filters = uses.filter(use => ['images', 'music', 'games'].includes(use.slug))
   const visible = items.filter((card) =>
-    (filter === 'saved' ? saved.includes(card.item.id) : !filter || card.category.slug === filter) &&
+    (filter === 'saved' ? saved.includes(card.item.id) : !filter || card.uses.some(use => use.slug === filter)) &&
     `${card.item.title} ${card.item.summary} ${card.category.name} ${card.tags.map(tag => tag.name).join(' ')}`.toLowerCase().includes(initialQuery.toLowerCase()))
   // Prefer editorial selections; otherwise use the first published cover in catalog order.
   const spotlight = items.find(card => card.item.isFeatured && card.cover) ?? items.find(card => card.cover)
@@ -31,7 +31,7 @@ export default function Home({ items, categories, initialFilter = '', initialQue
 
   return <div className="home-page">
     <a className="skip-home" href="#main">Skip to content</a>
-    <SiteHeader categories={categories} activeFilter={filter} />
+    <SiteHeader />
 
     <main id="main" className="home-shell">
       <section className="home-intro" aria-labelledby="home-title">
@@ -51,7 +51,7 @@ export default function Home({ items, categories, initialFilter = '', initialQue
         </div>
       </section>}
 
-      <section className="category-grid" aria-label="Explore by category">{categories.map(({ id, slug, name, iconKey, description }, index) => { const Icon = categoryIcon(iconKey); return <Link key={id} href={`/search?category=${slug}`} className={`category-door category-${slug}`}><span className="category-icon"><Icon size={23} strokeWidth={1.6} aria-hidden="true" /></span><div><h2>{name}<span>{String(items.filter((item) => item.category.slug === slug).length).padStart(2, '0')}</span></h2><p>{description}</p></div><ArrowUpRight className="category-arrow" size={19} aria-hidden="true" /><span className="category-number" aria-hidden="true">0{index + 1}</span></Link> })}</section>
+      <section className="category-grid" aria-label="Explore by category">{categories.map(({ id, slug, name, iconKey, description }, index) => { const Icon = categoryIcon(iconKey); return <Link key={id} href={`/search?use=${slug}`} className={`category-door category-${slug}`}><span className="category-icon"><Icon size={23} strokeWidth={1.6} aria-hidden="true" /></span><div><h2>{name}<span>{String(items.filter((item) => item.category.slug === slug).length).padStart(2, '0')}</span></h2><p>{description}</p></div><ArrowUpRight className="category-arrow" size={19} aria-hidden="true" /><span className="category-number" aria-hidden="true">0{index + 1}</span></Link> })}</section>
 
       <section className="discover-section" id="discover" aria-labelledby="discover-title">
         <div className="section-heading"><div><p className="eyebrow">WORTH A LITTLE LOOK</p><h2 id="discover-title">Good things, right this way<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the whole archive <ArrowUpRight size={16} aria-hidden="true" /></Link></div>

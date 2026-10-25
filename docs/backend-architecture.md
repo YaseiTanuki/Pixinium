@@ -1,13 +1,15 @@
 # Hybrid backend
 
-Supabase owns authentication, sessions, and data needed by Supabase features.
+Supabase owns authentication and sessions. Neon `catalog.profiles` stores profile
+details and application roles: `member` (displayed as User) and `admin`.
 Neon owns website content, including the existing archive. Content queries remain
 in `server/repositories` and use the server-only `DATABASE_URL`.
 
 The extensible catalog schema, entity relationships, migration workflow, and
 runtime ownership rules are documented in [entity-model.md](./entity-model.md).
 The application uses canonical catalog entities for all content reads.
-The legacy archive table is retained only as migration history.
+Migration 0005 removes the obsolete archive tables and imported metadata snapshots.
+Images is the content category; wallpaper, background and avatar are multiple uses.
 
 ## Supabase clients
 
@@ -22,16 +24,22 @@ environment before building. Only the publishable key belongs in browser code.
 
 ## Authorization across databases
 
-For protected Neon operations, verify the Supabase identity on the server using
-`auth.getClaims()` (check the error and require `data?.claims?.sub`), then enforce
-ownership/permissions in the Neon query using that verified subject. Never accept
+For protected account/admin operations, verify the Supabase identity on the server
+using `auth.getUser()` (check the error and require a confirmed, non-anonymous user),
+then read the current role from Neon `catalog.profiles`. Set `app.user_id` to the
+verified UUID in the same transaction as profile creation and selection. Never accept
 a user ID from the browser as proof of identity. Supabase RLS does not protect
 Neon queries. A future Neon owner identifier should reference the Supabase user
 ID logically; these separate databases cannot enforce a cross-database foreign key.
 
-Existing public archive reads remain public. This setup adds clients and session
-refresh infrastructure; login UI, provider configuration, and user-owned content
-are separate features. Auth-changing Route Handlers must return private/no-store
+No account table or role migration is required in Supabase. Existing Neon admin
+assignments remain authoritative. Signup itself calls only Supabase Auth; Neon is
+accessed when a confirmed account opens a protected page or performs an upload.
+
+Existing public archive reads remain public. Login, registration, confirmation,
+profiles and an admin-only category-aware content studio are implemented; provider setup and
+validation requirements are in [auth-and-admin.md](./auth-and-admin.md).
+Auth-changing Route Handlers must return private/no-store
 responses, and authenticated pages must not use shared caching.
 
 Reference: https://supabase.com/docs/guides/auth/server-side/creating-a-client

@@ -39,7 +39,7 @@ erDiagram
 | `item_assets` | Media role, alt text, crop focal point, display order | One cover per item, gallery, preview, download attachments |
 | `tags`, `item_tags` | Many-to-many labels across categories | Cozy, night, chaos, future mood discovery |
 | `collections`, `collection_items` | Ordered saved, custom, or editorial groups | Your collection, future named lists and curated shelves |
-| `legacy_item_keys` | Original title to stable item ID | Old detail URLs and migration of browser-local favorites |
+| `content_uses`, `item_uses` | Multiple intended uses per item | Wallpaper, background and avatar without duplicate uploads |
 | `profiles` | Supabase UUID, unique lowercase username, display name, avatar URL, application role | Account and collection ownership |
 
 Content IDs use `bigint GENERATED ALWAYS AS IDENTITY`; expose them as
@@ -85,14 +85,14 @@ schemas selected by the category's persisted `metadata_schema_key`:
 
 | Key | Optional machine-readable fields |
 | --- | --- |
-| `wallpapers.v1` | `width` + `height`, `image_count`, image `formats` |
+| `images.v1` | `width` + `height`, `image_count`, image `formats` |
 | `music.v1` | `track_count`, `duration_seconds`, audio `formats` |
 | `games.v1` | `size_bytes`, `platforms`, `version` |
 | `generic.v1` | No custom fields; safe default for a new category |
 
 Unknown schema keys/fields, wrong types, negative counts, fractional counts,
-unsafe integers, and incomplete image dimensions are rejected. All schemas also
-explicitly model the optional imported `legacy` snapshot. Fields remain optional
+unsafe integers, and incomplete image dimensions are rejected. Imported legacy
+snapshots are removed and rejected by the current schemas. Fields remain optional
 so draft content and migrated rows do not need fabricated technical metadata.
 
 `server/services/catalog-metadata.ts` validates updates after reading and locking
@@ -110,8 +110,7 @@ fields requires registering a versioned Zod schema and selecting its key.
 
 Promote attributes to typed columns or a dedicated detail table when they need
 range filters, indexes, relationships, or stronger constraints. Do not build an
-untyped relationship model inside JSON. The backfilled `metadata.legacy` object
-is a transition snapshot, not a second source of truth.
+untyped relationship model inside JSON. Intended uses belong in `item_uses`.
 
 The frontend loads active categories from Neon and filters by category slug.
 Facts render their stored labels and values; accent colors and cover focal points
@@ -200,11 +199,11 @@ of pretending there is one cross-provider transaction.
 Run `pnpm db:migrate` with a direct `DATABASE_URL_UNPOOLED` after testing on an
 isolated branch. Existing migration files remain immutable history: they can
 backfill existing archive rows, while a fresh database needs no demo data.
-The app requires migrations 0001?0003 and queries only `catalog.*`.
+The app requires migrations 0001 through 0005 and queries only `catalog.*`.
 
 The old `/api/archive` endpoint and title-based item URLs are removed.
-`public.archive_items` and `catalog.legacy_item_keys` are retained in the database
-for migration history only; dropping persisted tables requires a separate migration.
+Migration 0005 drops `public.archive_items` and `catalog.legacy_item_keys`, removes
+legacy metadata, and renames Wallpapers to Images. Old wallpaper URLs are not redirected.
 Legacy examples live exclusively in test fixtures for backfill regression tests.
 
 Saved items remain guest, device-local favorites, now keyed by canonical item IDs

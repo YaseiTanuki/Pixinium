@@ -1,7 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { neon } from '@neondatabase/serverless'
-import type { CatalogDetail, Category, Asset } from '../../lib/entities/catalog'
+import type { CatalogDetail, Category, Asset, ContentUse } from '../../lib/entities/catalog'
 import { cardsQuery } from '../repositories/catalog.queries'
 
 function database() {
@@ -13,6 +13,10 @@ type Media = CatalogDetail['media'][number] & Pick<Asset, 'provider' | 'external
 
 function assetUrl(asset: Media): string {
   if (asset.provider === 'external' && asset.externalUrl) return asset.externalUrl
+  // Resolve only published catalog assets through a fresh, no-store signed redirect.
+  if (asset.provider === 'supabase' && asset.bucket === process.env.SUPABASE_ADMIN_UPLOAD_BUCKET) {
+    return `/api/assets/${asset.assetId}`
+  }
   // Storage origins must be explicitly configured for public catalog media.
   // Private objects require a signed-URL resolver before they can be published.
   const origins: Record<string, string> = JSON.parse(process.env.CATALOG_PUBLIC_ASSET_ORIGINS ?? '{}')
@@ -30,6 +34,9 @@ export const listCategories = cache(async (): Promise<Category[]> => {
     FROM catalog.categories WHERE is_active ORDER BY sort_order, id`) as Category[]
 })
 
+export const listContentUses = cache(async (): Promise<ContentUse[]> =>
+  await database().query('SELECT slug, name FROM catalog.content_uses ORDER BY sort_order, slug') as ContentUse[])
+
 export async function listCatalogItems(filters: { category?: string; slug?: string; query?: string } = {}): Promise<CatalogDetail[]> {
   const rows = await database().query(cardsQuery, [filters.category ?? null, filters.slug ?? null,
     filters.query?.trim() ? `%${filters.query.trim()}%` : null])
@@ -40,7 +47,7 @@ export async function listCatalogItems(filters: { category?: string; slug?: stri
     }))
     const cover = media.find((asset) => asset.role === 'cover')
     return { item: row.item, category: row.category, facts: row.facts, description: row.description,
-      tags: row.tags, media, cover: cover ? { url: cover.url, altText: cover.altText,
+      tags: row.tags, uses: row.uses, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY } : null } as CatalogDetail
   })
 }

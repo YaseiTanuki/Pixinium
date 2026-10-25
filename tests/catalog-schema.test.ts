@@ -30,22 +30,36 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
   const db = new PGlite()
   try {
     await seedLegacy(db)
-    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql'])
+    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql'])
+
+    await t.test('uses backfill and multi-use discovery preserve one item and hide drafts', async () => {
+      const first = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items ORDER BY id LIMIT 1")).rows[0]
+      assert.equal((await db.query('SELECT * FROM catalog.item_uses WHERE item_id = $1 AND use_slug = $2', [first.id, 'wallpaper'])).rows.length, 1)
+      await db.exec('BEGIN')
+      try {
+        await db.query("INSERT INTO catalog.item_uses VALUES ($1, 'background'), ($1, 'avatar')", [first.id])
+        const found = (await db.query<{ uses: unknown[] }>(cardsQuery, [null, null, '%avatar%'])).rows
+        assert.equal(found.length, 1)
+        assert.equal(found[0].uses.length, 4)
+        await db.query("UPDATE catalog.items SET status = 'draft' WHERE id = $1", [first.id])
+        assert.equal((await db.query(cardsQuery, [null, null, '%avatar%'])).rows.length, 0)
+      } finally { await db.exec('ROLLBACK') }
+    })
 
     await t.test('application query returns canonical identities, facts and assets, and enforces visibility without RLS', async () => {
       const rows = (await db.query<CatalogCard & { assets: unknown[] }>(cardsQuery, [null, null, null])).rows
       assert.equal(rows.length, 8)
       assert.equal(rows[0].item.id, '1')
-      assert.equal(rows[0].category.slug, 'wallpapers')
+      assert.equal(rows[0].category.slug, 'images')
       assert.equal(rows[0].facts[0].label, 'Resolution')
       assert.equal(rows[0].assets.length, 1)
-      assert.equal(itemHref(rows[0]), `/items/wallpapers/${rows[0].item.slug}`)
+      assert.equal(itemHref(rows[0]), `/items/images/${rows[0].item.slug}`)
       assert.equal((await db.query(cardsQuery, ['music', rows[0].item.slug, null])).rows.length, 0)
-      assert.equal((await db.query(cardsQuery, ['wallpapers', rows[0].item.slug, null])).rows.length, 1)
+      assert.equal((await db.query(cardsQuery, ['images', rows[0].item.slug, null])).rows.length, 1)
       await db.exec('BEGIN')
       try {
         await db.exec(`UPDATE catalog.items SET status = 'draft' WHERE id = 1`)
-        assert.equal((await db.query(cardsQuery, ['wallpapers', rows[0].item.slug, null])).rows.length, 0)
+        assert.equal((await db.query(cardsQuery, ['images', rows[0].item.slug, null])).rows.length, 0)
         await db.exec(`UPDATE catalog.categories SET is_active = false WHERE slug = 'music'`)
         assert.equal((await db.query(cardsQuery, ['music', null, null])).rows.length, 0)
       } finally { await db.exec('ROLLBACK') }
@@ -53,13 +67,15 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
     })
 
     await t.test('backfill preserves the archive, splits facts, deduplicates assets, and preserves focal points', async () => {
-      assert.equal((await db.query('SELECT * FROM archive_items')).rows.length, 8)
+      assert.equal((await db.query<{ name: string | null }>("SELECT to_regclass('public.archive_items') AS name")).rows[0].name, null)
+      assert.equal((await db.query<{ name: string | null }>("SELECT to_regclass('catalog.legacy_item_keys') AS name")).rows[0].name, null)
+      assert.equal((await db.query("SELECT id FROM catalog.items WHERE metadata ? 'legacy'")).rows.length, 0)
       assert.equal((await db.query('SELECT * FROM catalog.items')).rows.length, 8)
       assert.equal((await db.query('SELECT * FROM catalog.item_facts')).rows.length, 16)
       assert.equal((await db.query('SELECT * FROM catalog.assets')).rows.length, 1)
       assert.equal((await db.query('SELECT * FROM catalog.item_assets')).rows.length, 5)
       const cover = (await db.query<{ focal_x: string; focal_y: string }>(`SELECT focal_x, focal_y FROM catalog.item_assets ia
-        JOIN catalog.legacy_item_keys k ON k.item_id = ia.item_id WHERE legacy_title = 'Exploding Werewolf'`)).rows[0]
+        JOIN catalog.items i ON i.id = ia.item_id WHERE i.title = 'Exploding Werewolf'`)).rows[0]
       assert.equal(Number(cover.focal_x), 10)
       assert.equal(Number(cover.focal_y), 18)
       const accent = (await db.query<{ accent_color: string }>('SELECT accent_color FROM catalog.items WHERE id = 1')).rows[0]
@@ -67,14 +83,14 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.deepEqual(await migrate(connection(db)), [])
     })
 
-    await t.test('new categories need only rows; rename does not break references or legacy links', async () => {
+    await t.test('new categories need only rows; rename does not break references', async () => {
       await db.exec(`INSERT INTO catalog.categories(slug, name) VALUES ('fonts', 'Fonts');
         INSERT INTO catalog.items(category_id, slug, title, status, published_at)
         SELECT id, 'soft-serif', 'Soft Serif', 'published', now() FROM catalog.categories WHERE slug = 'fonts';
         INSERT INTO catalog.item_facts(item_id, key, label, value)
         SELECT id, 'weights', 'Weights', '6 weights' FROM catalog.items WHERE slug = 'soft-serif';
         UPDATE catalog.items SET title = 'Werewolf, renamed' WHERE id = 1;`)
-      assert.equal((await db.query(`SELECT * FROM catalog.legacy_item_keys WHERE legacy_title = 'Exploding Werewolf' AND item_id = 1`)).rows.length, 1)
+      assert.equal((await db.query(`SELECT * FROM catalog.item_uses WHERE item_id = 1 AND use_slug = 'wallpaper'`)).rows.length, 1)
       assert.equal((await db.query(`SELECT * FROM catalog.item_facts WHERE key = 'weights'`)).rows.length, 1)
       await assert.rejects(db.exec(`DELETE FROM catalog.categories WHERE slug = 'fonts'`), /foreign key/)
     })
@@ -128,6 +144,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       GRANT UPDATE(username, display_name, avatar_url) ON catalog.profiles TO catalog_test_runtime;
       GRANT USAGE ON SEQUENCE catalog.collections_id_seq TO catalog_test_runtime;
       INSERT INTO catalog.items(category_id, slug, title) VALUES (1, 'draft-item', 'Draft item');
+      INSERT INTO catalog.item_uses(item_id, use_slug) SELECT id, 'avatar' FROM catalog.items WHERE slug = 'draft-item';
       INSERT INTO catalog.assets(provider, external_url) VALUES ('external', 'https://example.com/private.png');
       INSERT INTO catalog.item_assets(item_id, asset_id, role)
         SELECT i.id, a.id, 'cover' FROM catalog.items i, catalog.assets a
@@ -138,6 +155,8 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.equal((await db.query('SELECT * FROM catalog.items')).rows.length, 9)
       assert.equal((await db.query('SELECT * FROM catalog.assets')).rows.length, 1)
       assert.equal((await db.query('SELECT * FROM catalog.collections')).rows.length, 0)
+      assert.equal((await db.query("SELECT * FROM catalog.item_uses WHERE use_slug = 'avatar'")).rows.length, 0)
+      await assert.rejects(db.exec("INSERT INTO catalog.item_uses VALUES (1, 'avatar')"), /permission denied/)
       await assert.rejects(db.exec(`INSERT INTO catalog.collections(owner_user_id, kind, slug, title) VALUES ('${alice}', 'saved', 'saved', 'Saved')`), /row-level security/)
       await assert.rejects(db.exec(`UPDATE catalog.items SET title = 'Not allowed' WHERE id = 1`), /permission denied/)
     })
@@ -233,9 +252,11 @@ test('Zod rejects unknown schema keys, incompatible fields, invalid types, and p
   for (const [key, input] of [
     ['music.v1', { track_count: '8' }], ['music.v1', { track_count: -1 }],
     ['music.v1', { track_count: 1.5 }], ['music.v1', { owner_user_id: alice }],
-    ['wallpapers.v1', { width: 1920 }], ['games.v1', { size_bytes: Number.MAX_SAFE_INTEGER + 1 }],
+    ['images.v1', { width: 1920 }], ['games.v1', { size_bytes: Number.MAX_SAFE_INTEGER + 1 }],
     ['games.v1', { platforms: ['unknown'] }], ['generic.v1', { anything: true }],
     ['missing.v1', {}], ['constructor', {}], ['music.v1', []],
+    ['images.v1', { legacy: { meta: 'old', color: 'old', crop: null, accent: null } }],
+    ['wallpapers.v1', {}],
   ] as const) assert.throws(() => parseCategoryMetadata(key, input))
 })
 

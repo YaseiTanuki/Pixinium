@@ -9,7 +9,9 @@
     "start": "next start",
     "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate-database.ts",
     "db:audit": "node --env-file=.env.local --import tsx scripts/audit-database.ts",
-    "test:db": "node --import tsx --test tests/catalog-schema.test.ts"
+    "test:db": "node --import tsx --test tests/catalog-schema.test.ts",
+    "test:auth": "node --import tsx --test tests/auth-policy.test.ts",
+    "test:content": "node --import tsx --test tests/content.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

@@ -1,9 +1,9 @@
 import CatalogSearch from './catalog-search'
 import './search.css'
-import { listCatalogItems, listCategories } from '@/server/services/catalog.service'
+import { listCatalogItems, listContentUses } from '@/server/services/catalog.service'
 export const dynamic = 'force-dynamic'
-export default async function Page({ searchParams }: { searchParams: Promise<{ category?: string; q?: string }> }) {
- const { category, q } = await searchParams
- const [items, categories] = await Promise.all([listCatalogItems(), listCategories()])
- return <CatalogSearch key={`${category}:${q}`} items={items} categories={categories} initialFilter={category ?? ''} initialQuery={q ?? ''} />
+export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string; use?: string }> }) {
+ const { q, use } = await searchParams
+ const [items, uses] = await Promise.all([listCatalogItems(), listContentUses()])
+ return <CatalogSearch key={`${q}:${use}`} items={items} uses={uses} initialUse={use ?? ''} initialQuery={q ?? ''} />
 }
