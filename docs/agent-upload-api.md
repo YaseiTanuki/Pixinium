@@ -36,7 +36,7 @@ Send `Authorization: Bearer <token>` on every API request. Send
 | GET | `/api/agent/catalog` | Active category IDs, uses, file types and limits |
 | POST | `/api/agent/uploads` | Request a temporary upload URL |
 | DELETE | `/api/agent/uploads` | Delete an array of owned staging paths |
-| POST | `/api/agent/content` | Create a draft or publish content |
+| POST | `/api/agent/content` | Publish content |
 
 ### 1. Prepare and upload each file
 
@@ -59,7 +59,7 @@ Get the actual `categoryId` from `/api/agent/catalog`. POST `/api/agent/content`
 {
   "categoryId": "1",
   "title": "Quiet sunset",
-  "status": "draft",
+  "status": "published",
   "summary": "A warm sunset for your collection.",
   "uses": ["wallpaper", "background"],
   "attachments": [
@@ -68,8 +68,8 @@ Get the actual `categoryId` from `/api/agent/catalog`. POST `/api/agent/content`
 }
 ```
 
-Only `categoryId` and `title` are mandatory for an empty draft. Omitted fields
-default to empty descriptions, arrays and metadata, draft status, display order 0,
+Provide `categoryId`, `title` and the required uploaded files. Omitted optional fields
+default to empty descriptions, arrays and metadata, published status, display order 0,
 unfeatured and accent `#f1e5dd`. Optional `tags` are `{slug,name}` objects; optional
 `facts` are `{key,label,value}` objects. Attachment focalX/focalY default to 50.
 Do not submit asset roles, item IDs, slugs, bucket keys or signed URLs as paths.
@@ -104,7 +104,7 @@ Create a manifest next to your files:
 {
   "categoryId": "1",
   "title": "Quiet sunset",
-  "status": "draft",
+  "status": "published",
   "files": [
     { "file": "sunset.png", "altText": "An orange sunset over the mountains" }
   ]

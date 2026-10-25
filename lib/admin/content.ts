@@ -23,7 +23,7 @@ export const attachmentSchema = z.object({
 export const contentSchema = z.object({
   categoryId: z.string().regex(/^[1-9][0-9]*$/),
   title: z.string().trim().min(1).max(200), summary: z.string().trim().max(500),
-  description: z.string().trim().max(20000), status: z.enum(['draft', 'published']),
+  description: z.string().trim().max(20000), status: z.literal('published').default('published'),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/), isFeatured: z.boolean(),
   sortOrder: z.number().int().min(0).max(2147483647),
   metadata: z.record(z.string(), z.unknown()),

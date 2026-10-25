@@ -100,7 +100,7 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
     saveInProgress.current = true
     setResult({})
     try {
-      const response = await createContent({ categoryId, uses: form.getAll('uses'), title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: form.get('status'), accentColor: form.get('accentColor'), isFeatured: form.has('isFeatured'), sortOrder: Number(form.get('sortOrder')), metadata, tags, facts, attachments })
+      const response = await createContent({ categoryId, uses: form.getAll('uses'), title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', accentColor: form.get('accentColor'), isFeatured: form.has('isFeatured'), sortOrder: Number(form.get('sortOrder')), metadata, tags, facts, attachments })
       setResult(response)
       if (response.message) { pendingUploads.current.clear(); router.refresh() }
     } catch { setResult({ error: 'Could not save content. Your entries are preserved; please retry.' }) }
@@ -139,14 +139,13 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
         <button type="button" className="account-text-link" disabled={facts.length >= 20} onClick={() => setFacts(current => [...current, { key: '', label: '', value: '' }])}><Plus size={16} aria-hidden="true" /> Add fact</button>
       </section>
       <section className="workspace-panel"><h2>Publication</h2><div className="studio-grid">
-        <label>Status<select className="account-input" name="status" defaultValue="draft"><option value="draft">Draft — private</option><option value="published">Published — visible in the archive</option></select></label>
         <label>Display order<input className="account-input" type="number" name="sortOrder" defaultValue={0} min={0} max={2147483647} required /></label>
         <label>Accent color<input className="account-input" type="color" name="accentColor" defaultValue="#f1e5dd" /></label>
         <label className="studio-checkbox"><input type="checkbox" name="isFeatured" /> Feature in the archive</label>
       </div></section>
     </fieldset>
     <div aria-live="polite">{result.error && <p className="account-notice" role="alert">{result.error}</p>}{result.message && <p className="account-notice account-notice-success">{result.message} {result.href && <Link className="account-text-link" href={result.href}>View content</Link>}</p>}</div>
-    <div className="studio-submit">{result.message ? <button type="button" className="account-button" onClick={() => { formRef.current?.reset(); setAttachments([]); setFacts([]); setResult({}); setProgress('') }}>Create another item</button> : <button className="account-button" disabled={busy || !ready || !categoryId}>{saving ? 'Saving content…' : uploading ? 'Uploading files…' : 'Save content'}</button>}<p className="account-help">Drafts remain private. Published content is available to everyone.</p></div>
+    <div className="studio-submit">{result.message ? <button type="button" className="account-button" onClick={() => { formRef.current?.reset(); setAttachments([]); setFacts([]); setResult({}); setProgress('') }}>Create another item</button> : <button className="account-button" disabled={busy || !ready || !categoryId}>{saving ? 'Saving content…' : uploading ? 'Uploading files…' : 'Publish content'}</button>}<p className="account-help">Publishing makes this content available to everyone.</p></div>
   </form>
 }
 

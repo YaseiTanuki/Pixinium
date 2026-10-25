@@ -30,7 +30,7 @@ is limited to 64 million pixels. Thumbnail dimensions and file size are persiste
 separately from the original. Admins no longer choose cover/gallery/preview roles.
 Only `cover` (generated display thumbnail) and `download` remain in the database.
 For a multi-file item, the first image supplies its single thumbnail; all originals
-remain downloadable. Drafts can be saved without an image; publishing requires one.
+remain downloadable. Every upload requires an image and publishes immediately.
 
 Migration 0008 preserves former covers/gallery/previews as download links. Run
 `node --env-file=.env.local --import tsx scripts/backfill-image-thumbnails.ts`
@@ -40,7 +40,7 @@ backfill ran on 2026-10-25; there were no existing S3 covers to convert.
 
 Neon stores bucket/object keys, never expiring URLs. `/api/assets/<id>` checks
 published status and active category before redirecting to a 60-second signed GET.
-Drafts have no public application asset route. Uploaded MIME metadata is not
+Archived items have no public application asset route. Uploaded MIME metadata is not
 malware scanning; supported file extensions are defined in `lib/admin/content.ts`.
 
 The smoke test creates two uniquely named temporary objects and removes them:
@@ -107,7 +107,7 @@ The server parses audio bytes to detect format and duration, checks the format
 against the file extension, and derives track count and total duration. Each
 track's duration is also stored on its asset record. Submitted manual music
 metadata is ignored. Unsupported or unreadable tracks cannot be saved.
-Publishing requires artwork and at least one track; drafts may be incomplete.
+Publishing requires artwork and at least one track. Drafts are not supported.
 The implementation uses [music-metadata](https://github.com/Borewit/music-metadata).
 
 Published audio can also play directly on the detail page. The native player uses

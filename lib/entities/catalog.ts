@@ -5,7 +5,7 @@ export type UserId = string
 export type Timestamp = string
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 export type JsonObject = { [key: string]: JsonValue }
-export type PublicationStatus = 'draft' | 'published' | 'archived'
+export type PublicationStatus = 'published' | 'archived'
 export type ArtworkStyle = 'image' | 'record'
 
 export interface Category {

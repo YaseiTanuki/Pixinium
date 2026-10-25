@@ -30,9 +30,9 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
   const db = new PGlite()
   try {
     await seedLegacy(db)
-    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql'])
+    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql'])
 
-    await t.test('uses backfill and multi-use discovery preserve one item and hide drafts', async () => {
+    await t.test('uses backfill and multi-use discovery preserve one item and hide archived items', async () => {
       const first = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items ORDER BY id LIMIT 1")).rows[0]
       assert.equal((await db.query('SELECT * FROM catalog.item_uses WHERE item_id = $1 AND use_slug = $2', [first.id, 'wallpaper'])).rows.length, 1)
       await db.exec('BEGIN')
@@ -41,7 +41,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
         const found = (await db.query<{ uses: unknown[] }>(cardsQuery, [null, null, '%avatar%'])).rows
         assert.equal(found.length, 1)
         assert.equal(found[0].uses.length, 4)
-        await db.query("UPDATE catalog.items SET status = 'draft' WHERE id = $1", [first.id])
+        await db.query("UPDATE catalog.items SET status = 'archived' WHERE id = $1", [first.id])
         assert.equal((await db.query(cardsQuery, [null, null, '%avatar%'])).rows.length, 0)
       } finally { await db.exec('ROLLBACK') }
     })
@@ -58,7 +58,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.equal((await db.query(cardsQuery, ['images', rows[0].item.slug, null])).rows.length, 1)
       await db.exec('BEGIN')
       try {
-        await db.exec(`UPDATE catalog.items SET status = 'draft' WHERE id = 1`)
+        await db.exec(`UPDATE catalog.items SET status = 'archived' WHERE id = 1`)
         assert.equal((await db.query(cardsQuery, ['images', rows[0].item.slug, null])).rows.length, 0)
         await db.exec(`UPDATE catalog.categories SET is_active = false WHERE slug = 'music'`)
         assert.equal((await db.query(cardsQuery, ['music', null, null])).rows.length, 0)
@@ -96,17 +96,18 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
     })
 
     await t.test('constraints reject ambiguous asset locations, duplicate covers, and invalid facts', async () => {
+      await assert.rejects(db.exec("UPDATE catalog.items SET status = 'draft' WHERE id = 1"), /check constraint/)
       await assert.rejects(db.exec(`INSERT INTO catalog.assets(provider) VALUES ('supabase')`), /check constraint/)
       await assert.rejects(db.exec(`INSERT INTO catalog.assets(provider, external_url) VALUES ('external', 'javascript:alert(1)')`), /check constraint/)
       await assert.rejects(db.exec(`INSERT INTO catalog.item_assets(item_id, asset_id, role) VALUES (1, 1, 'cover')`), /unique constraint/)
       await assert.rejects(db.exec(`INSERT INTO catalog.item_facts(item_id, key, label, value) VALUES (1, 'empty', 'Empty', '')`), /check constraint/)
-      await assert.rejects(db.exec(`INSERT INTO catalog.items(category_id, slug, title, status) VALUES (1, 'no-date', 'No date', 'published')`), /check constraint/)
+      await assert.rejects(db.exec(`INSERT INTO catalog.items(category_id, slug, title, status, published_at) VALUES (1, 'no-date', 'No date', 'published', NULL)`), /check constraint/)
       await db.exec(`INSERT INTO catalog.assets(provider, bucket, object_path, media_type)
         VALUES ('supabase', 'archive', 'fonts/soft-serif.zip', 'file')`)
     })
 
     await t.test('slugs are unique within a category; storage paths are unique within a provider', async () => {
-      await db.exec(`INSERT INTO catalog.items(category_id, slug, title) VALUES (1, 'shared-slug', 'First'), (2, 'shared-slug', 'Second')`)
+      await db.exec(`INSERT INTO catalog.items(category_id, slug, title, status) VALUES (1, 'shared-slug', 'First', 'archived'), (2, 'shared-slug', 'Second', 'archived')`)
       await assert.rejects(db.exec(`INSERT INTO catalog.items(category_id, slug, title) VALUES (1, 'shared-slug', 'Duplicate')`), /unique constraint/)
       await db.exec(`INSERT INTO catalog.assets(provider, bucket, object_path, media_type) VALUES ('r2', 'archive', 'fonts/soft-serif.zip', 'file')`)
       await assert.rejects(db.exec(`INSERT INTO catalog.assets(provider, bucket, object_path) VALUES ('r2', 'archive', 'fonts/soft-serif.zip')`), /unique constraint/)
@@ -143,7 +144,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       GRANT INSERT ON catalog.profiles TO catalog_test_runtime;
       GRANT UPDATE(username, display_name, avatar_url) ON catalog.profiles TO catalog_test_runtime;
       GRANT USAGE ON SEQUENCE catalog.collections_id_seq TO catalog_test_runtime;
-      INSERT INTO catalog.items(category_id, slug, title) VALUES (1, 'draft-item', 'Draft item');
+      INSERT INTO catalog.items(category_id, slug, title, status) VALUES (1, 'draft-item', 'Archived item', 'archived');
       INSERT INTO catalog.item_uses(item_id, use_slug) SELECT id, 'avatar' FROM catalog.items WHERE slug = 'draft-item';
       INSERT INTO catalog.assets(provider, external_url) VALUES ('external', 'https://example.com/private.png');
       INSERT INTO catalog.item_assets(item_id, asset_id, role)
@@ -151,7 +152,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
         WHERE i.slug = 'draft-item' AND a.external_url = 'https://example.com/private.png';
       SET ROLE catalog_test_runtime;`)
 
-    await t.test('public reads exclude drafts and their assets, and expose no private collections', async () => {
+    await t.test('public reads exclude archived items and their assets, and expose no private collections', async () => {
       assert.equal((await db.query('SELECT * FROM catalog.items')).rows.length, 9)
       assert.equal((await db.query('SELECT * FROM catalog.assets')).rows.length, 1)
       assert.equal((await db.query('SELECT * FROM catalog.collections')).rows.length, 0)

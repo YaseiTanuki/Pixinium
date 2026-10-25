@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const input = await readAgentJson(request)
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new AgentApiError(400, 'Expected a content object.')
     const result = await createContentForActor(actor, {
-      status: 'draft', summary: '', description: '', accentColor: '#f1e5dd', isFeatured: false,
+      status: 'published', summary: '', description: '', accentColor: '#f1e5dd', isFeatured: false,
       sortOrder: 0, metadata: {}, uses: [], tags: [], facts: [], attachments: [], ...input,
     })
     return agentJson(result, result.error ? 422 : 201)

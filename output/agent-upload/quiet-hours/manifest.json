@@ -1,0 +1,25 @@
+{
+  "categoryId": "1",
+  "title": "Quiet Hours by the Window",
+  "status": "published",
+  "summary": "A ginger cat, a warm cup of tea, and a mountain lake glowing in the last light of day.",
+  "description": "Take a quiet moment by the window. A ginger cat rests beside a cup of tea as apricot sunlight settles over a mountain lake, distant villages, and lavender peaks. Trailing greenery and soft painted textures bring a little warmth to your screen.\n\nCreated with AI for Pixinium. Use it as a desktop wallpaper or a calming background. The original PNG is preserved for download, with a smaller WebP thumbnail for browsing.",
+  "uses": ["wallpaper", "background"],
+  "accentColor": "#e7b48e",
+  "tags": [
+    { "slug": "cozy", "name": "Cozy" },
+    { "slug": "sunset", "name": "Sunset" },
+    { "slug": "cat", "name": "Cat" },
+    { "slug": "mountains", "name": "Mountains" },
+    { "slug": "illustration", "name": "Illustration" },
+    { "slug": "ai-generated", "name": "AI generated" }
+  ],
+  "facts": [
+    { "key": "format", "label": "Format", "value": "PNG" },
+    { "key": "orientation", "label": "Orientation", "value": "Landscape" },
+    { "key": "creation", "label": "Creation", "value": "AI generated" }
+  ],
+  "files": [
+    { "file": "quiet-hours-by-the-window.png", "altText": "A ginger cat beside a cup of tea on a leafy windowsill, overlooking a mountain lake and villages under an apricot sunset." }
+  ]
+}

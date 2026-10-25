@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
-import { contentSchema, fileType } from '../lib/admin/content'
+import { contentSchema, attachmentSchema, fileType } from '../lib/admin/content'
 import { parseCategoryMetadata } from '../lib/entities/metadata'
 import { createContentQuery } from '../server/repositories/content-write'
 import { createItemSlug } from '../server/services/item-slug'
@@ -12,7 +12,7 @@ import { cardsQuery } from '../server/repositories/catalog.queries'
 const admin = '00000000-0000-4000-8000-000000000001'
 const member = '00000000-0000-4000-8000-000000000002'
 const item = { categoryId: '1', title: 'New find', slug: 'new-find', summary: 'Summary', description: '',
-  status: 'draft', accentColor: '#f1e5dd', isFeatured: false, sortOrder: 0, metadata: {},
+  status: 'published', accentColor: '#f1e5dd', isFeatured: false, sortOrder: 0, metadata: {},
   facts: [{ key: 'license', label: 'License', value: 'Personal use' }], tags: [{ slug: 'cozy', name: 'Cozy' }], attachments: [] }
 
 test('automatic item slugs handle repeated titles, Unicode and URL-unsafe characters', () => {
@@ -26,18 +26,20 @@ test('automatic item slugs handle repeated titles, Unicode and URL-unsafe charac
 })
 
 test('content validation rejects invalid publication, facts, roles and category metadata', () => {
-  assert.equal(contentSchema.safeParse(item).success, true)
-  assert.equal(contentSchema.safeParse({ ...item, uses: ['wallpaper', 'background', 'avatar'] }).success, true)
-  assert.equal(contentSchema.safeParse({ ...item, uses: ['avatar', 'avatar'] }).success, false)
-  assert.equal(contentSchema.safeParse({ ...item, status: 'published' }).success, false)
-  assert.equal(contentSchema.safeParse({ ...item, status: 'published', attachments: [{ path: `${admin}/${member}.png`, role: 'download', altText: 'Original sunset' }] }).success, true)
+  const valid = { ...item, attachments: [{ path: `${admin}/${member}.png`, altText: 'Original image' }] }
+  assert.equal(contentSchema.safeParse(valid).success, true)
+  assert.equal(contentSchema.safeParse({ ...valid, status: 'draft' }).success, false)
+  assert.equal(contentSchema.safeParse({ ...valid, uses: ['wallpaper', 'background', 'avatar'] }).success, true)
+  assert.equal(contentSchema.safeParse({ ...valid, uses: ['avatar', 'avatar'] }).success, false)
+  assert.equal(contentSchema.safeParse({ ...valid, attachments: [] }).success, false)
+  assert.equal(contentSchema.safeParse({ ...valid, status: 'published', attachments: [{ path: `${admin}/${member}.png`, role: 'download', altText: 'Original sunset' }] }).success, true)
   for (const role of ['cover', 'gallery', 'preview']) {
-    const parsed = contentSchema.parse({ ...item, attachments: [{ path: `${admin}/${member}.png`, role, altText: 'Original image' }] })
+    const parsed = contentSchema.parse({ ...valid, attachments: [{ path: `${admin}/${member}.png`, role, altText: 'Original image' }] })
     assert.equal(parsed.attachments[0].role, 'download')
   }
-  assert.equal(contentSchema.safeParse({ ...item, facts: [...item.facts, ...item.facts] }).success, false)
-  assert.equal(Object.hasOwn(contentSchema.parse({ ...item, slug: '../escape' }), 'slug'), false)
-  const { slug: _slug, ...withoutSlug } = item
+  assert.equal(contentSchema.safeParse({ ...valid, facts: [...item.facts, ...item.facts] }).success, false)
+  assert.equal(Object.hasOwn(contentSchema.parse({ ...valid, slug: '../escape' }), 'slug'), false)
+  const { slug: _slug, ...withoutSlug } = valid
   assert.equal(contentSchema.safeParse(withoutSlug).success, true)
   assert.equal(fileType('payload.svg'), null)
   assert.equal(fileType('game.ZIP')?.mediaType, 'file')
@@ -45,14 +47,14 @@ test('content validation rejects invalid publication, facts, roles and category 
   assert.throws(() => parseCategoryMetadata('images.v1', { width: 1920 }))
   assert.throws(() => parseCategoryMetadata('games.v1', { platforms: ['invalid'] }))
   assert.throws(() => parseCategoryMetadata('music.v1', { track_count: -1 }))
-  assert.equal(contentSchema.parse({ ...item, attachments: [{ path: `${admin}/${member}.zip`, role: 'cover', altText: 'Package' }] }).attachments[0].role, 'download')
+  assert.equal(attachmentSchema.parse({ path: `${admin}/${member}.zip`, role: 'cover', altText: 'Package' }).role, 'download')
 })
 
 test('content write is atomic, rechecks admin role and rejects category schema races', { timeout: 30000 }, async () => {
   const db = new PGlite()
   try {
     await db.exec('BEGIN')
-    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql']) {
+    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql']) {
       await db.exec(await readFile(`db/migrations/${file}`, 'utf8'))
     }
     await db.exec('COMMIT')
@@ -94,7 +96,7 @@ test('content write is atomic, rechecks admin role and rejects category schema r
         attachments: [{ ...original, path: `image/${reserved.id}/originals/original.png` },
           { ...thumbnail, path: `image/${reserved.id}/thumbnail.webp` }] }, 'private-uploads')
     assert.equal(reservedRows[0].id, reserved.id)
-    assert.equal(Object.hasOwn(contentSchema.parse({ ...item, reservedItemId: '999' }), 'reservedItemId'), false)
+    assert.equal(Object.hasOwn(contentSchema.parse({ ...item, reservedItemId: '999', attachments: [{ path: `${admin}/${member}.png`, altText: 'Image' }] }), 'reservedItemId'), false)
     for (const expected of ['sunset', 'sunset-1', 'sunset-2', 'sunset-3', 'sunset-4', 'sunset-5']) {
       const rows = await createContentWithTitleSlug(query, admin, category.id, category.metadata_schema_key,
         { ...item, title: 'Sunset', uses: ['avatar'] }, 'private-uploads')
@@ -102,7 +104,7 @@ test('content write is atomic, rechecks admin role and rejects category schema r
     }
     const music = (await db.query<{ id: string; metadata_schema_key: string }>("SELECT id::text, metadata_schema_key FROM catalog.categories WHERE slug = 'music'")).rows[0]
     const musicItem = await createContentWithTitleSlug(query, admin, music.id, music.metadata_schema_key,
-      { ...item, title: 'Audio with artwork', metadata: { track_count: 1, duration_seconds: 12, formats: ['wav'] }, attachments: [
+      { ...item, status: 'archived', title: 'Audio with artwork', metadata: { track_count: 1, duration_seconds: 12, formats: ['wav'] }, attachments: [
         { ...thumbnail, path: 'audio/fixture/thumbnail.webp' },
         { ...original, path: 'audio/fixture/originals/track.wav', mediaType: 'audio', mime: 'audio/wav', width: undefined, height: undefined, durationSeconds: 12.25 },
       ] }, 'private-uploads')

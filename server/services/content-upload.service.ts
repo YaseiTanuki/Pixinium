@@ -122,8 +122,8 @@ export async function createContentForActor(account: ContentActor | null, input:
       revalidatePath('/search')
       revalidatePath('/admin')
     } catch (error) { console.error('[content.revalidate]', authDiagnostic(error)) }
-    return { id: String(rows[0].id), slug: String(rows[0].slug), category: String(rows[0].category), message: value.status === 'published' ? 'Content published to the archive.' : 'Draft saved.',
-      href: value.status === 'published' ? `/items/${rows[0].category}/${rows[0].slug}` : undefined }
+    return { id: String(rows[0].id), slug: String(rows[0].slug), category: String(rows[0].category), message: 'Content published to the archive.',
+      href: `/items/${rows[0].category}/${rows[0].slug}` }
   } catch (error) {
     console.error('[content.create]', authDiagnostic(error))
     if (error instanceof z.ZodError) return { error: error.issues[0]?.message ?? 'Check category details.' }
