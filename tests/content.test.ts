@@ -5,6 +5,8 @@ import { PGlite } from '@electric-sql/pglite'
 import { contentSchema, fileType } from '../lib/admin/content'
 import { parseCategoryMetadata } from '../lib/entities/metadata'
 import { createContentQuery } from '../server/repositories/content-write'
+import { createItemSlug } from '../server/services/item-slug'
+import { createContentWithTitleSlug } from '../server/services/content-create'
 
 const admin = '00000000-0000-4000-8000-000000000001'
 const member = '00000000-0000-4000-8000-000000000002'
@@ -12,27 +14,44 @@ const item = { categoryId: '1', title: 'New find', slug: 'new-find', summary: 'S
   status: 'draft', accentColor: '#f1e5dd', isFeatured: false, sortOrder: 0, metadata: {},
   facts: [{ key: 'license', label: 'License', value: 'Personal use' }], tags: [{ slug: 'cozy', name: 'Cozy' }], attachments: [] }
 
+test('automatic item slugs handle repeated titles, Unicode and URL-unsafe characters', () => {
+  assert.equal(createItemSlug('Sunset'), 'sunset')
+  assert.equal(createItemSlug('Đêm yên bình'), 'dem-yen-binh')
+  for (const title of ['../Sunset?use=avatar', '🌄', '夜景', 'A'.repeat(200)]) {
+    const generated = createItemSlug(title)
+    assert.match(generated, /^[a-z0-9]+(-[a-z0-9]+)*$/)
+    assert.ok(generated.length <= 120)
+  }
+})
+
 test('content validation rejects invalid publication, facts, roles and category metadata', () => {
   assert.equal(contentSchema.safeParse(item).success, true)
   assert.equal(contentSchema.safeParse({ ...item, uses: ['wallpaper', 'background', 'avatar'] }).success, true)
   assert.equal(contentSchema.safeParse({ ...item, uses: ['avatar', 'avatar'] }).success, false)
   assert.equal(contentSchema.safeParse({ ...item, status: 'published' }).success, false)
+  assert.equal(contentSchema.safeParse({ ...item, status: 'published', attachments: [{ path: `${admin}/${member}.png`, role: 'download', altText: 'Original sunset' }] }).success, true)
+  for (const role of ['cover', 'gallery', 'preview']) {
+    const parsed = contentSchema.parse({ ...item, attachments: [{ path: `${admin}/${member}.png`, role, altText: 'Original image' }] })
+    assert.equal(parsed.attachments[0].role, 'download')
+  }
   assert.equal(contentSchema.safeParse({ ...item, facts: [...item.facts, ...item.facts] }).success, false)
-  assert.equal(contentSchema.safeParse({ ...item, slug: '../escape' }).success, false)
+  assert.equal(Object.hasOwn(contentSchema.parse({ ...item, slug: '../escape' }), 'slug'), false)
+  const { slug: _slug, ...withoutSlug } = item
+  assert.equal(contentSchema.safeParse(withoutSlug).success, true)
   assert.equal(fileType('payload.svg'), null)
   assert.equal(fileType('game.ZIP')?.mediaType, 'file')
   assert.equal(fileType('track.flac')?.mediaType, 'audio')
   assert.throws(() => parseCategoryMetadata('images.v1', { width: 1920 }))
   assert.throws(() => parseCategoryMetadata('games.v1', { platforms: ['invalid'] }))
   assert.throws(() => parseCategoryMetadata('music.v1', { track_count: -1 }))
-  assert.equal(contentSchema.safeParse({ ...item, attachments: [{ path: `${admin}/${member}.zip`, role: 'cover', altText: 'Cover' }] }).success, false)
+  assert.equal(contentSchema.parse({ ...item, attachments: [{ path: `${admin}/${member}.zip`, role: 'cover', altText: 'Package' }] }).attachments[0].role, 'download')
 })
 
 test('content write is atomic, rechecks admin role and rejects category schema races', { timeout: 30000 }, async () => {
   const db = new PGlite()
   try {
     await db.exec('BEGIN')
-    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql']) {
+    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql']) {
       await db.exec(await readFile(`db/migrations/${file}`, 'utf8'))
     }
     await db.exec('COMMIT')
@@ -59,6 +78,45 @@ test('content write is atomic, rechecks admin role and rejects category schema r
     assert.equal((await db.query('SELECT * FROM catalog.tags')).rows.length, 1)
     await assert.rejects(write(admin, 'rollback', category.metadata_schema_key, [{ path: 'broken', mediaType: 'invalid', mime: 'image/png', byteSize: 10 }]))
     assert.equal((await db.query(`SELECT * FROM catalog.items WHERE slug = 'rollback'`)).rows.length, 0)
+    const original = { ...asset, path: `content/${admin}/original.png`, role: 'download', width: 2400, height: 1600 }
+    const thumbnail = { ...asset, path: `content/${admin}/thumbnail.webp`, mime: 'image/webp', width: 800, height: 533 }
+    await write(admin, 'image-pair', category.metadata_schema_key, [original, thumbnail])
+    const pair = (await db.query<{ role: string; width: number; object_path: string }>(`SELECT ia.role, a.width, a.object_path
+      FROM catalog.item_assets ia JOIN catalog.assets a ON a.id=ia.asset_id JOIN catalog.items i ON i.id=ia.item_id
+      WHERE i.slug='image-pair' ORDER BY ia.role`)).rows
+    assert.deepEqual(pair.map(a => [a.role, a.width]), [['cover', 800], ['download', 2400]])
+    assert.notEqual(pair[0].object_path, pair[1].object_path)
+    const query = async (text: string, values: unknown[]) => (await db.query<Record<string, unknown>>(text, values)).rows
+    const [reserved] = await query("SELECT nextval(pg_get_serial_sequence('catalog.items', 'id'))::text AS id", [])
+    const reservedRows = await createContentWithTitleSlug(query, admin, category.id, category.metadata_schema_key,
+      { ...item, title: 'Reserved identity', reservedItemId: reserved.id,
+        attachments: [{ ...original, path: `image/${reserved.id}/originals/original.png` },
+          { ...thumbnail, path: `image/${reserved.id}/thumbnail.webp` }] }, 'private-uploads')
+    assert.equal(reservedRows[0].id, reserved.id)
+    assert.equal(Object.hasOwn(contentSchema.parse({ ...item, reservedItemId: '999' }), 'reservedItemId'), false)
+    for (const expected of ['sunset', 'sunset-1', 'sunset-2', 'sunset-3', 'sunset-4', 'sunset-5']) {
+      const rows = await createContentWithTitleSlug(query, admin, category.id, category.metadata_schema_key,
+        { ...item, title: 'Sunset', uses: ['avatar'] }, 'private-uploads')
+      assert.equal(rows[0].slug, expected)
+    }
+    const music = (await db.query<{ id: string; metadata_schema_key: string }>("SELECT id::text, metadata_schema_key FROM catalog.categories WHERE slug = 'music'")).rows[0]
+    assert.equal((await createContentWithTitleSlug(query, admin, music.id, music.metadata_schema_key,
+      { ...item, title: 'Sunset' }, 'private-uploads'))[0].slug, 'sunset')
+    let insertedCompetitor = false
+    const competingQuery = async (text: string, values: unknown[]) => {
+      if (text === createContentQuery && !insertedCompetitor) {
+        insertedCompetitor = true
+        await query(text, values)
+      }
+      return query(text, values)
+    }
+    assert.equal((await createContentWithTitleSlug(competingQuery, admin, category.id, category.metadata_schema_key,
+      { ...item, title: 'Concurrent title' }, 'private-uploads'))[0].slug, 'concurrent-title-1')
+    const unrelatedConflict = Object.assign(new Error('Duplicate attachment'), { code: '23505', constraint: 'assets_storage_path_idx' })
+    await assert.rejects(createContentWithTitleSlug(async text => {
+      if (text === createContentQuery) throw unrelatedConflict
+      return []
+    }, admin, category.id, category.metadata_schema_key, { ...item, title: 'No retry' }, 'private-uploads'), error => error === unrelatedConflict)
     await db.query(`UPDATE catalog.profiles SET role = 'member' WHERE id = $1`, [admin])
     assert.equal((await write(admin, 'demoted')).rows.length, 0)
   } finally { await db.close() }

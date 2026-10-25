@@ -6,9 +6,11 @@ WITH actor AS MATERIALIZED (
   SELECT id, slug FROM catalog.categories
   WHERE id = $2::bigint AND is_active AND metadata_schema_key = $3 FOR SHARE
 ), input AS (SELECT $4::jsonb AS doc), item AS (
-  INSERT INTO catalog.items(category_id, slug, title, summary, description, status,
+  INSERT INTO catalog.items(id, category_id, slug, title, summary, description, status,
     published_at, accent_color, is_featured, sort_order, metadata)
-  SELECT c.id, doc->>'slug', doc->>'title', doc->>'summary', doc->>'description', doc->>'status',
+  OVERRIDING SYSTEM VALUE
+  SELECT coalesce((doc->>'reservedItemId')::bigint, nextval(pg_get_serial_sequence('catalog.items', 'id'))),
+    c.id, doc->>'slug', doc->>'title', doc->>'summary', doc->>'description', doc->>'status',
     CASE WHEN doc->>'status' = 'published' THEN now() ELSE NULL END,
     doc->>'accentColor', (doc->>'isFeatured')::boolean, (doc->>'sortOrder')::integer, doc->'metadata'
   FROM input CROSS JOIN category c CROSS JOIN actor RETURNING id, slug
@@ -30,8 +32,9 @@ WITH actor AS MATERIALIZED (
 ), links AS (
   INSERT INTO catalog.item_tags(item_id,tag_id) SELECT item.id,tags.id FROM item CROSS JOIN tags
 ), assets AS (
-  INSERT INTO catalog.assets(provider,bucket,object_path,media_type,mime_type,byte_size)
-  SELECT 'supabase', $5, a->>'path', a->>'mediaType', a->>'mime', (a->>'byteSize')::bigint
+  INSERT INTO catalog.assets(provider,bucket,object_path,media_type,mime_type,byte_size,width,height)
+  SELECT 's3', $5, a->>'path', a->>'mediaType', a->>'mime', (a->>'byteSize')::bigint,
+    (a->>'width')::integer, (a->>'height')::integer
   FROM item CROSS JOIN input CROSS JOIN LATERAL jsonb_array_elements(doc->'attachments') a
   RETURNING id,object_path
 ), attachments AS (

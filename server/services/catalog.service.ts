@@ -14,7 +14,7 @@ type Media = CatalogDetail['media'][number] & Pick<Asset, 'provider' | 'external
 function assetUrl(asset: Media): string {
   if (asset.provider === 'external' && asset.externalUrl) return asset.externalUrl
   // Resolve only published catalog assets through a fresh, no-store signed redirect.
-  if (asset.provider === 'supabase' && asset.bucket === process.env.SUPABASE_ADMIN_UPLOAD_BUCKET) {
+  if (asset.provider === 's3' && asset.bucket === (process.env.S3_ASSETS_BUCKET || 'assets')) {
     return `/api/assets/${asset.assetId}`
   }
   // Storage origins must be explicitly configured for public catalog media.

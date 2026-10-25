@@ -17,12 +17,11 @@ export function fileType(name: string) {
 const slug = z.string().min(1).max(120).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
 export const attachmentSchema = z.object({
   path: z.string().max(200).regex(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.[a-z0-9]+$/),
-  role: z.enum(['cover', 'gallery', 'preview', 'download']),
   altText: z.string().trim().max(300),
   focalX: z.number().min(0).max(100).default(50), focalY: z.number().min(0).max(100).default(50),
-})
+}).transform(attachment => ({ ...attachment, role: 'download' as const }))
 export const contentSchema = z.object({
-  categoryId: z.string().regex(/^[1-9][0-9]*$/), slug,
+  categoryId: z.string().regex(/^[1-9][0-9]*$/),
   title: z.string().trim().min(1).max(200), summary: z.string().trim().max(500),
   description: z.string().trim().max(20000), status: z.enum(['draft', 'published']),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/), isFeatured: z.boolean(),
@@ -39,14 +38,11 @@ export const contentSchema = z.object({
   if (new Set(value.tags.map(x => x.slug)).size !== value.tags.length) issue('Tags must be unique.')
   if (new Set(value.uses).size !== value.uses.length) issue('Choose each use only once.')
   if (new Set(value.attachments.map(x => x.path)).size !== value.attachments.length) issue('Each file can be attached once.')
-  if (value.attachments.filter(x => x.role === 'cover').length > 1) issue('Choose only one cover.')
-  if (value.status === 'published' && !value.attachments.some(x => x.role === 'cover')) issue('Add a cover before publishing.')
+  if (value.status === 'published' && !value.attachments.some(x => fileType(x.path)?.mediaType === 'image')) issue('Upload an image to generate a thumbnail before publishing.')
   for (const asset of value.attachments) {
     const type = fileType(asset.path)
     if (!type) issue('Unsupported file type.')
-    if (['cover', 'gallery'].includes(asset.role) && type?.mediaType !== 'image') issue('Cover and gallery files must be images.')
-    if (type?.mediaType === 'file' && asset.role !== 'download') issue('Packages and documents must be downloads.')
-    if (['cover', 'gallery'].includes(asset.role) && !asset.altText) issue('Describe each cover and gallery image.')
+    if (type?.mediaType === 'image' && !asset.altText) issue('Describe each uploaded image.')
   }
 })
 export type ContentInput = z.infer<typeof contentSchema>

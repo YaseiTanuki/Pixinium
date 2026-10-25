@@ -48,3 +48,9 @@ matching broad use, in addition to any selected uses, without duplicate links.
 The home and search Showing bars filter by use; the separate search dropdown
 is removed. Browse links use `/search?use=...`. Categories still select metadata
 validation and the item detail route.
+
+Admin Studio generates item slugs from the title, with no manual URL field.
+Within a category, repeated titles become `sunset`, `sunset-1`, `sunset-2`, etc.
+The existing `(category_id, slug)` unique constraint prevents races; the writer
+rechecks available suffixes and retries only that constraint's conflict. Drafts
+and archived items also reserve their slugs. Uses do not participate in URL creation.

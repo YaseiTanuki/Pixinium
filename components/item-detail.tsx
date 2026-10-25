@@ -12,6 +12,7 @@ import { useSavedItems } from '@/lib/saved-items'
 export default function ItemDetail({ item, related, categories }: { item: CatalogDetail; related: Card[]; categories: Category[] }) {
   const { saved, toggleSaved } = useSavedItems()
   const isSaved = saved.includes(item.item.id)
+  const originalImage = item.media.find(asset => asset.role === 'download' && asset.mediaType === 'image')
   const [shareStatus, setShareStatus] = useState('')
 
   async function copyLink() {
@@ -37,7 +38,7 @@ export default function ItemDetail({ item, related, categories }: { item: Catalo
             {item.cover ? <img src={item.cover.url} alt={item.cover.altText} width={800} height={650} fetchPriority="high" className="detail-image" /> : item.category.artworkStyle === 'record' ? <div className="detail-record" aria-hidden="true"><span className="detail-record-label">PIXINIUM RECORDS</span><div className="record-disc"><span><Moon size={44} fill="currentColor" /></span></div><span className="detail-record-caption">A LITTLE SOUNDTRACK FOR YOUR WORLD</span></div> : <ImageIcon size={60} aria-label="No cover artwork" />}
             <span className="detail-stamp" aria-hidden="true">A LITTLE<br />FIND. A LOT<br />TO LOVE.<Sparkles size={19} /></span>
           </div>
-          <div className="detail-preview-bottom"><span>{item.cover ? 'Collection artwork' : 'On the record'}<small>{item.cover ? 'A closer look at your next little favorite.' : 'A soundtrack worth keeping close.'}</small></span>{item.cover ? <a href={item.cover.url} target="_blank" rel="noreferrer" className="detail-original" aria-label="Open original artwork in a new tab"><Maximize2 size={16} aria-hidden="true" /></a> : <Music2 size={22} aria-hidden="true" />}</div>
+          <div className="detail-preview-bottom"><span>{item.cover ? 'Image preview' : 'On the record'}<small>{item.cover ? 'Download the original at full resolution.' : 'A soundtrack worth keeping close.'}</small></span>{originalImage ? <a href={originalImage.url} className="detail-original" aria-label="Download original image"><Maximize2 size={16} aria-hidden="true" /></a> : !item.cover && <Music2 size={22} aria-hidden="true" />}</div>
         </section>
 
         <section className="detail-copy" aria-labelledby="item-title">

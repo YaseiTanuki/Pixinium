@@ -3,11 +3,12 @@ import { requireAccount } from '@/server/services/auth.service'
 import { AdminUploadForm } from '@/components/admin-upload-form'
 import { listCategories, listContentUses } from '@/server/services/catalog.service'
 import { neon } from '@neondatabase/serverless'
+import { storageConfigured } from '@/server/services/storage.service'
 
 export default async function AdminPage() {
   await requireAccount('admin:access')
   const [categories, uses] = await Promise.all([listCategories(), listContentUses()])
-  const ready = Boolean(process.env.CATALOG_ADMIN_DATABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_ADMIN_UPLOAD_BUCKET)
+  const ready = Boolean(process.env.CATALOG_ADMIN_DATABASE_URL && storageConfigured())
   let recent: Array<{ id: string; title: string; status: string; category: string; slug: string }> = []
   let listError = false
   if (process.env.CATALOG_ADMIN_DATABASE_URL) {

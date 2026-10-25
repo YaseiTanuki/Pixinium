@@ -52,7 +52,7 @@ export interface ItemFact {
 
 type AssetLocation =
   | { provider: 'external'; externalUrl: string; bucket: null; objectPath: null }
-  | { provider: 'supabase' | 'r2'; externalUrl: null; bucket: string; objectPath: string }
+  | { provider: 'supabase' | 'r2' | 's3'; externalUrl: null; bucket: string; objectPath: string }
 
 export type Asset = AssetLocation & {
   id: EntityId
@@ -71,7 +71,7 @@ export interface ItemAsset {
   id: EntityId
   itemId: EntityId
   assetId: EntityId
-  role: 'cover' | 'gallery' | 'preview' | 'download'
+  role: 'cover' | 'download'
   altText: string
   focalX: number
   focalY: number

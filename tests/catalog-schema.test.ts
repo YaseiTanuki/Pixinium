@@ -30,7 +30,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
   const db = new PGlite()
   try {
     await seedLegacy(db)
-    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql'])
+    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql'])
 
     await t.test('uses backfill and multi-use discovery preserve one item and hide drafts', async () => {
       const first = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items ORDER BY id LIMIT 1")).rows[0]
@@ -52,7 +52,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.equal(rows[0].item.id, '1')
       assert.equal(rows[0].category.slug, 'images')
       assert.equal(rows[0].facts[0].label, 'Resolution')
-      assert.equal(rows[0].assets.length, 1)
+      assert.equal(rows[0].assets.length, 2)
       assert.equal(itemHref(rows[0]), `/items/images/${rows[0].item.slug}`)
       assert.equal((await db.query(cardsQuery, ['music', rows[0].item.slug, null])).rows.length, 0)
       assert.equal((await db.query(cardsQuery, ['images', rows[0].item.slug, null])).rows.length, 1)
@@ -73,7 +73,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.equal((await db.query('SELECT * FROM catalog.items')).rows.length, 8)
       assert.equal((await db.query('SELECT * FROM catalog.item_facts')).rows.length, 16)
       assert.equal((await db.query('SELECT * FROM catalog.assets')).rows.length, 1)
-      assert.equal((await db.query('SELECT * FROM catalog.item_assets')).rows.length, 5)
+      assert.equal((await db.query('SELECT * FROM catalog.item_assets')).rows.length, 10)
       const cover = (await db.query<{ focal_x: string; focal_y: string }>(`SELECT focal_x, focal_y FROM catalog.item_assets ia
         JOIN catalog.items i ON i.id = ia.item_id WHERE i.title = 'Exploding Werewolf'`)).rows[0]
       assert.equal(Number(cover.focal_x), 10)
@@ -117,7 +117,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       await db.exec(`INSERT INTO catalog.tags(slug, name) VALUES ('cozy', 'Cozy'); INSERT INTO catalog.item_tags(item_id, tag_id) VALUES (1, 1)`)
       await assert.rejects(db.exec(`INSERT INTO catalog.item_tags(item_id, tag_id) VALUES (1, 1)`), /unique constraint/)
       await assert.rejects(db.exec(`INSERT INTO catalog.item_tags(item_id, tag_id) VALUES (99999, 1)`), /foreign key/)
-      await assert.rejects(db.exec(`INSERT INTO catalog.item_assets(item_id, asset_id, role) VALUES (1, 99999, 'gallery')`), /foreign key/)
+      await assert.rejects(db.exec(`INSERT INTO catalog.item_assets(item_id, asset_id, role) VALUES (1, 99999, 'download')`), /foreign key/)
       await assert.rejects(db.exec(`UPDATE catalog.item_assets SET sort_order = -1 WHERE item_id = 1`), /check constraint/)
       await assert.rejects(db.exec(`UPDATE catalog.item_facts SET sort_order = -1 WHERE item_id = 1`), /check constraint/)
       // Different assets must still not create a second cover.

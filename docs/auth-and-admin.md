@@ -28,15 +28,9 @@ Extend `lib/auth/permissions.ts` deliberately when adding roles or permissions.
    setup instructions are in `emails/README.md`.
    The app relies on provider rate limiting; it does not implement a distributed limiter.
    No client-supplied `next` destination is accepted by the confirmation handler.
-3. To enable uploads, create a dedicated **private** Supabase Storage bucket.
-   Configure `SUPABASE_ADMIN_UPLOAD_BUCKET` and server-only
-   `SUPABASE_SERVICE_ROLE_KEY` in the deployment environment. Set the bucket limit
-   to 52428800 bytes (50 MiB) or a smaller intentional limit. Configure the MIME
-   allowlist from `lib/admin/content.ts` for images, audio, video, ZIP and PDF.
-   Do not grant anon/authenticated INSERT, UPDATE, DELETE, or SELECT policies on
-   this bucket. Review existing broad storage policies as they can also match it.
-   The server checks the bucket is private and uses its privileged key only after
-   verifying the caller's current Neon role. Never prefix this key with NEXT_PUBLIC.
+3. Configure a private S3-compatible bucket and the server-only AWS settings in
+   [object-storage.md](./object-storage.md). Supabase handles authentication only;
+   new uploads do not need a Supabase service-role key or Storage bucket.
 4. Set `CATALOG_ADMIN_DATABASE_URL` to a dedicated server-only catalog writer on
    the same Neon database as `DATABASE_URL`. The writer needs SELECT on profiles
    and categories (including locks), SELECT/INSERT/UPDATE on tags, INSERT/SELECT
@@ -81,7 +75,7 @@ the same operator path with `member`; each subsequent upload rereads the role.
   overwrite. Finalization verifies path ownership, storage existence, size and
   MIME metadata. This is a trusted-admin workflow, not malware scanning or full
   file decoding. Do not allow ordinary users to obtain upload tokens.
-- Studio saves category, title, slug, summary, description, tags, ordered facts,
+- Studio saves category, title, summary, description, tags, ordered facts,
   category metadata, accent, feature flag, display order and asset relationships.
   Category metadata is validated against the database's schema key. The atomic
   SQL write locks/rechecks the admin role and category, preventing partial saves.
