@@ -5,6 +5,8 @@ import { SiteHeader } from '@/components/site-header'
 import { useState } from 'react'
 import { ArrowLeft, ArrowUpRight, Check, ChevronRight, Heart, Image as ImageIcon, Maximize2, Moon, Music2, Sparkles, Link2 } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
+import { AudioTrackPlayer } from '@/components/audio-track-player'
+import { MusicPlayer } from '@/components/music-player'
 
 import type { CatalogDetail, CatalogCard as Card, Category } from '@/lib/entities/catalog'
 import { useSavedItems } from '@/lib/saved-items'
@@ -33,14 +35,14 @@ export default function ItemDetail({ item, related, categories }: { item: Catalo
       <nav className="detail-breadcrumb" aria-label="Breadcrumb"><Link href="/search"><ArrowLeft size={14} aria-hidden="true" /> The archive</Link><ChevronRight size={12} aria-hidden="true" /><Link href={`/search?use=${item.category.slug}`}>{item.category.name}</Link><ChevronRight size={12} aria-hidden="true" /><span aria-current="page">{item.item.title}</span></nav>
 
       <div className="detail-hero">
-        <section className={`detail-preview ${item.category.artworkStyle === 'record' ? 'detail-preview-music' : ''}`} aria-label={`${item.item.title} artwork`}>
+        {isMusic ? <MusicPlayer key={item.item.id} item={item} /> : <section className={`detail-preview ${item.category.artworkStyle === 'record' ? 'detail-preview-music' : ''}`} aria-label={`${item.item.title} artwork`}>
           <div className="detail-preview-top"><span><Sparkles size={13} aria-hidden="true" /> THE LITTLE DETAILS</span><span>PIXINIUM / {item.category.name.toUpperCase()}</span></div>
           <div className="detail-art" style={{ backgroundColor: item.item.accentColor }}>
             {item.cover ? <img src={item.cover.url} alt={item.cover.altText} width={800} height={650} fetchPriority="high" className="detail-image" /> : item.category.artworkStyle === 'record' ? <div className="detail-record" aria-hidden="true"><span className="detail-record-label">PIXINIUM RECORDS</span><div className="record-disc"><span><Moon size={44} fill="currentColor" /></span></div><span className="detail-record-caption">A LITTLE SOUNDTRACK FOR YOUR WORLD</span></div> : <ImageIcon size={60} aria-label="No cover artwork" />}
             <span className="detail-stamp" aria-hidden="true">A LITTLE<br />FIND. A LOT<br />TO LOVE.<Sparkles size={19} /></span>
           </div>
-          <div className="detail-preview-bottom"><span>{isMusic ? 'Cover artwork' : item.cover ? 'Image preview' : 'Artwork'}<small>{isMusic ? 'Download the original audio tracks below.' : originalImage ? 'Download the original at full resolution.' : 'A preview of this find.'}</small></span>{originalImage && !isMusic ? <a href={originalImage.url} className="detail-original" aria-label="Download original image"><Maximize2 size={16} aria-hidden="true" /></a> : isMusic && <Music2 size={22} aria-hidden="true" />}</div>
-        </section>
+          <div className="detail-preview-bottom"><span>{isMusic ? 'Cover artwork' : item.cover ? 'Image preview' : 'Artwork'}<small>{isMusic ? 'Listen below or download the original tracks.' : originalImage ? 'Download the original at full resolution.' : 'A preview of this find.'}</small></span>{originalImage && !isMusic ? <a href={originalImage.url} className="detail-original" aria-label="Download original image"><Maximize2 size={16} aria-hidden="true" /></a> : isMusic && <Music2 size={22} aria-hidden="true" />}</div>
+        </section>}
 
         <section className="detail-copy" aria-labelledby="item-title">
           <p className="eyebrow"><span className="status-dot" />{item.category.name}</p>
@@ -60,7 +62,9 @@ export default function ItemDetail({ item, related, categories }: { item: Catalo
 
       <section className="detail-about" aria-labelledby="about-title"><div><p className="eyebrow">ABOUT THIS FIND</p><h2 id="about-title">{item.item.title}</h2></div><div><p>{item.description || item.item.summary}</p><Link href={`/search?use=${item.category.slug}`}>Explore more {item.category.name.toLowerCase()} <ArrowUpRight size={15} aria-hidden="true" /></Link></div></section>
 
-      {item.media.some(asset => asset.role === 'download') && <section className="detail-about" aria-label="Item downloads"><h2>{isMusic ? 'Download tracks' : 'Explore this find'}</h2><div>{item.media.filter(asset => asset.role === 'download').map(asset => <p key={asset.id}><a href={asset.url} target="_blank" rel="noreferrer">{asset.altText || (isMusic ? 'Download track' : 'Download file')}</a></p>)}</div></section>}
+      {!isMusic && item.media.some(asset => asset.role === 'download') && <section className="detail-about" aria-label="Item media"><h2>{isMusic ? 'Listen & download' : 'Explore this find'}</h2><div className="min-w-0 space-y-4">{item.media.filter(asset => asset.role === 'download').map((asset, index) => asset.mediaType === 'audio'
+        ? <AudioTrackPlayer key={asset.id} url={asset.url} label={asset.altText || `Track ${index + 1}`} />
+        : <p key={asset.id}><a href={asset.url} target="_blank" rel="noreferrer">{asset.altText || 'Download file'}</a></p>)}</div></section>}
 
       {related.length > 0 && <section className="detail-related" aria-labelledby="related-title"><div className="section-heading"><div><p className="eyebrow">KEEP THE GOOD THINGS COMING</p><h2 id="related-title">A few more little favorites<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the archive <ArrowUpRight size={16} aria-hidden="true" /></Link></div><div className="discovery-grid">{related.map((entry) => <CatalogCard key={entry.item.id} item={entry} />)}</div></section>}
     </main>

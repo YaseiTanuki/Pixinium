@@ -109,3 +109,9 @@ track's duration is also stored on its asset record. Submitted manual music
 metadata is ignored. Unsupported or unreadable tracks cannot be saved.
 Publishing requires artwork and at least one track; drafts may be incomplete.
 The implementation uses [music-metadata](https://github.com/Borewit/music-metadata).
+
+Published audio can also play directly on the detail page. The native player uses
+`/api/assets/<id>?play=1`, which rechecks public visibility and streams S3 bytes
+inline with single-range support for seeking. Artwork and other file types cannot
+use this playback mode. Download links retain the signed attachment response.
+Players do not preload tracks, and starting one pauses other audio players.

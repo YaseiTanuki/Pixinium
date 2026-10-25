@@ -85,6 +85,12 @@ export async function signDownload(path: string, download: boolean) {
   }), { expiresIn: 60 })
 }
 
+/** Fetch audio per request so seeking never depends on an expired signed URL. */
+export async function readAudioStream(path: string, range?: string) {
+  const { storage, bucket } = adminStorage()
+  return storage.send(new GetObjectCommand({ Bucket: bucket, Key: path, Range: range }))
+}
+
 export async function readStoredBytes(path: string, size: number, etag?: string) {
   const { storage, bucket } = adminStorage()
   const original = await storage.send(new GetObjectCommand({ Bucket: bucket, Key: path, IfMatch: etag }))
