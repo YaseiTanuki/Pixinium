@@ -8,7 +8,9 @@ import { getAccount } from '@/server/services/auth.service'
 import { hasPermission } from '@/lib/auth/permissions'
 import { contentSchema, fileType, MAX_CONTENT_FILE_BYTES, type ContentResult } from '@/lib/admin/content'
 import { parseCategoryMetadata } from '@/lib/entities/metadata'
-import { requirePrivateStorage, signUpload, inspectUpload, finalizeUpload, storeImageThumbnail, deleteStagingUploads, cleanupExpiredStaging } from '@/server/services/storage.service'
+import { requirePrivateStorage, signUpload, inspectUpload, finalizeUpload, storeImageThumbnail, deleteStagingUploads, cleanupExpiredStaging, readStoredBytes } from '@/server/services/storage.service'
+import { readAudioMetadata } from '@/server/services/audio-metadata'
+import { validateMusicFiles } from '@/lib/admin/music'
 import { ownedStagingPaths } from '@/lib/admin/staging'
 import { itemStorageDirectory } from '@/lib/admin/storage-paths'
 import { createContentWithTitleSlug } from '@/server/services/content-create'
@@ -58,7 +60,12 @@ export async function createContent(input: unknown): Promise<ContentResult> {
     const validUses = await sql.query('SELECT slug FROM catalog.content_uses WHERE slug = ANY($1::text[])', [value.uses])
     if (validUses.length !== value.uses.length) return { error: 'A selected use is no longer available. Reload the studio.' }
     const schemaKey = String(categories[0].metadata_schema_key)
-    const metadata = parseCategoryMetadata(schemaKey, value.metadata)
+    const isMusic = schemaKey === 'music.v1'
+    if (isMusic) {
+      const error = validateMusicFiles(value.attachments, value.status === 'published')
+      if (error) return { error }
+    }
+    let metadata = parseCategoryMetadata(schemaKey, isMusic ? {} : value.metadata)
     const { bucket } = await requirePrivateStorage()
     const attachments = []
     for (const asset of value.attachments) {
@@ -76,15 +83,29 @@ export async function createContent(input: unknown): Promise<ContentResult> {
     const directory = itemStorageDirectory(String(categories[0].slug), reservedItemId)
     const finalized = []
     let hasThumbnail = false
+    const tracks: Awaited<ReturnType<typeof readAudioMetadata>>[] = []
     for (const asset of attachments) {
+      if (isMusic && asset.mediaType === 'image') {
+        // Artwork is temporary input: retain only its generated thumbnail.
+        const thumbnail = await storeImageThumbnail(`staging/${asset.path}`, asset.byteSize, directory, asset.etag)
+        finalized.push({ ...asset, ...thumbnail, role: 'cover' as const })
+        continue
+      }
+      const audio = isMusic && asset.mediaType === 'audio'
+        ? await readAudioMetadata(await readStoredBytes(`staging/${asset.path}`, asset.byteSize, asset.etag), asset.extension) : undefined
+      if (audio) tracks.push(audio)
       const original = { ...asset, path: await finalizeUpload(asset.path, asset.etag, asset.mime, asset.byteSize, directory) }
       if (asset.mediaType === 'image' && !hasThumbnail) {
         const thumbnail = await storeImageThumbnail(original.path, asset.byteSize, directory)
         finalized.push({ ...original, width: thumbnail.originalWidth, height: thumbnail.originalHeight })
         finalized.push({ ...asset, ...thumbnail, role: 'cover' as const })
         hasThumbnail = true
-      } else finalized.push(original)
+      } else finalized.push({ ...original, ...(audio ? { durationSeconds: audio.durationSeconds } : {}) })
     }
+    if (isMusic) metadata = parseCategoryMetadata(schemaKey, tracks.length ? {
+      track_count: tracks.length, duration_seconds: Math.round(tracks.reduce((sum, track) => sum + track.durationSeconds, 0)),
+      formats: [...new Set(tracks.map(track => track.format))],
+    } : {})
     const rows = await createContentWithTitleSlug((text, values) => sql.query(text, values),
       account.id, value.categoryId, schemaKey, { ...value, reservedItemId, metadata, attachments: finalized }, bucket)
     if (!rows[0]) return { error: 'Your permissions or category changed. Reload the studio and try again.' }

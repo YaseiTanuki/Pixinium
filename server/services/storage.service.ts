@@ -85,12 +85,18 @@ export async function signDownload(path: string, download: boolean) {
   }), { expiresIn: 60 })
 }
 
-export async function storeImageThumbnail(originalPath: string, size: number, directory: string) {
+export async function readStoredBytes(path: string, size: number, etag?: string) {
   const { storage, bucket } = adminStorage()
-  const original = await storage.send(new GetObjectCommand({ Bucket: bucket, Key: originalPath }))
+  const original = await storage.send(new GetObjectCommand({ Bucket: bucket, Key: path, IfMatch: etag }))
   if (!original.Body || original.ContentLength !== size || size > 50 * 1024 * 1024) throw new Error('Invalid original image')
   const bytes = await original.Body.transformToByteArray()
   if (bytes.byteLength !== size) throw new Error('Incomplete original image')
+  return bytes
+}
+
+export async function storeImageThumbnail(originalPath: string, size: number, directory: string, etag?: string) {
+  const { storage, bucket } = adminStorage()
+  const bytes = await readStoredBytes(originalPath, size, etag)
   const thumbnail = await createImageThumbnail(bytes)
   const path = `${directory}/thumbnail.webp`
   await storage.send(new PutObjectCommand({ Bucket: bucket, Key: path,

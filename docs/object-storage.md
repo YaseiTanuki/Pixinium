@@ -94,3 +94,18 @@ attachment atomically, then remove unreferenced legacy `content/` objects.
 Run while catalog writes are paused. Shared source assets are copied per item;
 external assets and staging uploads are untouched. Reruns skip migrated links.
 No table alteration is required.
+
+## Music uploads
+
+Music has separate artwork and audio pickers. One artwork image is accepted;
+its staging bytes produce `audio/<item-id>/thumbnail.webp` directly. The artwork
+original is never copied into permanent storage or linked as a download.
+Successful saves delete its staging object along with staged tracks.
+
+Tracks retain their original bytes under `audio/<item-id>/originals/`.
+The server parses audio bytes to detect format and duration, checks the format
+against the file extension, and derives track count and total duration. Each
+track's duration is also stored on its asset record. Submitted manual music
+metadata is ignored. Unsupported or unreadable tracks cannot be saved.
+Publishing requires artwork and at least one track; drafts may be incomplete.
+The implementation uses [music-metadata](https://github.com/Borewit/music-metadata).

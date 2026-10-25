@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { MusicUploadFields } from '@/components/music-upload-fields'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Upload } from 'lucide-react'
@@ -10,8 +11,6 @@ import { createContent, prepareContentUpload, discardContentUploads } from '@/ap
 
 type Props = { categories: Pick<Category, 'id' | 'name' | 'metadataSchemaKey'>[]; uses: ContentUse[]; ready: boolean }
 const details: Record<string, Array<{ key: string; label: string; type?: 'number'; hint?: string }>> = {
-  'images.v1': [{ key: 'width', label: 'Width (px)', type: 'number' }, { key: 'height', label: 'Height (px)', type: 'number' }, { key: 'image_count', label: 'Image count', type: 'number' }, { key: 'formats', label: 'Formats', hint: 'png, jpg, webp, avif' }],
-  'music.v1': [{ key: 'track_count', label: 'Track count', type: 'number' }, { key: 'duration_seconds', label: 'Duration (seconds)', type: 'number' }, { key: 'formats', label: 'Formats', hint: 'mp3, flac, wav, ogg, aac' }],
   'games.v1': [{ key: 'size_bytes', label: 'Package size (bytes)', type: 'number' }, { key: 'version', label: 'Version' }, { key: 'platforms', label: 'Platforms', hint: 'windows, macos, linux, web, android, ios' }],
 }
 
@@ -29,6 +28,7 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
   const [progress, setProgress] = useState('')
   const [result, setResult] = useState<ContentResult>({})
   const category = categories.find(c => c.id === categoryId)
+  const isMusic = category?.metadataSchemaKey === 'music.v1'
   const fields = details[category?.metadataSchemaKey ?? ''] ?? []
   const busy = uploading || saving || removing
 
@@ -55,8 +55,14 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
     finally { setRemoving(false) }
   }
 
-  async function upload(files: FileList | null) {
+  async function upload(files: FileList | null, kind?: 'image' | 'audio') {
     if (!files?.length) return
+    if (kind && Array.from(files).some(file => fileType(file.name)?.mediaType !== kind)) {
+      setResult({ error: kind === 'image' ? 'Choose an artwork image.' : 'Choose supported audio tracks.' }); return
+    }
+    if (isMusic && kind === 'image' && (files.length !== 1 || attachments.some(asset => fileType(asset.path)?.mediaType === 'image'))) {
+      setResult({ error: 'Remove the current artwork before uploading its replacement.' }); return
+    }
     if (attachments.length + files.length > 12) { setResult({ error: 'Attach up to 12 files per item.' }); return }
     setUploading(true)
     setResult({})
@@ -77,7 +83,9 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
         }
         setAttachments(current => [...current, { path: prepared.path!, role: 'download', altText: file.name, focalX: 50, focalY: 50 }])
       }
-      setProgress('Originals uploaded. A smaller thumbnail will be generated when you save.')
+      setProgress(isMusic
+        ? kind === 'image' ? 'Artwork uploaded. Its thumbnail will be generated when you save.' : 'Tracks uploaded. Audio properties will be detected when you save.'
+        : 'Originals uploaded. A smaller thumbnail will be generated when you save.')
     } catch (error) { setResult({ error: error instanceof Error ? error.message : 'Upload failed.' }); setProgress('') }
     finally { setUploading(false) }
   }
@@ -107,7 +115,7 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
     <fieldset disabled={busy || Boolean(result.message)} className="studio-fields">
       <section className="workspace-panel"><h2>Content details</h2><p className="workspace-muted">Choose a category and describe what you’re adding.</p>
         <div className="studio-grid">
-          <label>Category<select className="account-input" value={categoryId} onChange={e => setCategoryId(e.target.value)} required><option value="" disabled>Select a category</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+          <label>Category<select className="account-input" value={categoryId} onChange={e => { setCategoryId(e.target.value); setProgress(''); setResult({}) }} required><option value="" disabled>Select a category</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
           <label>Title<input className="account-input" name="title" required maxLength={200} /></label>
           <fieldset className="studio-full"><legend className="text-sm font-bold">Suitable for</legend><p className="account-help">Choose all that apply. One upload can have several uses.</p><div className="flex flex-wrap gap-x-6 gap-y-2">{uses.map(use => <label key={use.slug} className="studio-checkbox"><input type="checkbox" name="uses" value={use.slug} />{use.name}</label>)}</div></fieldset>
           <label className="studio-full">Summary<textarea className="account-input" name="summary" rows={2} maxLength={500} /></label>
@@ -116,16 +124,18 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
         </div>
       </section>
       {fields.length > 0 && <section className="workspace-panel" key={categoryId}><h2>{category?.name} properties</h2><p className="workspace-muted">Optional technical details stored with this content.</p><div className="studio-grid">{fields.map(field => <label key={field.key}>{field.label}<input className="account-input" name={`metadata.${field.key}`} type={field.type ?? 'text'} min={0} step={1} maxLength={200} />{field.hint && <span className="account-help">{field.hint}</span>}</label>)}</div></section>}
+      {isMusic ? <MusicUploadFields attachments={attachments} ready={ready} upload={upload} remove={removeUploads}
+        editLabel={(path, altText) => setAttachments(current => current.map(asset => asset.path === path ? { ...asset, altText } : asset))} /> :
       <section className="workspace-panel"><h2>Original files & thumbnail</h2><p className="workspace-muted">Upload the original files for download. We automatically create a smaller display thumbnail from the first image.</p>
         <label className="studio-file-picker"><Upload size={20} aria-hidden="true" /> Upload files<input className="account-input" type="file" multiple accept={Object.keys(fileTypes).map(x => `.${x}`).join(',')} disabled={!ready} onChange={e => { void upload(e.target.files); e.target.value = '' }} /><span className="account-help">Up to 12 files, 50 MB each. Use ZIP for game packages. Files stay private until the item is published.</span></label>
-        <div role="status" className="account-help">{progress}</div>
         {attachments.map((asset, index) => <div className="studio-attachment" key={asset.path}><div className="studio-grid">
           <p className="account-help">Original download{fileType(asset.path)?.mediaType === 'image' && attachments.find(a => fileType(a.path)?.mediaType === 'image')?.path === asset.path ? ' · Thumbnail generated automatically' : ''}</p>
           <label>Description / download label<input className="account-input" value={asset.altText} maxLength={300} onChange={e => setAttachments(current => current.map((a, i) => i === index ? { ...a, altText: e.target.value } : a))} /></label>
           {fileType(asset.path)?.mediaType === 'image' && attachments.find(a => fileType(a.path)?.mediaType === 'image')?.path === asset.path && <>{(['focalX', 'focalY'] as const).map(key => <label key={key}>{key === 'focalX' ? 'Thumbnail horizontal focus (%)' : 'Thumbnail vertical focus (%)'}<input className="account-input" type="number" min={0} max={100} value={asset[key]} onChange={e => setAttachments(current => current.map((a, i) => i === index ? { ...a, [key]: Number(e.target.value) } : a))} /></label>)}</>}
         </div><button type="button" className="account-text-link" onClick={() => void removeUploads([asset.path])}><Trash2 size={14} aria-hidden="true" /> Remove attachment</button></div>)}
-        {attachments.length > 0 && <button type="button" className="account-text-link" onClick={() => void removeUploads([...pendingUploads.current])}>Discard all uploads</button>}
-      </section>
+      </section>}
+      <div role="status" className="account-help">{progress}</div>
+      {attachments.length > 0 && <button type="button" className="account-text-link" onClick={() => void removeUploads([...pendingUploads.current])}>Discard all uploads</button>}
       <section className="workspace-panel"><h2>Display facts</h2><p className="workspace-muted">Add details such as license, resolution or supported controls. Rows appear in this order.</p>
         {facts.map((fact, index) => <div className="studio-fact" key={index}>{(['key', 'label', 'value'] as const).map(key => <label key={key}>{key}<input className="account-input" required value={fact[key]} maxLength={key === 'key' ? 64 : key === 'label' ? 80 : 300} onChange={e => setFacts(current => current.map((f, i) => i === index ? { ...f, [key]: e.target.value } : f))} /></label>)}<button type="button" className="account-text-link" aria-label={`Remove fact ${index + 1}`} onClick={() => setFacts(current => current.filter((_, i) => i !== index))}><Trash2 size={16} aria-hidden="true" /></button></div>)}
         <button type="button" className="account-text-link" disabled={facts.length >= 20} onClick={() => setFacts(current => [...current, { key: '', label: '', value: '' }])}><Plus size={16} aria-hidden="true" /> Add fact</button>

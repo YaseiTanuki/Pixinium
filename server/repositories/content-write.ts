@@ -32,9 +32,9 @@ WITH actor AS MATERIALIZED (
 ), links AS (
   INSERT INTO catalog.item_tags(item_id,tag_id) SELECT item.id,tags.id FROM item CROSS JOIN tags
 ), assets AS (
-  INSERT INTO catalog.assets(provider,bucket,object_path,media_type,mime_type,byte_size,width,height)
+  INSERT INTO catalog.assets(provider,bucket,object_path,media_type,mime_type,byte_size,width,height,duration_seconds)
   SELECT 's3', $5, a->>'path', a->>'mediaType', a->>'mime', (a->>'byteSize')::bigint,
-    (a->>'width')::integer, (a->>'height')::integer
+    (a->>'width')::integer, (a->>'height')::integer, (a->>'durationSeconds')::numeric
   FROM item CROSS JOIN input CROSS JOIN LATERAL jsonb_array_elements(doc->'attachments') a
   RETURNING id,object_path
 ), attachments AS (

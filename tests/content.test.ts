@@ -7,6 +7,7 @@ import { parseCategoryMetadata } from '../lib/entities/metadata'
 import { createContentQuery } from '../server/repositories/content-write'
 import { createItemSlug } from '../server/services/item-slug'
 import { createContentWithTitleSlug } from '../server/services/content-create'
+import { cardsQuery } from '../server/repositories/catalog.queries'
 
 const admin = '00000000-0000-4000-8000-000000000001'
 const member = '00000000-0000-4000-8000-000000000002'
@@ -100,6 +101,23 @@ test('content write is atomic, rechecks admin role and rejects category schema r
       assert.equal(rows[0].slug, expected)
     }
     const music = (await db.query<{ id: string; metadata_schema_key: string }>("SELECT id::text, metadata_schema_key FROM catalog.categories WHERE slug = 'music'")).rows[0]
+    const musicItem = await createContentWithTitleSlug(query, admin, music.id, music.metadata_schema_key,
+      { ...item, title: 'Audio with artwork', metadata: { track_count: 1, duration_seconds: 12, formats: ['wav'] }, attachments: [
+        { ...thumbnail, path: 'audio/fixture/thumbnail.webp' },
+        { ...original, path: 'audio/fixture/originals/track.wav', mediaType: 'audio', mime: 'audio/wav', width: undefined, height: undefined, durationSeconds: 12.25 },
+      ] }, 'private-uploads')
+    const musicAssets = await query(`SELECT ia.role,a.media_type,a.duration_seconds::text FROM catalog.item_assets ia
+      JOIN catalog.assets a ON a.id=ia.asset_id WHERE ia.item_id=$1::bigint ORDER BY ia.role`, [musicItem[0].id])
+    assert.deepEqual(musicAssets, [{ role: 'cover', media_type: 'image', duration_seconds: null },
+      { role: 'download', media_type: 'audio', duration_seconds: '12.250' }])
+    assert.equal((await query(cardsQuery, ['music', musicItem[0].slug, null])).length, 0)
+    await db.query("UPDATE catalog.items SET status='published',published_at=now() WHERE id=$1::bigint", [musicItem[0].id])
+    const [loadedMusic] = await query(cardsQuery, ['music', musicItem[0].slug, null])
+    const loadedAssets = loadedMusic.assets as Array<{ role: string; mediaType: string; objectPath: string }>
+    assert.deepEqual(loadedAssets.map(asset => [asset.role, asset.mediaType, asset.objectPath]), [
+      ['cover', 'image', 'audio/fixture/thumbnail.webp'],
+      ['download', 'audio', 'audio/fixture/originals/track.wav'],
+    ])
     assert.equal((await createContentWithTitleSlug(query, admin, music.id, music.metadata_schema_key,
       { ...item, title: 'Sunset' }, 'private-uploads'))[0].slug, 'sunset')
     let insertedCompetitor = false
