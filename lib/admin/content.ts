@@ -47,4 +47,4 @@ export const contentSchema = z.object({
 })
 export type ContentInput = z.infer<typeof contentSchema>
 export type AttachmentInput = z.infer<typeof attachmentSchema>
-export type ContentResult = { error?: string; message?: string; href?: string }
+export type ContentResult = { error?: string; message?: string; href?: string; id?: string; slug?: string; category?: string }
