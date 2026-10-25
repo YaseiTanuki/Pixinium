@@ -11,6 +11,7 @@ import { parseCategoryMetadata } from '@/lib/entities/metadata'
 import { requirePrivateStorage, signUpload, inspectUpload, finalizeUpload, storeImageThumbnail, deleteStagingUploads, cleanupExpiredStaging, readStoredBytes } from '@/server/services/storage.service'
 import { readAudioMetadata } from '@/server/services/audio-metadata'
 import { validateMusicFiles } from '@/lib/admin/music'
+import { validateGameFiles } from '@/lib/admin/game'
 import { ownedStagingPaths } from '@/lib/admin/staging'
 import { itemStorageDirectory } from '@/lib/admin/storage-paths'
 import { createContentWithTitleSlug } from '@/server/services/content-create'
@@ -61,6 +62,11 @@ export async function createContent(input: unknown): Promise<ContentResult> {
     if (validUses.length !== value.uses.length) return { error: 'A selected use is no longer available. Reload the studio.' }
     const schemaKey = String(categories[0].metadata_schema_key)
     const isMusic = schemaKey === 'music.v1'
+    const isGame = schemaKey === 'games.v1'
+    if (isGame) {
+      const error = validateGameFiles(value.attachments, value.status === 'published')
+      if (error) return { error }
+    }
     if (isMusic) {
       const error = validateMusicFiles(value.attachments, value.status === 'published')
       if (error) return { error }
@@ -85,7 +91,7 @@ export async function createContent(input: unknown): Promise<ContentResult> {
     let hasThumbnail = false
     const tracks: Awaited<ReturnType<typeof readAudioMetadata>>[] = []
     for (const asset of attachments) {
-      if (isMusic && asset.mediaType === 'image') {
+      if ((isMusic || isGame) && asset.mediaType === 'image') {
         // Artwork is temporary input: retain only its generated thumbnail.
         const thumbnail = await storeImageThumbnail(`staging/${asset.path}`, asset.byteSize, directory, asset.etag)
         finalized.push({ ...asset, ...thumbnail, role: 'cover' as const })

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { MusicUploadFields } from '@/components/music-upload-fields'
+import { GameUploadFields } from '@/components/game-upload-fields'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Upload } from 'lucide-react'
@@ -10,9 +11,6 @@ import { fileType, fileTypes, MAX_CONTENT_FILE_BYTES, type AttachmentInput, type
 import { createContent, prepareContentUpload, discardContentUploads } from '@/app/actions/content'
 
 type Props = { categories: Pick<Category, 'id' | 'name' | 'metadataSchemaKey'>[]; uses: ContentUse[]; ready: boolean }
-const details: Record<string, Array<{ key: string; label: string; type?: 'number'; hint?: string }>> = {
-  'games.v1': [{ key: 'size_bytes', label: 'Package size (bytes)', type: 'number' }, { key: 'version', label: 'Version' }, { key: 'platforms', label: 'Platforms', hint: 'windows, macos, linux, web, android, ios' }],
-}
 
 export function AdminUploadForm({ categories, uses, ready }: Props) {
   const router = useRouter()
@@ -29,7 +27,7 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
   const [result, setResult] = useState<ContentResult>({})
   const category = categories.find(c => c.id === categoryId)
   const isMusic = category?.metadataSchemaKey === 'music.v1'
-  const fields = details[category?.metadataSchemaKey ?? ''] ?? []
+  const isGame = category?.metadataSchemaKey === 'games.v1'
   const busy = uploading || saving || removing
 
   useEffect(() => {
@@ -55,13 +53,16 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
     finally { setRemoving(false) }
   }
 
-  async function upload(files: FileList | null, kind?: 'image' | 'audio') {
+  async function upload(files: FileList | null, kind?: 'image' | 'audio' | 'game') {
     if (!files?.length) return
-    if (kind && Array.from(files).some(file => fileType(file.name)?.mediaType !== kind)) {
-      setResult({ error: kind === 'image' ? 'Choose an artwork image.' : 'Choose supported audio tracks.' }); return
+    if (kind && Array.from(files).some(file => kind === 'game' ? fileType(file.name)?.extension !== 'zip' : fileType(file.name)?.mediaType !== kind)) {
+      setResult({ error: kind === 'game' ? 'Choose a ZIP game package.' : kind === 'image' ? 'Choose an artwork image.' : 'Choose supported audio tracks.' }); return
     }
-    if (isMusic && kind === 'image' && (files.length !== 1 || attachments.some(asset => fileType(asset.path)?.mediaType === 'image'))) {
+    if ((isMusic || isGame) && kind === 'image' && (files.length !== 1 || attachments.some(asset => fileType(asset.path)?.mediaType === 'image'))) {
       setResult({ error: 'Remove the current artwork before uploading its replacement.' }); return
+    }
+    if (isGame && kind === 'game' && (files.length !== 1 || attachments.some(asset => fileType(asset.path)?.extension === 'zip'))) {
+      setResult({ error: 'Remove the current game package before uploading its replacement.' }); return
     }
     if (attachments.length + files.length > 12) { setResult({ error: 'Attach up to 12 files per item.' }); return }
     setUploading(true)
@@ -83,7 +84,7 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
         }
         setAttachments(current => [...current, { path: prepared.path!, role: 'download', altText: file.name, focalX: 50, focalY: 50 }])
       }
-      setProgress(isMusic
+      setProgress(isGame ? kind === 'image' ? 'Artwork uploaded. Its thumbnail will be generated when you save.' : 'Game package uploaded.' : isMusic
         ? kind === 'image' ? 'Artwork uploaded. Its thumbnail will be generated when you save.' : 'Tracks uploaded. Audio properties will be detected when you save.'
         : 'Originals uploaded. A smaller thumbnail will be generated when you save.')
     } catch (error) { setResult({ error: error instanceof Error ? error.message : 'Upload failed.' }); setProgress('') }
@@ -94,10 +95,6 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const metadata: Record<string, unknown> = {}
-    for (const field of fields) {
-      const value = String(form.get(`metadata.${field.key}`) ?? '').trim()
-      if (value) metadata[field.key] = field.type === 'number' ? Number(value) : ['platforms', 'formats'].includes(field.key) ? value.split(',').map(x => x.trim().toLowerCase()).filter(Boolean) : value
-    }
     const tags = String(form.get('tags') ?? '').split(',').map(x => x.trim()).filter(Boolean).map(name => ({ name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }))
     setSaving(true)
     saveInProgress.current = true
@@ -123,8 +120,9 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
           <label className="studio-full">Tags<input className="account-input" name="tags" maxLength={1000} /><span className="account-help">Separate tags with commas, for example: cozy, night, pixel art.</span></label>
         </div>
       </section>
-      {fields.length > 0 && <section className="workspace-panel" key={categoryId}><h2>{category?.name} properties</h2><p className="workspace-muted">Optional technical details stored with this content.</p><div className="studio-grid">{fields.map(field => <label key={field.key}>{field.label}<input className="account-input" name={`metadata.${field.key}`} type={field.type ?? 'text'} min={0} step={1} maxLength={200} />{field.hint && <span className="account-help">{field.hint}</span>}</label>)}</div></section>}
       {isMusic ? <MusicUploadFields attachments={attachments} ready={ready} upload={upload} remove={removeUploads}
+        editLabel={(path, altText) => setAttachments(current => current.map(asset => asset.path === path ? { ...asset, altText } : asset))} /> :
+      isGame ? <GameUploadFields attachments={attachments} ready={ready} upload={upload} remove={removeUploads}
         editLabel={(path, altText) => setAttachments(current => current.map(asset => asset.path === path ? { ...asset, altText } : asset))} /> :
       <section className="workspace-panel"><h2>Original files & thumbnail</h2><p className="workspace-muted">Upload the original files for download. We automatically create a smaller display thumbnail from the first image.</p>
         <label className="studio-file-picker"><Upload size={20} aria-hidden="true" /> Upload files<input className="account-input" type="file" multiple accept={Object.keys(fileTypes).map(x => `.${x}`).join(',')} disabled={!ready} onChange={e => { void upload(e.target.files); e.target.value = '' }} /><span className="account-help">Up to 12 files, 50 MB each. Use ZIP for game packages. Files stay private until the item is published.</span></label>
