@@ -4,7 +4,7 @@ export const cardsQuery = `SELECT
     'summary', i.summary, 'accentColor', i.accent_color, 'isFeatured', i.is_featured) AS item,
   jsonb_build_object('id', c.id::text, 'slug', c.slug, 'name', c.name,
     'iconKey', c.icon_key, 'artworkStyle', c.artwork_style) AS category,
-  i.description,
+  i.description, c.metadata_schema_key,
   coalesce((SELECT jsonb_agg(jsonb_build_object('slug', u.slug, 'name', u.name)
     ORDER BY u.sort_order, u.slug) FROM catalog.item_uses iu
     JOIN catalog.content_uses u ON u.slug = iu.use_slug WHERE iu.item_id = i.id), '[]') AS uses,
@@ -17,6 +17,7 @@ export const cardsQuery = `SELECT
   coalesce((SELECT jsonb_agg(jsonb_build_object('id', ia.id::text, 'itemId', ia.item_id::text,
     'assetId', a.id::text, 'role', ia.role, 'altText', ia.alt_text,
     'focalX', ia.focal_x, 'focalY', ia.focal_y, 'sortOrder', ia.sort_order,
+    'width', a.width, 'height', a.height, 'mimeType', a.mime_type,
     'mediaType', a.media_type, 'provider', a.provider, 'externalUrl', a.external_url,
     'bucket', a.bucket, 'objectPath', a.object_path) ORDER BY ia.sort_order, ia.id)
     FROM catalog.item_assets ia JOIN catalog.assets a ON a.id = ia.asset_id

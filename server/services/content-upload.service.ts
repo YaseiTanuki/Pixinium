@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { imageFacts, imageCreator } from '@/lib/image-facts'
 import { randomUUID } from 'node:crypto'
 import { neon } from '@neondatabase/serverless'
 import { revalidatePath } from 'next/cache'
@@ -45,7 +46,7 @@ export async function discardContentUploadsForActor(account: ContentActor | null
   }
 }
 
-export async function createContentForActor(account: ContentActor | null, input: unknown): Promise<ContentResult> {
+export async function createContentForActor(account: ContentActor | null, input: unknown, source: 'studio' | 'agent' = 'studio'): Promise<ContentResult> {
   try {
     if (!account || !hasPermission(account.role, 'assets:upload')) return { error: 'You do not have access to create content.' }
     const parsed = contentSchema.safeParse(input)
@@ -101,7 +102,7 @@ export async function createContentForActor(account: ContentActor | null, input:
       const original = { ...asset, path: await finalizeUpload(asset.path, asset.etag, asset.mime, asset.byteSize, directory) }
       if (asset.mediaType === 'image' && !hasThumbnail) {
         const thumbnail = await storeImageThumbnail(original.path, asset.byteSize, directory)
-        finalized.push({ ...original, width: thumbnail.originalWidth, height: thumbnail.originalHeight })
+        finalized.push({ ...original, width: thumbnail.originalWidth, height: thumbnail.originalHeight, mime: thumbnail.originalMime })
         finalized.push({ ...asset, ...thumbnail, role: 'cover' as const })
         hasThumbnail = true
       } else finalized.push({ ...original, ...(audio ? { durationSeconds: audio.durationSeconds } : {}) })
@@ -110,8 +111,16 @@ export async function createContentForActor(account: ContentActor | null, input:
       track_count: tracks.length, duration_seconds: Math.round(tracks.reduce((sum, track) => sum + track.durationSeconds, 0)),
       formats: [...new Set(tracks.map(track => track.format))],
     } : {})
+    let facts = value.facts
+    if (schemaKey === 'images.v1') {
+      const [profile] = source === 'studio'
+        ? await sql`SELECT username FROM catalog.profiles WHERE id = ${account.id}::uuid` : []
+      const original = finalized.find(asset => asset.role === 'download' && asset.mediaType === 'image')
+      facts = imageFacts(reservedItemId, original ? { ...original, mimeType: original.mime } : undefined,
+        imageCreator(source, profile?.username as string | null | undefined))
+    }
     const rows = await createContentWithTitleSlug((text, values) => sql.query(text, values),
-      account.id, value.categoryId, schemaKey, { ...value, reservedItemId, metadata, attachments: finalized }, bucket)
+      account.id, value.categoryId, schemaKey, { ...value, reservedItemId, metadata, facts, attachments: finalized }, bucket)
     if (!rows[0]) return { error: 'Your permissions or category changed. Reload the studio and try again.' }
     // The committed item owns separate final objects. A cleanup outage must not
     // turn a successful save into a retry that creates a duplicate item.

@@ -128,5 +128,5 @@ export interface CatalogDetail extends CatalogCard {
   description: string
   tags: Tag[]
   /** URLs are resolved per request; signed Supabase URLs must never be persisted. */
-  media: Array<ItemAsset & { url: string; mediaType: Asset['mediaType'] }>
+  media: Array<ItemAsset & { url: string; mediaType: Asset['mediaType']; width?: number | null; height?: number | null; mimeType?: string | null }>
 }

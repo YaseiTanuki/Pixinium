@@ -11,5 +11,6 @@ export async function createImageThumbnail(original: Uint8Array) {
     .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
     .webp({ quality: 80 }).timeout({ seconds: 15 }).toBuffer({ resolveWithObject: true })
   return { data, width: info.width, height: info.height,
-    originalWidth: metadata.width, originalHeight: metadata.height }
+    originalWidth: metadata.autoOrient.width, originalHeight: metadata.autoOrient.height,
+    originalMime: `image/${metadata.format === 'heif' && metadata.compression === 'av1' ? 'avif' : metadata.format}` }
 }

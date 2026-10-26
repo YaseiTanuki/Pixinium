@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const result = await createContentForActor(actor, {
       status: 'published', summary: '', description: '', accentColor: '#f1e5dd', isFeatured: false,
       sortOrder: 0, metadata: {}, uses: [], tags: [], facts: [], attachments: [], ...input,
-    })
+    }, 'agent')
     return agentJson(result, result.error ? 422 : 201)
   })
 }

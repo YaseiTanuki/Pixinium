@@ -5,7 +5,6 @@ import { SiteHeader } from '@/components/site-header'
 import { useState } from 'react'
 import { ArrowLeft, ArrowUpRight, Check, ChevronRight, Download, Heart, Image as ImageIcon, Moon, Sparkles, Link2 } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
-import { AudioTrackPlayer } from '@/components/audio-track-player'
 import { MusicPlayer } from '@/components/music-player'
 
 import type { CatalogDetail, CatalogCard as Card, Category } from '@/lib/entities/catalog'
@@ -30,7 +29,7 @@ export default function ItemDetail({ item, related, categories }: { item: Catalo
 
   const mediaActions = <div className="detail-media-actions">
     <button type="button" onClick={copyLink} aria-label="Copy link to share this find" title="Copy link"><Link2 size={16} aria-hidden="true" /></button>
-    {!isMusic && downloads.length > 0 && <a href={downloads.length === 1 ? downloads[0].url : '#item-downloads'} className="detail-download" aria-label={downloads.length === 1 ? 'Download original' : 'View download files'} title={downloads.length === 1 ? 'Download original' : 'View download files'}><Download size={16} aria-hidden="true" /></a>}
+    {!isMusic && downloads.map((asset, index) => <a key={asset.id} href={asset.url} className="detail-download" aria-label={downloads.length === 1 ? 'Download original' : `Download ${asset.altText || `file ${index + 1}`}`} title={downloads.length === 1 ? 'Download original' : `Download ${asset.altText || `file ${index + 1}`}`}><Download size={16} aria-hidden="true" /></a>)}
   </div>
 
   return <div className="home-page item-detail-page">
@@ -66,11 +65,7 @@ export default function ItemDetail({ item, related, categories }: { item: Catalo
         </section>
       </div>
 
-      <section className="detail-about" aria-labelledby="about-title"><div><p className="eyebrow">ABOUT THIS FIND</p><h2 id="about-title">{item.item.title}</h2></div><div><p>{item.description || item.item.summary}</p><Link href={`/search?use=${item.category.slug}`}>Explore more {item.category.name.toLowerCase()} <ArrowUpRight size={15} aria-hidden="true" /></Link></div></section>
-
-      {!isMusic && downloads.length > 0 && <section id="item-downloads" className="detail-about" aria-label="Item media"><h2>Explore this find</h2><div className="min-w-0 space-y-4">{downloads.map((asset, index) => asset.mediaType === 'audio'
-        ? <AudioTrackPlayer key={asset.id} url={asset.url} label={asset.altText || `Track ${index + 1}`} />
-        : <p key={asset.id}><a href={asset.url} target="_blank" rel="noreferrer">{asset.altText || 'Download file'}</a></p>)}</div></section>}
+      <section className="detail-about" aria-labelledby="about-title"><div><p className="eyebrow">ABOUT THIS FIND</p><h2 id="about-title">{item.item.title}</h2></div><div><p>{item.description || item.item.summary}</p></div></section>
 
       {related.length > 0 && <section className="detail-related" aria-labelledby="related-title"><div className="section-heading"><div><p className="eyebrow">KEEP THE GOOD THINGS COMING</p><h2 id="related-title">A few more little favorites<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the archive <ArrowUpRight size={16} aria-hidden="true" /></Link></div><div className="discovery-grid">{related.map((entry) => <CatalogCard key={entry.item.id} item={entry} />)}</div></section>}
     </main>

@@ -12,7 +12,7 @@ export async function GET(request: Request) {
       sql`SELECT slug,name FROM catalog.content_uses ORDER BY sort_order,slug`,
     ])
     return agentJson({ categories, uses, fileTypes, limits: { maxFileBytes: MAX_CONTENT_FILE_BYTES, maxFiles: 12 },
-      rules: { images: 'Original images are downloads; the first image generates a thumbnail.',
+      rules: { images: 'Original images are downloads; the first image generates a thumbnail. Resolution and format are detected automatically; Creator is Pixinium. Manual image facts are ignored.',
         music: 'One artwork image and audio tracks. Artwork is thumbnail-only; audio metadata is automatic.',
         games: 'One artwork image and one ZIP package. Artwork is thumbnail-only.' } })
   })

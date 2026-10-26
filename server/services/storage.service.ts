@@ -121,5 +121,5 @@ export async function storeImageThumbnail(originalPath: string, size: number, di
     Body: thumbnail.data, ContentType: 'image/webp', ContentLength: thumbnail.data.length }))
   return { path, mime: 'image/webp', mediaType: 'image' as const, byteSize: thumbnail.data.length,
     width: thumbnail.width, height: thumbnail.height,
-    originalWidth: thumbnail.originalWidth, originalHeight: thumbnail.originalHeight }
+    originalWidth: thumbnail.originalWidth, originalHeight: thumbnail.originalHeight, originalMime: thumbnail.originalMime }
 }

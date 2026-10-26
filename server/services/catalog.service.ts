@@ -1,5 +1,6 @@
 import 'server-only'
 import { cache } from 'react'
+import { imageFacts } from '../../lib/image-facts'
 import { neon } from '@neondatabase/serverless'
 import type { CatalogDetail, Category, Asset, ContentUse } from '../../lib/entities/catalog'
 import { cardsQuery } from '../repositories/catalog.queries'
@@ -46,7 +47,12 @@ export async function listCatalogItems(filters: { category?: string; slug?: stri
       ...asset, url: assetUrl({ ...asset, provider, externalUrl, bucket, objectPath }),
     }))
     const cover = media.find((asset) => asset.role === 'cover')
-    return { item: row.item, category: row.category, facts: row.facts, description: row.description,
+    const storedFacts = row.facts as CatalogDetail['facts']
+    const facts = row.metadata_schema_key === 'images.v1'
+      ? imageFacts(row.item.id, media.find(asset => asset.role === 'download' && asset.mediaType === 'image'),
+        storedFacts.find(fact => fact.key === 'creator')?.value ?? 'Unknown')
+      : storedFacts
+    return { item: row.item, category: row.category, facts, description: row.description,
       tags: row.tags, uses: row.uses, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY } : null } as CatalogDetail
   })
