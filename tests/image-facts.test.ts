@@ -19,5 +19,7 @@ test('creator is the uploader username or Pixinium for the trusted agent source'
   assert.equal(imageCreator('studio', 'tanuk'), 'tanuk')
   assert.equal(imageCreator('agent', 'tanuk'), 'Pixinium')
   assert.equal(imageCreator('studio', null), 'Unknown')
+  assert.equal(imageCreator('studio', 'adminname', 'admin'), 'Pixinium')
+  assert.equal(imageCreator('studio', 'membername', 'member'), 'membername')
   assert.equal(imageFacts('12', undefined, 'AI generated')[2].value, 'Pixinium')
 })

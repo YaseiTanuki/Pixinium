@@ -4,6 +4,7 @@ import { requireAccount } from '@/server/services/auth.service'
 import { hasPermission } from '@/lib/auth/permissions'
 import { logout } from '@/app/actions/auth'
 import { listCatalogItems } from '@/server/services/catalog.service'
+import { UsernameForm } from '@/components/username-form'
 import { ProfileAvatar } from '@/components/profile-avatar'
 import { ProfileCollection } from '@/components/profile-collection'
 
@@ -13,12 +14,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const account = await requireAccount()
   const { access } = await searchParams
   const catalog = await listCatalogItems().then(items => ({ items, unavailable: false })).catch(() => ({ items: [], unavailable: true }))
-  const name = account.displayName || 'Pixinium member'
+  const name = account.username || account.displayName || 'Pixinium member'
   const joined = new Date(account.joinedAt)
   const joinedLabel = Number.isNaN(joined.getTime()) ? null : new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(joined)
 
   return <div className="workspace-page profile-page">
     {access === 'denied' && <p role="alert" className="account-notice">You don’t have access to that area.</p>}
+    {!account.username && <section className="profile-info-card"><h2>Finish setting up your account</h2><p>Your account needs an available username.</p><UsernameForm /></section>}
     <header className="profile-identity">
       <ProfileAvatar name={name} url={account.avatarUrl} />
       <div className="profile-identity-copy"><p className="profile-kicker">YOUR PROFILE</p><h1>{name}</h1><p className="profile-email"><Mail size={15} aria-hidden="true" /><span>{account.email}</span></p><span className="profile-verified"><BadgeCheck size={14} aria-hidden="true" /> Email verified</span></div>
@@ -28,7 +30,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <ProfileCollection items={catalog.items.map(({ item, category, cover, facts }) => ({ item, category, cover, facts }))} unavailable={catalog.unavailable} />
       <aside className="profile-sidebar" aria-label="Account details and actions">
         <section className="profile-info-card"><h2>Account details</h2><dl>
-          <div><dt><UserRound size={14} aria-hidden="true" /> Display name</dt><dd>{name}</dd></div>
+          <div><dt><UserRound size={14} aria-hidden="true" /> Username</dt><dd>{account.username ?? 'Not chosen yet'}</dd></div>
           <div><dt><Mail size={14} aria-hidden="true" /> Email address</dt><dd>{account.email}</dd></div>
           {joinedLabel && <div><dt><CalendarDays size={14} aria-hidden="true" /> Joined Pixinium</dt><dd><time dateTime={account.joinedAt}>{joinedLabel}</time></dd></div>}
         </dl><form action={logout}><button className="profile-signout"><LogOut size={15} aria-hidden="true" /> Sign out</button></form></section>

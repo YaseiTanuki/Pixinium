@@ -13,6 +13,6 @@ export function imageFacts(itemId: string, original: ImageDetails | undefined, c
   ].map((fact, sortOrder) => ({ ...fact, itemId, sortOrder }))
 }
 
-export function imageCreator(source: 'studio' | 'agent', username: string | null | undefined): string {
-  return source === 'agent' ? 'Pixinium' : username?.trim() || 'Unknown'
+export function imageCreator(source: 'studio' | 'agent', username: string | null | undefined, role?: string): string {
+  return source === 'agent' || role === 'admin' ? 'Pixinium' : username?.trim() || 'Unknown'
 }

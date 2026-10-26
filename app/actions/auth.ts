@@ -27,14 +27,14 @@ export async function login(_state: AuthState, form: FormData): Promise<AuthStat
 
 export async function signup(_state: AuthState, form: FormData): Promise<AuthState> {
   const parsed = signupSchema.safeParse(Object.fromEntries(form))
-  if (!parsed.success) return { error: 'Use a valid email, a name of 2–100 characters, and matching passwords of 12–128 characters.' }
+  if (!parsed.success) return { error: 'Use a valid email, a username of 3-12 letters, numbers or underscores, and matching passwords of 12-128 characters.' }
   let signedIn = false
   const startedAt = Date.now()
   try {
     const client = await createClient()
-    const { email, password, displayName } = parsed.data
+    const { email, password, username } = parsed.data
     const { data, error } = await client.auth.signUp({ email, password,
-      options: { data: { display_name: displayName } } })
+      options: { data: { username, display_name: username } } })
     if (error) {
       console.error('[auth.signup]', { ...authDiagnostic(error), elapsedMs: Date.now() - startedAt })
       return { error: signupErrorMessage(error) }

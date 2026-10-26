@@ -113,11 +113,11 @@ export async function createContentForActor(account: ContentActor | null, input:
     } : {})
     let facts = value.facts
     if (schemaKey === 'images.v1') {
-      const [profile] = source === 'studio'
+      const [profile] = source === 'studio' && account.role !== 'admin'
         ? await sql`SELECT username FROM catalog.profiles WHERE id = ${account.id}::uuid` : []
       const original = finalized.find(asset => asset.role === 'download' && asset.mediaType === 'image')
       facts = imageFacts(reservedItemId, original ? { ...original, mimeType: original.mime } : undefined,
-        imageCreator(source, profile?.username as string | null | undefined))
+        imageCreator(source, profile?.username as string | null | undefined, account.role))
     }
     const rows = await createContentWithTitleSlug((text, values) => sql.query(text, values),
       account.id, value.categoryId, schemaKey, { ...value, reservedItemId, metadata, facts, attachments: finalized }, bucket)

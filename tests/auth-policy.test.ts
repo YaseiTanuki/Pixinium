@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { hasPermission } from '../lib/auth/permissions'
-import { loginSchema, signupSchema } from '../lib/auth/validation'
+import { loginSchema, signupSchema, usernameSchema } from '../lib/auth/validation'
 import { imageFormat } from '../lib/auth/upload-validation'
 import { authDiagnostic, loginErrorMessage, signupErrorMessage } from '../lib/auth/errors'
 
@@ -38,7 +38,7 @@ test('only admin receives v1 upload and admin access permissions', () => {
 
 test('registration strips supplied roles and IDs, validates confirmation, preserves password spaces', () => {
   const input = { email: 'member@example.test', password: ' long password ',
-    confirmPassword: ' long password ', displayName: 'Member', role: 'admin', id: 'attacker' }
+    confirmPassword: ' long password ', username: 'member', role: 'admin', id: 'attacker' }
   const parsed = signupSchema.parse(input)
   assert.equal('role' in parsed, false)
   assert.equal('id' in parsed, false)
@@ -54,4 +54,13 @@ test('upload rejects active documents and truncated files, recognizes supported 
   assert.equal(imageFormat(new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,0]))?.mime, 'image/png')
   assert.equal(imageFormat(new Uint8Array([255,216,255,0,0,0,0,0,0,0,0,0]))?.mime, 'image/jpeg')
   assert.equal(imageFormat(new TextEncoder().encode('RIFF0000WEBP'))?.mime, 'image/webp')
+})
+
+
+test('usernames normalize case and enforce the permanent username format', () => {
+  assert.equal(usernameSchema.parse(' Member_12 '), 'member_12')
+  assert.equal(usernameSchema.safeParse('a'.repeat(12)).success, true)
+  for (const name of ['ab', 'a'.repeat(13), 'has spaces', 'name!', '']) {
+    assert.equal(usernameSchema.safeParse(name).success, false)
+  }
 })
