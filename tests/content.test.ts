@@ -5,6 +5,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { contentSchema, attachmentSchema, fileType } from '../lib/admin/content'
 import { parseCategoryMetadata } from '../lib/entities/metadata'
 import { createContentQuery } from '../server/repositories/content-write'
+import { deleteContentQuery } from '../server/repositories/content-delete'
 import { createItemSlug } from '../server/services/item-slug'
 import { createContentWithTitleSlug } from '../server/services/content-create'
 import { cardsQuery } from '../server/repositories/catalog.queries'
@@ -137,7 +138,24 @@ test('content write is atomic, rechecks admin role and rejects category schema r
       if (text === createContentQuery) throw unrelatedConflict
       return []
     }, admin, category.id, category.metadata_schema_key, { ...item, title: 'No retry' }, 'private-uploads'), error => error === unrelatedConflict)
+    const doomed = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items WHERE slug = 'image-pair'")).rows[0]
+    const survivor = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items WHERE slug = 'valid'")).rows[0]
+    await db.query(`INSERT INTO catalog.item_assets(item_id, asset_id, role)
+      SELECT $1::bigint, asset_id, 'download' FROM catalog.item_assets WHERE item_id = $2::bigint AND role = 'download'`, [survivor.id, doomed.id])
+    assert.equal((await db.query(deleteContentQuery, [member, doomed.id])).rows.length, 0)
+    assert.equal((await db.query(deleteContentQuery, ['00000000-0000-4000-8000-000000000099', doomed.id])).rows.length, 0)
+    const deleted = (await db.query<{ assets: Array<{ object_path: string }> }>(deleteContentQuery, [admin, doomed.id])).rows[0]
+    assert.deepEqual(deleted.assets.map(asset => asset.object_path), [thumbnail.path])
+    for (const table of ['items', 'item_assets', 'item_facts', 'item_tags', 'item_uses']) {
+      assert.equal((await db.query(`SELECT 1 FROM catalog.${table} WHERE ${table === 'items' ? 'id' : 'item_id'} = $1::bigint`, [doomed.id])).rows.length, 0)
+    }
+    assert.equal((await db.query('SELECT 1 FROM catalog.assets WHERE object_path = $1', [original.path])).rows.length, 1)
+    assert.equal((await db.query('SELECT 1 FROM catalog.assets WHERE object_path = $1', [thumbnail.path])).rows.length, 0)
+    assert.equal((await db.query(deleteContentQuery, [admin, doomed.id])).rows.length, 0)
+    const noAssets = (await write(admin, 'delete-no-assets')).rows[0] as { id: string }
+    assert.deepEqual((await db.query<{ assets: unknown[] }>(deleteContentQuery, [admin, noAssets.id])).rows[0].assets, [])
     await db.query(`UPDATE catalog.profiles SET role = 'member' WHERE id = $1`, [admin])
+    assert.equal((await db.query(deleteContentQuery, [admin, survivor.id])).rows.length, 0)
     assert.equal((await write(admin, 'demoted')).rows.length, 0)
   } finally { await db.close() }
 })

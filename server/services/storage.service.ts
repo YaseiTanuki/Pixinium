@@ -53,6 +53,18 @@ export async function deleteStagingUploads(paths: string[]) {
   await Promise.all(paths.map(path => storage.send(new DeleteObjectCommand({ Bucket: bucket, Key: `staging/${path}` }))))
 }
 
+/** Accept only asset records returned by the authorized database deletion. */
+export async function deleteStoredContent(assets: Array<{ provider: string; bucket: string | null; object_path: string | null }>) {
+  const stored = assets.filter(asset => asset.provider === 's3')
+  if (!stored.length) return
+  const { storage, bucket } = adminStorage()
+  const results = await Promise.allSettled(stored.map(async asset => {
+    if (asset.bucket !== bucket || !asset.object_path) throw new Error('Unexpected content storage location.')
+    await storage.send(new DeleteObjectCommand({ Bucket: bucket, Key: asset.object_path }))
+  }))
+  if (results.some(result => result.status === 'rejected')) throw new Error('Some content files could not be deleted.')
+}
+
 export async function cleanupExpiredStaging(userId: string) {
   const { storage, bucket } = adminStorage()
   const prefix = `staging/${userId}/`

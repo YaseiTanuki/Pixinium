@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { AdminContentList } from '@/components/admin-content-list'
 import { requireAccount } from '@/server/services/auth.service'
 import { AdminUploadForm } from '@/components/admin-upload-form'
 import { listCategories, listContentUses } from '@/server/services/catalog.service'
@@ -19,5 +20,5 @@ export default async function AdminPage() {
   }
   return <div className="workspace-page"><header className="workspace-heading"><Link href="/profile" className="account-text-link">Back to profile</Link><h1>Admin studio</h1><p className="workspace-muted">Create wallpapers, music, games and other content for the archive.</p></header>
     <AdminUploadForm categories={categories.map(({ id, name, metadataSchemaKey }) => ({ id, name, metadataSchemaKey }))} uses={uses} ready={ready} />
-    <section className="workspace-panel studio-recent"><h2>Recent content</h2>{listError ? <p className="account-notice">Recent content could not be loaded. Check the catalog write connection.</p> : recent.length ? <ul>{recent.map(item => <li key={item.id}><div>{item.status === 'published' ? <Link className="account-text-link" href={`/items/${item.category}/${item.slug}`}>{item.title}</Link> : <strong>{item.title}</strong>}<span className="workspace-muted">{item.category}</span></div><span className="studio-status">{item.status}</span></li>)}</ul> : <p className="workspace-muted">Saved content will appear here. New uploads are published immediately.</p>}</section></div>
+    <section className="workspace-panel studio-recent"><h2>Recent content</h2>{listError ? <p className="account-notice">Recent content could not be loaded. Check the catalog write connection.</p> : <AdminContentList items={recent} />}</section></div>
 }
