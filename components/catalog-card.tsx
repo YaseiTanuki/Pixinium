@@ -10,7 +10,7 @@ import { useSavedItems } from '@/lib/saved-items'
 
 export function ItemArtwork({ item }: { item: Card }) {
   return <div className="item-artwork" style={{ backgroundColor: item.item.accentColor }}>
-    {item.cover ? <img src={item.cover.url} alt={item.cover.altText} width={600} height={400} loading="lazy" className="h-full w-full object-cover" style={{ objectPosition: `${item.cover.focalX}% ${item.cover.focalY}%` }} /> : item.category.artworkStyle === 'record' ? <div className="record-art" aria-hidden="true"><div className="record-disc"><span><Music2 size={25} /></span></div><span className="record-caption">PIXINIUM RECORDS / SIDE B</span></div> : <ImageIcon size={36} aria-label="No cover artwork" />}
+    {item.cover ? <img src={item.cover.url} alt={item.cover.altText} width={item.cover.width ?? 600} height={item.cover.height ?? 400} loading="lazy" className="h-full w-full object-cover" style={{ objectPosition: `${item.cover.focalX}% ${item.cover.focalY}%` }} /> : item.category.artworkStyle === 'record' ? <div className="record-art" aria-hidden="true"><div className="record-disc"><span><Music2 size={25} /></span></div><span className="record-caption">PIXINIUM RECORDS / SIDE B</span></div> : <ImageIcon size={36} aria-label="No cover artwork" />}
   </div>
 }
 

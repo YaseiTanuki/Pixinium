@@ -60,7 +60,7 @@ export async function listCatalogItems(filters: { category?: string; slug?: stri
         : storedFacts
     return { item: row.item, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
       tags: row.tags, uses: row.uses, media, cover: cover ? { url: cover.url, altText: cover.altText,
-        focalX: cover.focalX, focalY: cover.focalY } : null } as CatalogDetail
+        focalX: cover.focalX, focalY: cover.focalY, width: cover.width, height: cover.height } : null } as CatalogDetail
   })
 }
 

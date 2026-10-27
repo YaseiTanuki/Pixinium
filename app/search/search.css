@@ -1,16 +1,20 @@
-/* Fit more results without squeezing cards below a readable width. */
+/* Stack mixed image ratios without reserving empty space for grid rows. */
 .search-results {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
-  gap: 14px;
+  columns: 260px;
+  column-gap: 14px;
 }
 
-.search-results .item-artwork { height: 150px; }
+.search-results .discovery-card {
+  break-inside: avoid;
+  margin-bottom: 14px;
+}
+.search-results .item-artwork { height: auto; min-height: 150px; }
+.search-results .item-artwork:has(img) { min-height: 0; }
+.search-results .item-artwork img { display: block; width: 100%; height: auto; }
 .search-results .discovery-card-copy { padding: 12px 13px; }
 .search-results .discovery-card h3 { font-size: 13px; overflow-wrap: anywhere; }
-.search-results .discovery-card-copy > p { font-size: 11px; overflow-wrap: anywhere; }
-.search-results .discovery-card-bottom { margin-top: 10px; padding-top: 8px; }
-.search-results .discovery-card-bottom a { min-height: 28px; }
+.search-results .discovery-card-copy > p,
+.search-results .discovery-card-bottom { display: none; }
 .search-results .save-item { width: 36px; height: 36px; }
 
 @media (pointer: coarse) {

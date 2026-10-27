@@ -119,7 +119,7 @@ export interface Profile {
 export interface CatalogCard {
   item: Pick<Item, 'id' | 'slug' | 'title' | 'summary' | 'accentColor' | 'isFeatured'>
   category: Pick<Category, 'id' | 'slug' | 'name' | 'iconKey' | 'artworkStyle'>
-  cover: { url: string; altText: string; focalX: number; focalY: number } | null
+  cover: { url: string; altText: string; focalX: number; focalY: number; width?: number | null; height?: number | null } | null
   facts: ItemFact[]
 }
 
