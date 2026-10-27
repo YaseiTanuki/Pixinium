@@ -1,7 +1,9 @@
 'use client'
 
 import { Music2, Trash2, Upload } from 'lucide-react'
-import { fileType, fileTypes, type AttachmentInput } from '@/lib/admin/content'
+import { fileType, acceptedFileTypes, type AttachmentInput } from '@/lib/admin/content'
+
+import { CONTENT_LIMITS } from '@/lib/admin/limits'
 
 type Props = {
   attachments: AttachmentInput[]
@@ -11,8 +13,6 @@ type Props = {
   editLabel: (path: string, label: string) => void
 }
 
-const accepted = (kind: 'image' | 'audio') => Object.entries(fileTypes)
-  .filter(([, type]) => type.mediaType === kind).map(([ext]) => `.${ext}`).join(',')
 
 export function MusicUploadFields({ attachments, ready, upload, remove, editLabel }: Props) {
   const artwork = attachments.filter(asset => fileType(asset.path)?.mediaType === 'image')
@@ -24,12 +24,12 @@ export function MusicUploadFields({ attachments, ready, upload, remove, editLabe
       <h2 id="music-artwork-title">Cover artwork</h2>
       <p className="workspace-muted">Upload one image for the music thumbnail. Only the reduced thumbnail is kept.</p>
       {artwork.length === 0 && <label className="studio-file-picker"><Upload size={20} aria-hidden="true" /> Upload artwork
-        <input className="account-input" type="file" accept={accepted('image')} disabled={!ready}
+        <input className="account-input" type="file" accept={acceptedFileTypes('image')} disabled={!ready}
           onChange={event => { void upload(event.target.files, 'image'); event.target.value = '' }} />
-        <span className="account-help">PNG, JPG, WebP or AVIF. Up to 50 MB.</span>
+        <span className="account-help">PNG, JPG, WebP or AVIF. Up to {CONTENT_LIMITS.fileMegabytes} MB.</span>
       </label>}
       {artwork.map(asset => <div className="studio-attachment" key={asset.path}>
-        <label>Artwork description<input className="account-input" value={asset.altText} maxLength={300}
+        <label>Artwork description<input className="account-input" value={asset.altText} maxLength={CONTENT_LIMITS.attachmentLabel}
           onChange={event => editLabel(asset.path, event.target.value)} /></label>
         <p className="account-help">Describe the artwork for people using screen readers.</p>
         <button type="button" className="account-text-link" onClick={() => void remove([asset.path])}><Trash2 size={14} aria-hidden="true" /> Remove artwork</button>
@@ -40,12 +40,12 @@ export function MusicUploadFields({ attachments, ready, upload, remove, editLabe
       <h2 id="music-tracks-title">Audio tracks</h2>
       <p className="workspace-muted">Upload the original audio for download. Track count, duration and formats are detected when you save.</p>
       <label className="studio-file-picker"><Music2 size={20} aria-hidden="true" /> Upload tracks
-        <input className="account-input" type="file" multiple accept={accepted('audio')} disabled={!ready}
+        <input className="account-input" type="file" multiple accept={acceptedFileTypes('audio')} disabled={!ready}
           onChange={event => { void upload(event.target.files, 'audio'); event.target.value = '' }} />
-        <span className="account-help">MP3, WAV, FLAC, OGG or AAC. Up to 50 MB per track, 12 files including artwork.</span>
+        <span className="account-help">MP3, WAV, FLAC, OGG or AAC. Up to {CONTENT_LIMITS.fileMegabytes} MB per track, {CONTENT_LIMITS.files} files including artwork.</span>
       </label>
       {tracks.map((asset, index) => <div className="studio-attachment" key={asset.path}>
-        <label>Track {index + 1} download label<input className="account-input" value={asset.altText} maxLength={300}
+        <label>Track {index + 1} download label<input className="account-input" value={asset.altText} maxLength={CONTENT_LIMITS.attachmentLabel}
           onChange={event => editLabel(asset.path, event.target.value)} /></label>
         <button type="button" className="account-text-link" onClick={() => void remove([asset.path])}><Trash2 size={14} aria-hidden="true" /> Remove track</button>
       </div>)}

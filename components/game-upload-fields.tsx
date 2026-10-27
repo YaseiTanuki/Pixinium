@@ -1,7 +1,9 @@
 'use client'
 
 import { Trash2, Upload } from 'lucide-react'
-import { fileType, fileTypes, type AttachmentInput } from '@/lib/admin/content'
+import { fileType, acceptedFileTypes, type AttachmentInput } from '@/lib/admin/content'
+
+import { CONTENT_LIMITS } from '@/lib/admin/limits'
 
 type Props = {
   attachments: AttachmentInput[]
@@ -18,7 +20,7 @@ export function GameUploadFields({ attachments, ready, upload, remove, editLabel
   const sections = [
     { kind: 'image' as const, title: 'Game thumbnail', label: 'Thumbnail description', assets: artwork,
       help: 'Upload one image. Only the reduced thumbnail is kept.',
-      accept: Object.entries(fileTypes).filter(([, type]) => type.mediaType === 'image').map(([ext]) => `.${ext}`).join(',') },
+      accept: acceptedFileTypes('image') },
     { kind: 'game' as const, title: 'Game file', label: 'Game download label', assets: packages,
       help: 'Upload one ZIP package containing the game files. The original package is kept for download.', accept: '.zip' },
   ]
@@ -29,10 +31,10 @@ export function GameUploadFields({ attachments, ready, upload, remove, editLabel
       {section.assets.length === 0 && <label className="studio-file-picker"><Upload size={20} aria-hidden="true" /> Upload {section.title.toLowerCase()}
         <input className="account-input" type="file" accept={section.accept} disabled={!ready}
           onChange={event => { void upload(event.target.files, section.kind); event.target.value = '' }} />
-        <span className="account-help">One file, up to 50 MB.</span>
+        <span className="account-help">One file, up to {CONTENT_LIMITS.fileMegabytes} MB.</span>
       </label>}
       {section.assets.map(asset => <div className="studio-attachment" key={asset.path}>
-        <label>{section.label}<input className="account-input" value={asset.altText} maxLength={300}
+        <label>{section.label}<input className="account-input" value={asset.altText} maxLength={CONTENT_LIMITS.attachmentLabel}
           onChange={event => editLabel(asset.path, event.target.value)} /></label>
         <button type="button" className="account-text-link" onClick={() => void remove([asset.path])}><Trash2 size={14} aria-hidden="true" /> Remove {section.title.toLowerCase()}</button>
       </div>)}

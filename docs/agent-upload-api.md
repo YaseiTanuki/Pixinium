@@ -1,6 +1,6 @@
 # Agent upload API
 
-This API lets trusted agents create images, music and games using the same
+This API lets trusted agents create images, music, games and asset packs using the same
 validation and storage processing as Admin Studio. It grants upload and publish
 access on behalf of one existing admin. The current admin role is checked on every
 request; content creation also checks it inside the database write.
@@ -72,15 +72,20 @@ Provide `categoryId`, `title` and the required uploaded files. Omitted optional 
 default to empty descriptions, arrays and metadata, published status, display order 0,
 unfeatured and accent `#f1e5dd`. Optional `tags` are `{slug,name}` objects; optional
 `facts` are `{key,label,value}` objects. Attachment focalX/focalY default to 50.
-Do not submit asset roles, item IDs, slugs, bucket keys or signed URLs as paths.
-The server assigns those fields. `altText` is required for image attachments.
+Attachment roles default to `download`. Asset packs require one explicit `cover`
+attachment; `preview` is server-generated and cannot be submitted. Optional `fileName`
+preserves image basenames in the generated ZIP. Do not submit item IDs, slugs, bucket
+keys or signed URLs as paths. `altText` is required for image attachments.
 
 - Images: originals remain downloads; the first image generates the thumbnail.
 - Music: one artwork image plus audio tracks. Only the thumbnail is retained for
   artwork. Audio duration, count and formats are detected automatically.
 - Games: one artwork image plus one ZIP package. Artwork is thumbnail-only.
+- Assets: one separate `cover` image plus 1–11 `download` images. The server creates
+  one ZIP of the originals, excluding the cover, and up to five display previews.
+  See [Asset packs](asset-packs.md) for the full contract.
 - Publishing requires artwork; music also requires audio, games require a ZIP.
-- Up to 12 staged files per item. Their paths must belong to the configured admin.
+- Up to 12 staged files per item, or 51 for asset packs (one cover plus 50 images). Their paths must belong to the configured admin.
 
 Success returns 201 with `id`, `slug`, `category`, `message`, and `href` for a
 published item. Saves remove staging objects after the database commit.

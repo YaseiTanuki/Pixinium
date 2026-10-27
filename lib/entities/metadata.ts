@@ -1,3 +1,4 @@
+import { CONTENT_SCHEMAS } from '../content-types'
 import { z } from 'zod'
 
 const positiveInteger = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
@@ -5,7 +6,10 @@ const nonnegativeInteger = z.number().int().nonnegative().max(Number.MAX_SAFE_IN
 
 export const metadataSchemas = {
   'generic.v1': z.strictObject({}),
-  'images.v1': z.strictObject({
+  [CONTENT_SCHEMAS.asset]: z.strictObject({
+    image_count: positiveInteger,
+  }),
+  [CONTENT_SCHEMAS.image]: z.strictObject({
     width: positiveInteger.optional(),
     height: positiveInteger.optional(),
     image_count: positiveInteger.optional(),
@@ -13,12 +17,12 @@ export const metadataSchemas = {
   }).refine((value) => (value.width === undefined) === (value.height === undefined), {
     message: 'Width and height must be provided together', path: ['height'],
   }),
-  'music.v1': z.strictObject({
+  [CONTENT_SCHEMAS.music]: z.strictObject({
     track_count: positiveInteger.optional(),
     duration_seconds: nonnegativeInteger.optional(),
     formats: z.array(z.enum(['mp3', 'flac', 'wav', 'ogg', 'aac'])).min(1).optional(),
   }),
-  'games.v1': z.strictObject({
+  [CONTENT_SCHEMAS.game]: z.strictObject({
     size_bytes: nonnegativeInteger.optional(),
     platforms: z.array(z.enum(['windows', 'macos', 'linux', 'web', 'android', 'ios'])).min(1).optional(),
     version: z.string().trim().min(1).max(64).optional(),

@@ -36,7 +36,7 @@ erDiagram
 | `items` | Stable ID, slug, title, summary, description, category, publication state, featured flag, ordering | Archive cards, spotlight, detail heading and about section |
 | `item_facts` | Ordered key/label/value facts | `Resolution / 4K`, `Tracks / 8 tracks`, `Platform / Windows` |
 | `assets` | Reusable external, Supabase Storage, or R2 reference; optional dimensions, duration, size | Artwork, audio/video previews, future downloads |
-| `item_assets` | Media role, alt text, crop focal point, display order | One cover per item, gallery, preview, download attachments |
+| `item_assets` | Media role, alt text, crop focal point, display order | One cover per item, preview and download attachments |
 | `tags`, `item_tags` | Many-to-many labels across categories | Cozy, night, chaos, future mood discovery |
 | `collections`, `collection_items` | Ordered saved, custom, or editorial groups | Your collection, future named lists and curated shelves |
 | `content_uses`, `item_uses` | Multiple intended uses per item | Wallpaper, background and avatar without duplicate uploads |

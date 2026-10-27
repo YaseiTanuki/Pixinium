@@ -36,7 +36,7 @@ try {
     if (bytes.length !== info.size) throw new Error('File changed while reading.')
     const uploaded = await fetch(upload.url, { method: 'PUT', redirect: 'error', headers: upload.headers, body: bytes })
     if (!uploaded.ok) throw new Error(`Storage upload failed (${uploaded.status})`)
-    attachments.push({ path: upload.path, altText: entry.altText || basename(path) })
+    attachments.push({ path: upload.path, role: entry.role ?? 'download', fileName: basename(path), altText: entry.altText || basename(path) })
   }
   submitting = true
   const created = await api('content', 'POST', { ...content, attachments })

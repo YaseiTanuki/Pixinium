@@ -32,7 +32,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         },
       })
     }
-    const url = await signDownload(String(rows[0].object_path), Boolean(rows[0].download))
+    const url = await signDownload(String(rows[0].object_path), Boolean(rows[0].download),
+      rows[0].mime_type === 'application/zip' ? `asset-pack-${id}.zip` : undefined)
     return new NextResponse(null, { status: 307, headers: { ...headers, Location: url } })
   } catch (error) {
     const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode

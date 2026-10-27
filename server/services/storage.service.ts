@@ -1,5 +1,7 @@
+import { MAX_CONTENT_FILE_BYTES } from '../../lib/admin/limits'
 import 'server-only'
 import { randomUUID } from 'node:crypto'
+import { createReadStream } from 'node:fs'
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, CopyObjectCommand, DeleteObjectCommand, GetBucketAclCommand, GetBucketPolicyCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createImageThumbnail } from './image-thumbnail'
@@ -90,10 +92,12 @@ export async function finalizeUpload(path: string, etag: string, mime: string, s
   return destination
 }
 
-export async function signDownload(path: string, download: boolean) {
+export async function signDownload(path: string, download: boolean, filename?: string) {
   const { storage, bucket } = adminStorage()
   return getSignedUrl(storage, new GetObjectCommand({ Bucket: bucket, Key: path,
-    ResponseContentDisposition: download ? 'attachment' : 'inline',
+    ResponseContentDisposition: download
+      ? filename ? `attachment; filename="${filename.replace(/[^a-zA-Z0-9_.-]/g, '_')}"` : 'attachment'
+      : 'inline',
   }), { expiresIn: 60 })
 }
 
@@ -106,7 +110,7 @@ export async function readAudioStream(path: string, range?: string) {
 export async function readStoredBytes(path: string, size: number, etag?: string) {
   const { storage, bucket } = adminStorage()
   const original = await storage.send(new GetObjectCommand({ Bucket: bucket, Key: path, IfMatch: etag }))
-  if (!original.Body || original.ContentLength !== size || size > 50 * 1024 * 1024) throw new Error('Invalid original image')
+  if (!original.Body || original.ContentLength !== size || size > MAX_CONTENT_FILE_BYTES) throw new Error('Invalid original image')
   const bytes = await original.Body.transformToByteArray()
   if (bytes.byteLength !== size) throw new Error('Incomplete original image')
   return bytes
@@ -122,4 +126,29 @@ export async function storeImageThumbnail(originalPath: string, size: number, di
   return { path, mime: 'image/webp', mediaType: 'image' as const, byteSize: thumbnail.data.length,
     width: thumbnail.width, height: thumbnail.height,
     originalWidth: thumbnail.originalWidth, originalHeight: thumbnail.originalHeight, originalMime: thumbnail.originalMime }
+}
+
+export async function storeGeneratedImage(path: string, bytes: Uint8Array) {
+  const { storage, bucket } = adminStorage()
+  await storage.send(new PutObjectCommand({ Bucket: bucket, Key: path,
+    Body: bytes, ContentLength: bytes.length, ContentType: 'image/webp' }))
+}
+
+export async function storeGeneratedZip(path: string, localFile: string, size: number) {
+  const { storage, bucket } = adminStorage()
+  const body = createReadStream(localFile)
+  try {
+    await storage.send(new PutObjectCommand({ Bucket: bucket, Key: path,
+      Body: body, ContentLength: size, ContentType: 'application/zip',
+      ContentDisposition: 'attachment; filename="asset-pack.zip"' }))
+  } finally { body.destroy() }
+}
+
+/** Only server-generated paths in the newly reserved item directory are accepted. */
+export async function deleteGeneratedPackFiles(directory: string, paths: string[]) {
+  if (paths.some(path => !path.startsWith(`${directory}/`) || path.includes('..'))) {
+    throw new Error('Unexpected generated file path')
+  }
+  const { storage, bucket } = adminStorage()
+  await Promise.all(paths.map(path => storage.send(new DeleteObjectCommand({ Bucket: bucket, Key: path }))))
 }

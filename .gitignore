@@ -20,3 +20,5 @@ node_modules
 .playwright-mcp/
 .neon
 .archify
+.tmp
+output/agent-upload

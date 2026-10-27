@@ -1,6 +1,7 @@
 import { z } from 'zod'
+import { CONTENT_LIMITS, MAX_ATTACHMENT_COUNT } from './limits'
+export { MAX_CONTENT_FILE_BYTES } from './limits'
 
-export const MAX_CONTENT_FILE_BYTES = 50 * 1024 * 1024
 export const fileTypes: Record<string, { mime: string; mediaType: 'image' | 'audio' | 'video' | 'file' }> = {
   png: { mime: 'image/png', mediaType: 'image' }, jpg: { mime: 'image/jpeg', mediaType: 'image' },
   jpeg: { mime: 'image/jpeg', mediaType: 'image' }, webp: { mime: 'image/webp', mediaType: 'image' },
@@ -14,24 +15,32 @@ export function fileType(name: string) {
   const extension = name.split('.').pop()?.toLowerCase() ?? ''
   return Object.hasOwn(fileTypes, extension) ? { extension, ...fileTypes[extension] } : null
 }
+
+export function acceptedFileTypes(mediaType?: 'image' | 'audio' | 'video' | 'file') {
+  return Object.entries(fileTypes)
+    .filter(([, type]) => !mediaType || type.mediaType === mediaType)
+    .map(([extension]) => `.${extension}`).join(',')
+}
 const slug = z.string().min(1).max(120).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
 export const attachmentSchema = z.object({
   path: z.string().max(200).regex(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.[a-z0-9]+$/),
-  altText: z.string().trim().max(300),
+  altText: z.string().trim().max(CONTENT_LIMITS.attachmentLabel),
+  role: z.enum(['cover', 'download']).default('download'),
+  fileName: z.string().trim().min(1).max(255).optional(),
   focalX: z.number().min(0).max(100).default(50), focalY: z.number().min(0).max(100).default(50),
-}).transform(attachment => ({ ...attachment, role: 'download' as const }))
+})
 export const contentSchema = z.object({
   categoryId: z.string().regex(/^[1-9][0-9]*$/),
-  title: z.string().trim().min(1).max(200), summary: z.string().trim().max(500),
-  description: z.string().trim().max(20000), status: z.literal('published').default('published'),
+  title: z.string().trim().min(1).max(CONTENT_LIMITS.title), summary: z.string().trim().max(CONTENT_LIMITS.summary),
+  description: z.string().trim().max(CONTENT_LIMITS.description), status: z.literal('published').default('published'),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/), isFeatured: z.boolean(),
-  sortOrder: z.number().int().min(0).max(2147483647),
+  sortOrder: z.number().int().min(0).max(CONTENT_LIMITS.sortOrder),
   metadata: z.record(z.string(), z.unknown()),
   uses: z.array(slug).max(20).default([]),
   tags: z.array(z.object({ slug, name: z.string().trim().min(1).max(60) })).max(20),
-  facts: z.array(z.object({ key: z.string().regex(/^[a-z][a-z0-9_]*$/).max(64),
-    label: z.string().trim().min(1).max(80), value: z.string().trim().min(1).max(300) })).max(20),
-  attachments: z.array(attachmentSchema).max(12),
+  facts: z.array(z.object({ key: z.string().regex(/^[a-z][a-z0-9_]*$/).max(CONTENT_LIMITS.factKey),
+    label: z.string().trim().min(1).max(CONTENT_LIMITS.factLabel), value: z.string().trim().min(1).max(CONTENT_LIMITS.factValue) })).max(CONTENT_LIMITS.facts),
+  attachments: z.array(attachmentSchema).max(MAX_ATTACHMENT_COUNT),
 }).superRefine((value, ctx) => {
   const issue = (message: string) => ctx.addIssue({ code: 'custom', message })
   if (new Set(value.facts.map(x => x.key)).size !== value.facts.length) issue('Fact keys must be unique.')

@@ -71,7 +71,7 @@ export interface ItemAsset {
   id: EntityId
   itemId: EntityId
   assetId: EntityId
-  role: 'cover' | 'download'
+  role: 'cover' | 'download' | 'preview'
   altText: string
   focalX: number
   focalY: number
@@ -124,6 +124,7 @@ export interface CatalogCard {
 }
 
 export interface CatalogDetail extends CatalogCard {
+  category: CatalogCard['category'] & Pick<Category, 'metadataSchemaKey'>
   uses: ContentUse[]
   description: string
   tags: Tag[]

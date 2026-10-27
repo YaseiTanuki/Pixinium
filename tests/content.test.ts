@@ -34,10 +34,10 @@ test('content validation rejects invalid publication, facts, roles and category 
   assert.equal(contentSchema.safeParse({ ...valid, uses: ['avatar', 'avatar'] }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, attachments: [] }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, status: 'published', attachments: [{ path: `${admin}/${member}.png`, role: 'download', altText: 'Original sunset' }] }).success, true)
-  for (const role of ['cover', 'gallery', 'preview']) {
-    const parsed = contentSchema.parse({ ...valid, attachments: [{ path: `${admin}/${member}.png`, role, altText: 'Original image' }] })
-    assert.equal(parsed.attachments[0].role, 'download')
+  for (const role of ['gallery', 'preview']) {
+    assert.equal(contentSchema.safeParse({ ...valid, attachments: [{ path: `${admin}/${member}.png`, role, altText: 'Original image' }] }).success, false)
   }
+  assert.equal(attachmentSchema.parse({ path: `${admin}/${member}.png`, role: 'cover', altText: 'Thumbnail' }).role, 'cover')
   assert.equal(contentSchema.safeParse({ ...valid, facts: [...item.facts, ...item.facts] }).success, false)
   assert.equal(Object.hasOwn(contentSchema.parse({ ...valid, slug: '../escape' }), 'slug'), false)
   const { slug: _slug, ...withoutSlug } = valid
@@ -48,7 +48,7 @@ test('content validation rejects invalid publication, facts, roles and category 
   assert.throws(() => parseCategoryMetadata('images.v1', { width: 1920 }))
   assert.throws(() => parseCategoryMetadata('games.v1', { platforms: ['invalid'] }))
   assert.throws(() => parseCategoryMetadata('music.v1', { track_count: -1 }))
-  assert.equal(attachmentSchema.parse({ path: `${admin}/${member}.zip`, role: 'cover', altText: 'Package' }).role, 'download')
+  assert.equal(attachmentSchema.parse({ path: `${admin}/${member}.zip`, altText: 'Package' }).role, 'download')
 })
 
 test('content write is atomic, rechecks admin role and rejects category schema races', { timeout: 30000 }, async () => {

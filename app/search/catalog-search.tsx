@@ -11,7 +11,7 @@ import type { CatalogDetail, ContentUse } from '@/lib/entities/catalog'
 export default function CatalogSearch({ items, uses, initialUse = '', initialQuery = '' }: { items: CatalogDetail[]; uses: ContentUse[]; initialUse?: string; initialQuery?: string }) {
   const [activeUse, setActiveUse] = useState(initialUse)
   const [query, setQuery] = useState(initialQuery)
-  const filters = uses.filter(use => ['images', 'music', 'games'].includes(use.slug))
+  const filters = uses
   const visibleResults = useMemo(() => items.filter((item) => {
     const matchesQuery = !query || `${item.item.title} ${item.item.summary} ${item.category.name} ${item.tags.map(tag => tag.name).join(' ')} ${item.uses.map(use => use.name).join(' ')}`.toLowerCase().includes(query.toLowerCase())
     return matchesQuery && (!activeUse || item.uses.some(use => use.slug === activeUse))

@@ -1,6 +1,8 @@
+import { CONTENT_SCHEMAS } from '../../lib/content-types'
 import 'server-only'
 import { cache } from 'react'
 import { imageFacts } from '../../lib/image-facts'
+import { assetFacts } from '../../lib/asset-facts'
 import { neon } from '@neondatabase/serverless'
 import type { CatalogDetail, Category, Asset, ContentUse } from '../../lib/entities/catalog'
 import { cardsQuery } from '../repositories/catalog.queries'
@@ -48,11 +50,15 @@ export async function listCatalogItems(filters: { category?: string; slug?: stri
     }))
     const cover = media.find((asset) => asset.role === 'cover')
     const storedFacts = row.facts as CatalogDetail['facts']
-    const facts = row.metadata_schema_key === 'images.v1'
+    const facts = row.metadata_schema_key === CONTENT_SCHEMAS.image
       ? imageFacts(row.item.id, media.find(asset => asset.role === 'download' && asset.mediaType === 'image'),
         storedFacts.find(fact => fact.key === 'creator')?.value ?? 'Unknown')
-      : storedFacts
-    return { item: row.item, category: row.category, facts, description: row.description,
+      : row.metadata_schema_key === CONTENT_SCHEMAS.asset
+        ? assetFacts(row.item.id, row.image_count,
+          media.find(asset => asset.role === 'download')?.mimeType,
+          storedFacts.find(fact => fact.key === 'creator')?.value ?? 'Unknown')
+        : storedFacts
+    return { item: row.item, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
       tags: row.tags, uses: row.uses, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY } : null } as CatalogDetail
   })

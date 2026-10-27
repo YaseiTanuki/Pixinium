@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { playbackUrl } from '@/lib/media'
 
 export function AudioTrackPlayer({ url, label }: { url: string; label: string }) {
   const [failed, setFailed] = useState(false)
   // External media already has a playable URL; private S3 media uses our range-capable route.
-  const source = url.startsWith('/api/assets/') ? `${url}?play=1` : url
+  const source = playbackUrl(url)
   return <div className="min-w-0 space-y-3 rounded-xl border border-[#e4dad4] p-4">
     <p className="break-words font-semibold">{label}</p>
     <audio controls preload="none" src={source} aria-label={`Listen to ${label}`} className="w-full"

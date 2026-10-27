@@ -30,7 +30,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
   const db = new PGlite()
   try {
     await seedLegacy(db)
-    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql'])
+    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql'])
 
     await t.test('uses backfill and multi-use discovery preserve one item and hide archived items', async () => {
       const first = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items ORDER BY id LIMIT 1")).rows[0]
@@ -279,7 +279,7 @@ test('empty database can migrate without demo seeding', async () => {
   const db = new PGlite()
   try {
     await migrate(connection(db))
-    assert.equal((await db.query('SELECT * FROM catalog.categories')).rows.length, 3)
+    assert.equal((await db.query('SELECT * FROM catalog.categories')).rows.length, 4)
     assert.equal((await db.query('SELECT * FROM catalog.items')).rows.length, 0)
   } finally {
     await db.close()

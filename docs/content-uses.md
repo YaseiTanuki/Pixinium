@@ -4,7 +4,7 @@ An item has a content category (Images, Music or Games) for metadata validation.
 Wallpaper is a use, not an image category. Image detail URLs use `/items/images/...`.
 `catalog.content_uses` contains the available uses; `catalog.item_uses` links each
 item to any number of them. The initial choices are Wallpaper, Background and
-Avatar. These are independent of an attachment's cover/gallery/download role.
+Avatar. These are independent of an attachment's cover/preview/download role.
 The same item, assets, saved ID and URL are reused across all its uses.
 
 Migration `0004_content_uses.sql` backfills Wallpaper for existing items in the

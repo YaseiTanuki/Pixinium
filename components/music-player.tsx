@@ -1,10 +1,10 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Download, Music2, Play } from 'lucide-react'
+import { Music2, Play } from 'lucide-react'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 
-const playbackUrl = (url: string) => url.startsWith('/api/assets/') ? `${url}?play=1` : url
+import { playbackUrl } from '@/lib/media'
 
 export function MusicPlayer({ item }: { item: CatalogDetail }) {
   const tracks = item.media.filter(asset => asset.role === 'download' && asset.mediaType === 'audio')
@@ -53,7 +53,6 @@ export function MusicPlayer({ item }: { item: CatalogDetail }) {
               <span className="music-track-number">{index === selected ? <Play size={14} aria-hidden="true" /> : String(index + 1).padStart(2, '0')}</span>
               <span className="music-track-label">{entry.altText || `Track ${index + 1}`}</span>
             </button>
-            <a href={entry.url} aria-label={`Download ${entry.altText || `track ${index + 1}`}`} title="Download original track"><Download size={18} aria-hidden="true" /></a>
           </li>)}
         </ol>
       </> : <p className="music-player-title">No tracks available yet.</p>}

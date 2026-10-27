@@ -1,6 +1,8 @@
+import { CONTENT_SCHEMAS } from '../../lib/content-types'
 import 'server-only'
 
 import { imageFacts, imageCreator } from '@/lib/image-facts'
+import { assetFacts } from '@/lib/asset-facts'
 import { randomUUID } from 'node:crypto'
 import { neon } from '@neondatabase/serverless'
 import { revalidatePath } from 'next/cache'
@@ -15,6 +17,10 @@ import { validateGameFiles } from '@/lib/admin/game'
 import { ownedStagingPaths } from '@/lib/admin/staging'
 import { itemStorageDirectory } from '@/lib/admin/storage-paths'
 import { createContentWithTitleSlug } from '@/server/services/content-create'
+import { createAssetPack } from '@/server/services/asset-pack'
+import { validateAssetPackFiles } from '@/lib/admin/asset-pack'
+import { CONTENT_LIMITS } from '@/lib/admin/limits'
+import { storeGeneratedImage, storeGeneratedZip, deleteGeneratedPackFiles } from '@/server/services/storage.service'
 import { authDiagnostic } from '@/lib/auth/errors'
 
 export type ContentActor = { id: string; role: string }
@@ -47,6 +53,8 @@ export async function discardContentUploadsForActor(account: ContentActor | null
 }
 
 export async function createContentForActor(account: ContentActor | null, input: unknown, source: 'studio' | 'agent' = 'studio'): Promise<ContentResult> {
+  let pendingPack: { directory: string; paths: string[] } | undefined
+  let committed = false
   try {
     if (!account || !hasPermission(account.role, 'assets:upload')) return { error: 'You do not have access to create content.' }
     const parsed = contentSchema.safeParse(input)
@@ -60,8 +68,18 @@ export async function createContentForActor(account: ContentActor | null, input:
     const validUses = await sql.query('SELECT slug FROM catalog.content_uses WHERE slug = ANY($1::text[])', [value.uses])
     if (validUses.length !== value.uses.length) return { error: 'A selected use is no longer available. Reload the studio.' }
     const schemaKey = String(categories[0].metadata_schema_key)
-    const isMusic = schemaKey === 'music.v1'
-    const isGame = schemaKey === 'games.v1'
+    const isMusic = schemaKey === CONTENT_SCHEMAS.music
+    const isGame = schemaKey === CONTENT_SCHEMAS.game
+    const isAssetPack = schemaKey === CONTENT_SCHEMAS.asset
+    if (!isAssetPack && value.attachments.length > CONTENT_LIMITS.files) {
+      return { error: `Attach up to ${CONTENT_LIMITS.files} files per item.` }
+    }
+    if (isAssetPack) {
+      const error = validateAssetPackFiles(value.attachments)
+      if (error) return { error }
+    } else if (value.attachments.some(asset => asset.role !== 'download')) {
+      return { error: 'Separate thumbnails are only supported for asset packs.' }
+    }
     if (isGame) {
       const error = validateGameFiles(value.attachments, value.status === 'published')
       if (error) return { error }
@@ -70,7 +88,9 @@ export async function createContentForActor(account: ContentActor | null, input:
       const error = validateMusicFiles(value.attachments, value.status === 'published')
       if (error) return { error }
     }
-    let metadata = parseCategoryMetadata(schemaKey, isMusic ? {} : value.metadata)
+    let metadata = parseCategoryMetadata(schemaKey, isAssetPack
+      ? { image_count: value.attachments.filter(asset => asset.role === 'download').length }
+      : isMusic ? {} : value.metadata)
     const { bucket } = await requirePrivateStorage()
     const attachments = []
     for (const asset of value.attachments) {
@@ -89,7 +109,16 @@ export async function createContentForActor(account: ContentActor | null, input:
     const finalized = []
     let hasThumbnail = false
     const tracks: Awaited<ReturnType<typeof readAudioMetadata>>[] = []
-    for (const asset of attachments) {
+    if (isAssetPack) {
+      const pack = await createAssetPack(attachments, directory, {
+        read: asset => readStoredBytes(`staging/${asset.path}`, asset.byteSize, asset.etag),
+        putImage: storeGeneratedImage,
+        putZip: storeGeneratedZip,
+        remove: paths => deleteGeneratedPackFiles(directory, paths),
+      })
+      pendingPack = { directory, paths: pack.map(asset => asset.path) }
+      finalized.push(...pack)
+    } else for (const asset of attachments) {
       if ((isMusic || isGame) && asset.mediaType === 'image') {
         // Artwork is temporary input: retain only its generated thumbnail.
         const thumbnail = await storeImageThumbnail(`staging/${asset.path}`, asset.byteSize, directory, asset.etag)
@@ -112,16 +141,20 @@ export async function createContentForActor(account: ContentActor | null, input:
       formats: [...new Set(tracks.map(track => track.format))],
     } : {})
     let facts = value.facts
-    if (schemaKey === 'images.v1') {
+    if (schemaKey === CONTENT_SCHEMAS.image || isAssetPack) {
       const [profile] = source === 'studio' && account.role !== 'admin'
         ? await sql`SELECT username FROM catalog.profiles WHERE id = ${account.id}::uuid` : []
       const original = finalized.find(asset => asset.role === 'download' && asset.mediaType === 'image')
-      facts = imageFacts(reservedItemId, original ? { ...original, mimeType: original.mime } : undefined,
-        imageCreator(source, profile?.username as string | null | undefined, account.role))
+      const creator = imageCreator(source, profile?.username as string | null | undefined, account.role)
+      facts = isAssetPack
+        ? assetFacts(reservedItemId, value.attachments.filter(asset => asset.role === 'download').length,
+          finalized.find(asset => asset.role === 'download')?.mime, creator)
+        : imageFacts(reservedItemId, original ? { ...original, mimeType: original.mime } : undefined, creator)
     }
     const rows = await createContentWithTitleSlug((text, values) => sql.query(text, values),
       account.id, value.categoryId, schemaKey, { ...value, reservedItemId, metadata, facts, attachments: finalized }, bucket)
     if (!rows[0]) return { error: 'Your permissions or category changed. Reload the studio and try again.' }
+    committed = true
     // The committed item owns separate final objects. A cleanup outage must not
     // turn a successful save into a retry that creates a duplicate item.
     try { await deleteStagingUploads(value.attachments.map(asset => asset.path)) }
@@ -138,5 +171,14 @@ export async function createContentForActor(account: ContentActor | null, input:
     if (error instanceof z.ZodError) return { error: error.issues[0]?.message ?? 'Check category details.' }
     if (authDiagnostic(error).code === '23505') return { error: 'Content could not be saved because of a duplicate entry. Please try again.' }
     return { error: 'Content could not be saved. Your form is preserved; check server configuration and try again.' }
+  } finally {
+    if (pendingPack && !committed) {
+      // Transport failure can hide a successful commit; keep any referenced objects.
+      try {
+        const sql = neon(process.env.CATALOG_ADMIN_DATABASE_URL!)
+        const linked = await sql.query('SELECT 1 FROM catalog.assets WHERE provider = $1 AND object_path = ANY($2::text[]) LIMIT 1', ['s3', pendingPack.paths])
+        if (!linked.length) await deleteGeneratedPackFiles(pendingPack.directory, pendingPack.paths)
+      } catch (error) { console.error('[content.pack-cleanup]', authDiagnostic(error)) }
+    }
   }
 }

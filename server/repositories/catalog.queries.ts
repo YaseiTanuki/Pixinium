@@ -4,7 +4,7 @@ export const cardsQuery = `SELECT
     'summary', i.summary, 'accentColor', i.accent_color, 'isFeatured', i.is_featured) AS item,
   jsonb_build_object('id', c.id::text, 'slug', c.slug, 'name', c.name,
     'iconKey', c.icon_key, 'artworkStyle', c.artwork_style) AS category,
-  i.description, c.metadata_schema_key,
+  i.description, c.metadata_schema_key, i.metadata->'image_count' AS image_count,
   coalesce((SELECT jsonb_agg(jsonb_build_object('slug', u.slug, 'name', u.name)
     ORDER BY u.sort_order, u.slug) FROM catalog.item_uses iu
     JOIN catalog.content_uses u ON u.slug = iu.use_slug WHERE iu.item_id = i.id), '[]') AS uses,
