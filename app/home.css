@@ -95,9 +95,10 @@
 .feature-surprise div > p:last-child { max-width: 195px; margin-top: 6px; font-size: 10px; line-height: 1.6; color: #786958; }
 .surprise-button { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px; max-width: 95px; padding: 10px; border: 1px solid #bdae9a; border-radius: 9px; font-size: 10px; font-weight: 800; background: #fffaf1; }
 .surprise-button:hover { background: #211d20; color: white; }
-.category-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 17px; margin-top: 22px; }
+.category-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 17px; margin-top: 22px; }
 .category-door { position: relative; overflow: hidden; display: flex; align-items: center; gap: 16px; padding: 24px 21px; border: 1px solid var(--line); border-radius: 13px; background: #fffcf8; transition: transform 180ms ease, border-color 180ms ease; }
 .category-door:hover { transform: translateY(-3px); border-color: #bc8970; }
+.category-door > div { min-width: 0; }
 .category-icon { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; background: #ede2d7; border-radius: 12px; }
 .category-music .category-icon { background: #eadfe5; }
 .category-games .category-icon { background: #f0e3c6; }
