@@ -1,6 +1,8 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { useRef, useState, useSyncExternalStore } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 const key = 'pixinium:saved-catalog-ids'
 const empty: string[] = []
@@ -31,18 +33,36 @@ function subscribe(notify: () => void) {
 }
 
 export function useSavedItems() {
+  const router = useRouter()
+  const busy = useRef(false)
+  const [pending, setPending] = useState(false)
   const saved = useSyncExternalStore(subscribe, snapshot, () => empty)
-  function toggleSaved(id: string) {
-    const current = snapshot()
-    cachedItems = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+  async function toggleSaved(id: string) {
+    if (busy.current) return
+    busy.current = true
+    setPending(true)
     try {
-      const raw = JSON.stringify(cachedItems)
-      localStorage.setItem(key, raw)
-      cachedRaw = raw
+      const { data, error } = await createClient().auth.getUser()
+      if (error || !data.user || data.user.is_anonymous || !data.user.email_confirmed_at) {
+        router.push('/login?reason=collect')
+        return
+      }
+      const current = snapshot()
+      cachedItems = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+      try {
+        const raw = JSON.stringify(cachedItems)
+        localStorage.setItem(key, raw)
+        cachedRaw = raw
+      } catch {
+        // Keep the collection available for this session if storage is disabled.
+      }
+      window.dispatchEvent(new Event('pixinium-saved'))
     } catch {
-      // Keep the collection available for this session if storage is disabled.
+      router.push('/login?reason=collect')
+    } finally {
+      busy.current = false
+      setPending(false)
     }
-    window.dispatchEvent(new Event('pixinium-saved'))
   }
-  return { saved, toggleSaved }
+  return { saved, toggleSaved, pending }
 }

@@ -4,7 +4,7 @@ import { Check, Heart } from 'lucide-react'
 import { useSavedItems } from '@/lib/saved-items'
 
 export function SaveItemButton({ itemId }: { itemId: string }) {
-  const { saved, toggleSaved } = useSavedItems()
+  const { saved, toggleSaved, pending } = useSavedItems()
   const isSaved = saved.includes(itemId)
 
   return (
@@ -13,9 +13,11 @@ export function SaveItemButton({ itemId }: { itemId: string }) {
       className={`detail-save ${isSaved ? 'detail-saved' : ''}`}
       onClick={() => toggleSaved(itemId)}
       aria-pressed={isSaved}
+      disabled={pending}
+      aria-busy={pending}
     >
       {isSaved ? <Check size={19} aria-hidden="true" /> : <Heart size={19} aria-hidden="true" />}
-      {isSaved ? 'Saved on this device' : 'Save on this device'}
+      {isSaved ? 'Collected' : 'Collect'}
     </button>
   )
 }
