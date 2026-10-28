@@ -1,0 +1,11 @@
+# Generated assets, browser profiles, local tooling and agent instructions
+output/
+.tools/
+.agents/
+.codex/
+.tmp/
+.next/
+node_modules/
+graphify-out/
+.env*
+*.tsbuildinfo

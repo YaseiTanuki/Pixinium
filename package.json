@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "pnpm@12.3.4",
   "scripts": {
+    "graphify": "node scripts/graphify.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

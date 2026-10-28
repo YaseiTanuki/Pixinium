@@ -22,3 +22,8 @@ node_modules
 .archify
 .tmp
 output/agent-upload
+
+# Local Graphify environment and generated knowledge graph
+.tools/graphify/
+graphify-out/
+.codex
