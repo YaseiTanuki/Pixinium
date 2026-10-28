@@ -65,18 +65,14 @@
   .search-filter-tab, .search-filter-marker { transition: none; }
 }
 
-/* Stack mixed image ratios without reserving empty space for grid rows. */
+/* MasonryGrid places each card in the shortest available column. */
 .search-results {
-  columns: 260px;
-  column-gap: 14px;
+  --masonry-column-width: 260px;
+  --masonry-gap: 14px;
 }
 
 .search-results .discovery-card {
-  display: inline-block;
-  vertical-align: top;
   width: 100%;
-  break-inside: avoid;
-  margin-bottom: 14px;
 }
 .search-results .discovery-card-copy { padding: 12px 13px; }
 .search-results .discovery-card h3 { font-size: 13px; overflow-wrap: anywhere; }

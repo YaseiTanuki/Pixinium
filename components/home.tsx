@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { startTransition, useState, ViewTransition } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Heart, LayoutGrid, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
+import { MasonryGrid } from '@/components/masonry-grid'
 import { CATALOG_DISPLAY, itemHref, searchHref } from '@/lib/catalog'
 import type { CatalogDetail, Category, ContentUse } from '@/lib/entities/catalog'
 import { categoryIcon } from '@/lib/category-icons'
@@ -56,7 +57,7 @@ export default function Home({ items, categories, uses, spotlightId, musicId, in
       <section className="discover-section" id="discover" aria-labelledby="discover-title">
         <div className="section-heading"><div><p className="eyebrow">WORTH A LITTLE LOOK</p><h2 id="discover-title">Good things, right this way<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the whole archive <ArrowUpRight size={16} aria-hidden="true" /></Link></div>
         <div className="discovery-toolbar"><div className="discovery-filters" aria-label="Filter discoveries">{filters.map(({ slug, name }) => <button key={slug} aria-pressed={filter === slug} className={filter === slug ? 'active' : ''} onClick={() => chooseFilter(slug)}>{slug === '' && <LayoutGrid size={13} aria-hidden="true" />}{slug === 'saved' && <Heart size={13} aria-hidden="true" />}{name}{slug === 'saved' && <span>{saved.length}</span>}</button>)}</div><p role="status">{visible.length} little {visible.length === 1 ? 'find' : 'finds'} <ArrowDown size={12} aria-hidden="true" /></p></div>
-        <div className="discovery-grid">{visible.map((item) => <ViewTransition key={item.item.id} enter="home-fade" exit="home-fade"><CatalogCard item={item} variant="detailed" /></ViewTransition>)}</div>
+        <MasonryGrid className="discovery-grid">{visible.map((item) => <ViewTransition key={item.item.id} enter="home-fade" exit="home-fade"><CatalogCard item={item} variant="detailed" /></ViewTransition>)}</MasonryGrid>
         {visible.length === 0 && <div className="collection-empty"><Heart size={30} aria-hidden="true" /><h3>A little space for your favorites.</h3><p>{filter === 'saved' ? 'Tap the heart on any find to save it to your account.' : 'Try another category or search.'}</p><button className="primary-button" onClick={() => chooseFilter('')}>Find something to love <ArrowRight size={16} aria-hidden="true" /></button></div>}
       </section>
 

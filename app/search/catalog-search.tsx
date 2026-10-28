@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SiteHeader } from '@/components/site-header'
 import { CatalogCard } from '@/components/catalog-card'
+import { MasonryGrid } from '@/components/masonry-grid'
 import { CATALOG_DISPLAY, searchHref } from '@/lib/catalog'
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react'
 import { ArrowLeft, ArrowRight, BookOpen, Gamepad2, Grid2X2, Image, Layers, Monitor, Music2, SearchX, Smartphone, Sparkles, UserRound, type LucideIcon } from 'lucide-react'
@@ -85,7 +86,7 @@ export default function CatalogSearch({ items, uses, total, page, totalPages, in
             <p role="status">{pending ? 'Finding your next favorite…' : items.length ? <><span className="archive-result-dot" aria-hidden="true" /> Showing <strong>{first}–{first + items.length - 1}</strong> of {total} finds</> : 'No treasures found'}</p>
             {items.length > 0 && <span>Page <strong>{page}</strong> of {totalPages}</span>}
           </div>
-          <div className="search-results mt-2">{items.map(item => <CatalogCard key={item.item.id} item={item} />)}</div>
+          <MasonryGrid className="search-results mt-2">{items.map(item => <CatalogCard key={item.item.id} item={item} />)}</MasonryGrid>
           {!items.length && !pending && <div className="archive-empty"><SearchX size={30} aria-hidden="true" /><h2>No finds on this shelf.</h2><p>Try another search or take a look through the whole archive.</p><Link href="/search">Show all finds <ArrowRight size={16} aria-hidden="true" /></Link></div>}
           {totalPages > 1 && <nav className="archive-pagination" aria-label="Archive pages">
             <p className="archive-pagination-summary">Page <strong>{page}</strong> of <strong>{totalPages}</strong></p>

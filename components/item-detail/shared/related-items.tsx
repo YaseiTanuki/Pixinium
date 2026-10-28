@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
+import { MasonryGrid } from '@/components/masonry-grid'
 import type { CatalogCard as Card } from '@/lib/entities/catalog'
 
 export function RelatedItems({ items }: { items: Card[] }) {
@@ -17,9 +18,9 @@ export function RelatedItems({ items }: { items: Card[] }) {
           Explore the archive <ArrowUpRight size={16} aria-hidden="true" />
         </Link>
       </div>
-      <div className="discovery-grid">
+      <MasonryGrid className="discovery-grid">
         {items.map(entry => <CatalogCard key={entry.item.id} item={entry} />)}
-      </div>
+      </MasonryGrid>
     </section>
   )
 }
