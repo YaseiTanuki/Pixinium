@@ -1,6 +1,6 @@
 import type { CatalogCard } from './entities/catalog'
 
-export const CATALOG_DISPLAY = { relatedItems: 4, savedPreviewItems: 6 } as const
+export const CATALOG_DISPLAY = { relatedItems: 10 } as const
 
 export function searchHref({ use, query }: { use?: string; query?: string } = {}): string {
   const params = new URLSearchParams()
