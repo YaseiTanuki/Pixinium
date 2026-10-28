@@ -7,7 +7,6 @@ export const loginSchema = z.object({
   password: z.string().min(1).max(128),
 })
 export const signupSchema = loginSchema.extend({
-  username: usernameSchema,
   password: z.string().min(12).max(128),
   confirmPassword: z.string().max(128),
 }).refine((value) => value.password === value.confirmPassword, {

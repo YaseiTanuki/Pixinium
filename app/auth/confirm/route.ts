@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       success = !error
     } catch { /* Return a fixed local destination, without exposing provider details. */ }
   }
-  const response = NextResponse.redirect(new URL(success ? '/profile' : '/auth/confirmation-error', request.url))
+  const response = NextResponse.redirect(new URL(success ? '/choose-username' : '/auth/confirmation-error', request.url))
   response.headers.set('Cache-Control', 'private, no-store')
   response.headers.set('Referrer-Policy', 'no-referrer')
   return response

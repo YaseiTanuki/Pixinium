@@ -4,7 +4,6 @@ import { requireAccount } from '@/server/services/auth.service'
 import { hasPermission } from '@/lib/auth/permissions'
 import { logout } from '@/app/actions/auth'
 import { listCatalogItems } from '@/server/services/catalog.service'
-import { UsernameForm } from '@/components/username-form'
 import { ProfileAvatar } from '@/components/profile-avatar'
 import { ProfileCollection } from '@/components/profile-collection'
 
@@ -20,7 +19,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   return <div className="workspace-page profile-page">
     {access === 'denied' && <p role="alert" className="account-notice">You don’t have access to that area.</p>}
-    {!account.username && <section className="profile-info-card"><h2>Finish setting up your account</h2><p>Your account needs an available username.</p><UsernameForm /></section>}
     <header className="profile-identity">
       <ProfileAvatar name={name} url={account.avatarUrl} />
       <div className="profile-identity-copy"><p className="profile-kicker">YOUR PROFILE</p><h1>{name}</h1><p className="profile-email"><Mail size={15} aria-hidden="true" /><span>{account.email}</span></p><span className="profile-verified"><BadgeCheck size={14} aria-hidden="true" /> Email verified</span></div>

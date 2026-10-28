@@ -1,6 +1,6 @@
 # Authentication and admin v1
 
-Routes: `/login`, `/register`, `/auth/confirm`, `/profile`, `/admin`.
+Routes: `/login`, `/register`, `/auth/confirm`, `/choose-username`, `/profile`, `/admin`.
 The header's Account link opens the profile (or redirects guests to login).
 Supabase owns passwords and sessions; Neon `catalog.profiles` owns application
 roles. The two active roles are `member` (displayed as User) and `admin`.
@@ -42,6 +42,37 @@ Extend `lib/auth/permissions.ts` deliberately when adding roles or permissions.
 
 Provider settings, bucket policies and runtime credentials are deployment
 prerequisites; their current remote state was not inspected or changed.
+
+## Google sign-in
+
+Both `/login` and `/register` offer **Continue with Google**. The browser starts
+Supabase's PKCE flow; `/auth/callback` exchanges the code for session cookies and
+redirects to `/choose-username`. Failed or cancelled attempts return to login with
+a safe error message. Both Google and email registrations choose their permanent
+username on this separate page, using the same illustrated layout as login.
+Email registration requires confirmation before this step. Saving a username
+opens `/profile`; accounts with a username skip setup automatically. Protected
+account pages redirect unfinished accounts to setup. Application roles still
+come from the catalog profile.
+
+Before using this flow:
+
+1. Create a Web application OAuth client in Google Auth Platform and configure
+   its audience, branding, and email/profile/OpenID scopes. While in testing mode,
+   add the Google accounts that will test login.
+2. Copy the callback URL shown in Supabase Auth's Google provider settings into
+   Google's **Authorized redirect URIs** (normally
+   `https://<project-ref>.supabase.co/auth/v1/callback`).
+3. Enable Google in Supabase Auth and enter the Google client ID and secret there.
+   The secret belongs in Supabase, never in a `NEXT_PUBLIC_` variable.
+4. Add `http://localhost:3000/auth/callback` and the deployed site's exact
+   `https://<your-domain>/auth/callback` to Supabase Auth's redirect URL allowlist.
+   Set Site URL to the deployed site's trusted origin.
+
+Provider configuration is required separately; adding the app code does not
+enable the remote provider. Validate successful sign-in, cancellation, expired
+codes, profile username setup and sign-out using a configured Google test account.
+See the [Supabase Google setup guide](https://supabase.com/docs/guides/auth/social-sign-in/auth-google).
 
 ## Provision the first admin
 

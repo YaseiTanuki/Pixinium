@@ -40,6 +40,7 @@ export async function getAccount() {
 export async function requireAccount(permission?: Permission) {
   const account = await getAccount()
   if (!account) redirect('/login')
+  if (!account.username) redirect('/choose-username')
   if (permission && !hasPermission(account.role, permission)) redirect('/profile?access=denied')
   return account
 }

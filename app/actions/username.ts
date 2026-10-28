@@ -2,6 +2,7 @@
 
 import { neon } from '@neondatabase/serverless'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { getAccount } from '@/server/services/auth.service'
 import { usernameSchema, type AuthState } from '@/lib/auth/validation'
 
@@ -24,5 +25,5 @@ export async function chooseUsername(_state: AuthState, form: FormData): Promise
       ? 'That username is taken. Choose another.' : 'Could not save your username. Please retry.' }
   }
   revalidatePath('/', 'layout')
-  return { message: 'Your permanent username is saved.' }
+  redirect('/profile')
 }

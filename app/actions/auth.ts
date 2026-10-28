@@ -27,14 +27,13 @@ export async function login(_state: AuthState, form: FormData): Promise<AuthStat
 
 export async function signup(_state: AuthState, form: FormData): Promise<AuthState> {
   const parsed = signupSchema.safeParse(Object.fromEntries(form))
-  if (!parsed.success) return { error: 'Use a valid email, a username of 3-12 letters, numbers or underscores, and matching passwords of 12-128 characters.' }
+  if (!parsed.success) return { error: 'Use a valid email and matching passwords of 12-128 characters.' }
   let signedIn = false
   const startedAt = Date.now()
   try {
     const client = await createClient()
-    const { email, password, username } = parsed.data
-    const { data, error } = await client.auth.signUp({ email, password,
-      options: { data: { username, display_name: username } } })
+    const { email, password } = parsed.data
+    const { data, error } = await client.auth.signUp({ email, password })
     if (error) {
       console.error('[auth.signup]', { ...authDiagnostic(error), elapsedMs: Date.now() - startedAt })
       return { error: signupErrorMessage(error) }
@@ -44,7 +43,7 @@ export async function signup(_state: AuthState, form: FormData): Promise<AuthSta
     console.error('[auth.signup]', { ...authDiagnostic(error), elapsedMs: Date.now() - startedAt })
     return { error: signupErrorMessage(error) }
   }
-  if (signedIn) { revalidatePath('/', 'layout'); redirect('/profile') }
+  if (signedIn) { revalidatePath('/', 'layout'); redirect('/choose-username') }
   return { message: 'If this address can be registered, a confirmation email will arrive shortly. Confirm your email, then sign in.' }
 }
 
