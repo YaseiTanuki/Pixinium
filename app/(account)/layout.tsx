@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import { ArrowLeft, Gamepad2, Heart, ImageIcon, Music2, Sparkles } from 'lucide-react'
 import './account.css'
+import { BrandLogo } from '@/components/brand-logo'
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   return <div className="home-page account-page">
     <a className="skip-home" href="#account-main">Skip to content</a>
     <header className="account-header page-shell">
-      <Link href="/" className="home-logo" aria-label="Pixinium home">pixinium<span className="logo-dot">.</span></Link>
+      <BrandLogo />
       <Link href="/" className="account-back"><ArrowLeft size={15} aria-hidden="true" /> Back to the archive</Link>
     </header>
     <main id="account-main" className="account-shell">

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
+import { BrandLogo } from '@/components/brand-logo'
 import type { CatalogCard, CatalogDetail } from '@/lib/entities/catalog'
 import { contentKind, type ContentKind } from '@/lib/content-types'
 import { searchHref } from '@/lib/catalog'
@@ -65,7 +66,7 @@ export default function ItemDetail({ item, related }: ItemDetailProps) {
         <RelatedItems items={related} />
       </main>
       <footer className="home-footer home-shell">
-        <Link href="/" className="footer-logo">pixinium<span>.</span></Link>
+        <BrandLogo className="brand-logo-footer" />
         <p>A little archive. A lot to love.</p>
         <Link href="/search">Back to the good stuff ↑</Link>
       </footer>

@@ -30,6 +30,18 @@
 .home-logo { display: inline-flex; align-items: center; font-size: 26px; font-weight: 900; letter-spacing: -0.03em; }
 .logo-symbol { display: grid; place-items: center; width: 32px; height: 32px; margin-right: 12px; border-radius: 10px; background: #e94343; color: white; box-shadow: 3px 3px 0 var(--ink); }
 .logo-dot, .footer-logo span { color: #e94343; }
+.brand-logo { display: inline-flex; align-items: center; gap: 9px; width: fit-content; min-width: 0; min-height: 44px; flex-shrink: 0; border-radius: 10px; color: var(--ink); text-decoration: none; }
+.brand-logo-mark { flex-shrink: 0; width: 40px; height: 40px; object-fit: contain; }
+.brand-logo-name { font-family: var(--font-display); font-size: 22px; font-weight: 900; letter-spacing: -.035em; line-height: 1; white-space: nowrap; }
+.brand-logo-dot { color: #e94343; }
+.brand-logo:hover .brand-logo-name { color: var(--red); }
+.brand-logo-footer .brand-logo-mark { width: 32px; height: 32px; }
+.brand-logo-footer .brand-logo-name { font-size: 20px; }
+@media (max-width: 380px) {
+  .brand-logo { gap: 6px; }
+  .brand-logo-mark { width: 32px; height: 32px; }
+  .brand-logo-name { font-size: 18px; }
+}
 .home-navigation { display: flex; align-items: center; gap: 28px; font-size: 12px; font-weight: 700; color: var(--muted); }
 .home-navigation a { display: flex; align-items: center; gap: 5px; padding-block: 12px; }
 .home-navigation [aria-current] { color: var(--ink); position: relative; }

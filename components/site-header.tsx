@@ -5,6 +5,7 @@
 import Link from 'next/link'
 import { Heart, Search } from 'lucide-react'
 import { useSavedItems } from '@/lib/saved-items'
+import { BrandLogo } from '@/components/brand-logo'
 
 type SiteHeaderProps = {
   query?: string
@@ -16,9 +17,7 @@ export function SiteHeader({ query, onQueryChange }: SiteHeaderProps = {}) {
 
   return (
     <header className="page-shell grid min-h-[76px] grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-[#e9e1db] bg-[#f8f5f1]/90 py-3 text-[#211d20] backdrop-blur md:grid-cols-[auto_minmax(0,1fr)_auto_auto] md:gap-3">
-      <Link href="/" className="min-w-0 font-display text-xl font-black tracking-[-0.03em] md:mr-3" aria-label="Pixinium home">
-        pixinium<span className="text-[#e94343]">.</span>
-      </Link>
+      <BrandLogo className="md:mr-3" />
       <form action="/search" method="get" role="search" className="relative col-span-3 col-start-1 row-start-2 min-w-0 md:col-span-1 md:col-start-2 md:row-start-1 md:max-w-[360px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a29a95]" size={16} aria-hidden="true" />
         <input value={query} onChange={onQueryChange ? (event) => onQueryChange(event.target.value) : undefined} aria-label="Search the archive" name="q" type="search" placeholder="Search wallpapers, music, games?" className="h-11 min-w-0 w-full rounded-xl border border-[#e4dad4] bg-white pl-10 pr-4 text-base outline-none placeholder:text-[#b2aaa5] focus:border-[#e94343] md:text-sm" />

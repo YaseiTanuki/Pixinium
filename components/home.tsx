@@ -4,6 +4,7 @@
 
 import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'
+import { BrandLogo } from '@/components/brand-logo'
 import { useRouter } from 'next/navigation'
 import { startTransition, useState, ViewTransition } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Heart, LayoutGrid, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
@@ -62,6 +63,6 @@ export default function Home({ items, categories, uses, initialFilter = '', init
 
       <ViewTransition><section className="mood-section" aria-labelledby="mood-title"><div><p className="eyebrow">FOLLOW YOUR FEELING</p><h2 id="mood-title">There’s a find for every mood.</h2><p>No need to know exactly what you’re looking for.</p></div><div className="mood-links"><Link href="/search?q=cozy"><Sun size={18} aria-hidden="true" /><span>A cozy moment<small>Slow down a little</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/search?q=night"><Moon size={18} aria-hidden="true" /><span>After hours<small>For the night owls</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/search?q=chaos"><Zap size={18} aria-hidden="true" /><span>A little chaos<small>Embrace the fun</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link></div></section></ViewTransition>
     </main>
-    <footer className="home-footer home-shell"><Link href="/" className="footer-logo">pixinium<span>.</span></Link><p>A little archive. A lot to love.</p><a href="#main">Back to the good stuff ↑</a></footer>
+    <footer className="home-footer home-shell"><BrandLogo className="brand-logo-footer" /><p>A little archive. A lot to love.</p><a href="#main">Back to the good stuff ↑</a></footer>
   </div>
 }
