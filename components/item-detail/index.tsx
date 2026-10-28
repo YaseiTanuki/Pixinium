@@ -53,16 +53,15 @@ export default function ItemDetail({ item, related }: ItemDetailProps) {
 
         {contentKind(item.category.metadataSchemaKey) === 'asset' && <AssetPackPreview item={item} />}
 
-        <section className="detail-about" aria-labelledby="about-title">
+        {item.description && item.description !== item.item.summary && <section className="detail-about" aria-labelledby="about-title">
           <div>
             <p className="eyebrow">ABOUT THIS FIND</p>
-            <h2 id="about-title">{item.item.title}</h2>
+            <h2 id="about-title">A closer look<span>.</span></h2>
           </div>
           <div>
-            {item.item.summary && <p>{item.item.summary}</p>}
-            {item.description && item.description !== item.item.summary && <p>{item.description}</p>}
+            <p>{item.description}</p>
           </div>
-        </section>
+        </section>}
         <RelatedItems items={related} />
       </main>
       <footer className="home-footer home-shell">

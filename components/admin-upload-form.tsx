@@ -115,7 +115,7 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
     saveInProgress.current = true
     setResult({})
     try {
-      const response = await createContent({ categoryId, uses: form.getAll('uses'), title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', accentColor: form.get('accentColor'), isFeatured: form.has('isFeatured'), sortOrder: Number(form.get('sortOrder')), metadata, tags, facts: isImage ? [] : facts, attachments })
+      const response = await createContent({ categoryId, uses: form.getAll('uses'), title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', metadata, tags, facts: isImage ? [] : facts, attachments })
       setResult(response)
       if (response.message) { pendingUploads.current.clear(); router.refresh() }
     } catch { setResult({ error: 'Could not save content. Your entries are preserved; please retry.' }) }
@@ -151,15 +151,10 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
       </section>}
       <div role="status" className="account-help">{progress}</div>
       {attachments.length > 0 && <button type="button" className="account-text-link" onClick={() => void removeUploads([...pendingUploads.current])}>Discard all uploads</button>}
-      {isAssetPack ? <section className="workspace-panel"><h2>Asset details</h2><p className="workspace-muted">Quantity is counted from the pack images. Download format is ZIP. Creator is set to Pixinium automatically for admin uploads.</p></section> : isImage ? <section className="workspace-panel"><h2>Image details</h2><p className="workspace-muted">Resolution and format are detected from the original image. Creator is set to Pixinium automatically for admin uploads.</p></section> : <section className="workspace-panel"><h2>Display facts</h2><p className="workspace-muted">Add details such as license, resolution or supported controls. Rows appear in this order.</p>
+      {isAssetPack ? <section className="workspace-panel"><h2>Asset details</h2><p className="workspace-muted">Quantity is counted from the pack images. Download format is ZIP. Creator is set to Pixinium automatically for admin uploads.</p></section> : isImage ? null : <section className="workspace-panel"><h2>Display facts</h2><p className="workspace-muted">Add details such as license, resolution or supported controls. Rows appear in this order.</p>
         {facts.map((fact, index) => <div className="studio-fact" key={index}>{(['key', 'label', 'value'] as const).map(key => <label key={key}>{key}<input className="account-input" required value={fact[key]} maxLength={key === 'key' ? CONTENT_LIMITS.factKey : key === 'label' ? CONTENT_LIMITS.factLabel : CONTENT_LIMITS.factValue} onChange={e => setFacts(current => current.map((f, i) => i === index ? { ...f, [key]: e.target.value } : f))} /></label>)}<button type="button" className="account-text-link" aria-label={`Remove fact ${index + 1}`} onClick={() => setFacts(current => current.filter((_, i) => i !== index))}><Trash2 size={16} aria-hidden="true" /></button></div>)}
         <button type="button" className="account-text-link" disabled={facts.length >= CONTENT_LIMITS.facts} onClick={() => setFacts(current => [...current, { key: '', label: '', value: '' }])}><Plus size={16} aria-hidden="true" /> Add fact</button>
       </section>}
-      <section className="workspace-panel"><h2>Publication</h2><div className="studio-grid">
-        <label>Display order<input className="account-input" type="number" name="sortOrder" defaultValue={0} min={0} max={CONTENT_LIMITS.sortOrder} required /></label>
-        <label>Accent color<input className="account-input" type="color" name="accentColor" defaultValue="#f1e5dd" /></label>
-        <label className="studio-checkbox"><input type="checkbox" name="isFeatured" /> Feature in the archive</label>
-      </div></section>
     </fieldset>
     <div aria-live="polite">{result.error && <p className="account-notice" role="alert">{result.error}</p>}{result.message && <p className="account-notice account-notice-success">{result.message} {result.href && <Link className="account-text-link" href={result.href}>View content</Link>}</p>}</div>
     <div className="studio-submit">{result.message ? <button type="button" className="account-button" onClick={() => { formRef.current?.reset(); setAttachments([]); setFacts([]); setResult({}); setProgress('') }}>Create another item</button> : <button className="account-button" disabled={busy || !ready || !categoryId}>{saving ? 'Saving content…' : uploading ? 'Uploading files…' : 'Publish content'}</button>}<p className="account-help">Publishing makes this content available to everyone.</p></div>

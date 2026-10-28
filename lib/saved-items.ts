@@ -1,68 +1,94 @@
 'use client'
 
-import { useRef, useState, useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { loadSavedItems, setItemCollected } from '@/app/actions/saved-items'
 
-const key = 'pixinium:saved-catalog-ids'
-const empty: string[] = []
-let cachedRaw: string | null = null
-let cachedItems = empty
+const initial = { saved: [] as string[], pending: false, loaded: false, error: '' }
+let state = initial
+let generation = 0
+let loading: Promise<void> | null = null
+const listeners = new Set<() => void>()
+let stop: (() => void) | undefined
 
-function snapshot() {
-  try {
-    const raw = localStorage.getItem(key)
-    if (raw !== cachedRaw) {
-      const value: unknown = raw ? JSON.parse(raw) : []
-      cachedItems = Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : empty
-      cachedRaw = raw
+function update(next: Partial<typeof state>) {
+  state = { ...state, ...next }
+  listeners.forEach(notify => notify())
+}
+
+function refresh() {
+  if (loading || state.pending) return loading ?? Promise.resolve()
+  const version = generation
+  const request = (async () => {
+    try {
+      const result = await loadSavedItems()
+      if (version !== generation) return
+      update({ ...(result.ids ? { saved: result.ids } : {}), loaded: true, error: result.error ?? '' })
+    } catch {
+      if (version === generation) update({ loaded: true, error: 'Could not load your collection. Please try again.' })
     }
-    return cachedItems
-  } catch {
-    return cachedItems
-  }
+  })()
+  loading = request
+  void request.finally(() => { if (loading === request) loading = null })
+  return request
 }
 
 function subscribe(notify: () => void) {
-  window.addEventListener('storage', notify)
-  window.addEventListener('pixinium-saved', notify)
+  listeners.add(notify)
+  if (listeners.size === 1) {
+    let userId: string | null | undefined
+    let timer: ReturnType<typeof setTimeout>
+    const reload = () => { void refresh() }
+    const { data } = createClient().auth.onAuthStateChange((_event, session) => {
+      const nextUser = session?.user.id ?? null
+      if (nextUser === userId) return
+      userId = nextUser
+      generation++
+      loading = null
+      update({ ...initial })
+      // Run outside the auth callback to avoid holding the auth client's lock.
+      clearTimeout(timer)
+      timer = setTimeout(reload, 0)
+    })
+    window.addEventListener('focus', reload)
+    stop = () => {
+      clearTimeout(timer)
+      data.subscription.unsubscribe()
+      window.removeEventListener('focus', reload)
+      generation++
+      loading = null
+    }
+  }
   return () => {
-    window.removeEventListener('storage', notify)
-    window.removeEventListener('pixinium-saved', notify)
+    listeners.delete(notify)
+    if (!listeners.size) { stop?.(); stop = undefined }
   }
 }
 
+const snapshot = () => state
+const serverSnapshot = () => initial
+
 export function useSavedItems() {
   const router = useRouter()
-  const busy = useRef(false)
-  const [pending, setPending] = useState(false)
-  const saved = useSyncExternalStore(subscribe, snapshot, () => empty)
+  const current = useSyncExternalStore(subscribe, snapshot, serverSnapshot)
   async function toggleSaved(id: string) {
-    if (busy.current) return
-    busy.current = true
-    setPending(true)
+    if (state.pending) return
+    const beforeLoad = generation
+    await refresh()
+    if (beforeLoad !== generation || state.pending || state.error) return
+    const version = generation
+    update({ pending: true, error: '' })
     try {
-      const { data, error } = await createClient().auth.getUser()
-      if (error || !data.user || data.user.is_anonymous || !data.user.email_confirmed_at) {
-        router.push('/login?reason=collect')
-        return
-      }
-      const current = snapshot()
-      cachedItems = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
-      try {
-        const raw = JSON.stringify(cachedItems)
-        localStorage.setItem(key, raw)
-        cachedRaw = raw
-      } catch {
-        // Keep the collection available for this session if storage is disabled.
-      }
-      window.dispatchEvent(new Event('pixinium-saved'))
+      const result = await setItemCollected({ id, saved: !state.saved.includes(id) })
+      if (version !== generation) return
+      if (result.loginRequired) { router.push('/login?reason=collect'); return }
+      update({ ...(result.ids ? { saved: result.ids } : {}), error: result.error ?? '' })
     } catch {
-      router.push('/login?reason=collect')
+      if (version === generation) update({ error: 'Could not update your collection. Please try again.' })
     } finally {
-      busy.current = false
-      setPending(false)
+      if (version === generation) update({ pending: false })
     }
   }
-  return { saved, toggleSaved, pending }
+  return { ...current, toggleSaved }
 }
