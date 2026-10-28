@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation'
 import { startTransition, useState, ViewTransition } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Heart, LayoutGrid, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
-import { itemHref, searchHref } from '@/lib/catalog'
+import { CATALOG_DISPLAY, itemHref, searchHref } from '@/lib/catalog'
 import type { CatalogDetail, Category, ContentUse } from '@/lib/entities/catalog'
 import { categoryIcon } from '@/lib/category-icons'
 import { useSavedItems } from '@/lib/saved-items'
@@ -21,7 +21,7 @@ export default function Home({ items, categories, uses, spotlightId, musicId, in
   const filters = uses
   const visible = items.filter((card) =>
     (filter === 'saved' ? saved.includes(card.item.id) : !filter || card.uses.some(use => use.slug === filter)) &&
-    `${card.item.title} ${card.item.summary} ${card.category.name} ${card.tags.map(tag => tag.name).join(' ')}`.toLowerCase().includes(initialQuery.toLowerCase()))
+    `${card.item.title} ${card.item.summary} ${card.category.name} ${card.tags.map(tag => tag.name).join(' ')}`.toLowerCase().includes(initialQuery.toLowerCase())).slice(0, CATALOG_DISPLAY.homeItems)
   const spotlight = items.find(card => card.item.id === spotlightId)
   const music = items.find(card => card.item.id === musicId)
 

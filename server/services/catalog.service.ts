@@ -5,7 +5,8 @@ import { imageFacts } from '../../lib/image-facts'
 import { assetFacts } from '../../lib/asset-facts'
 import { neon } from '@neondatabase/serverless'
 import type { CatalogDetail, Category, Asset, ContentUse } from '../../lib/entities/catalog'
-import { cardsQuery } from '../repositories/catalog.queries'
+import { archiveCountQuery, archivePageQuery, cardsQuery } from '../repositories/catalog.queries'
+import { CATALOG_DISPLAY } from '../../lib/catalog'
 
 function database() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required to load the catalog.')
@@ -43,6 +44,31 @@ export const listContentUses = cache(async (): Promise<ContentUse[]> =>
 export async function listCatalogItems(filters: { category?: string; slug?: string; query?: string } = {}): Promise<CatalogDetail[]> {
   const rows = await database().query(cardsQuery, [filters.category ?? null, filters.slug ?? null,
     filters.query?.trim() ? `%${filters.query.trim()}%` : null])
+  return presentCatalogRows(rows as CatalogRow[])
+}
+
+export async function listArchivePage(filters: { use?: string; query?: string; page?: number }) {
+  const sql = database()
+  // Search text is literal, including SQL wildcard characters entered by the user.
+  const query = filters.query?.trim().replace(/[\\%_]/g, '\\$&')
+  const params = [null, null, query ? `%${query}%` : null, filters.use || null]
+  const [count] = await sql.query(archiveCountQuery, params)
+  const total = Number(count.total)
+  const pageSize = CATALOG_DISPLAY.archivePageSize
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const requested = Number.isSafeInteger(filters.page) && filters.page! > 0 ? filters.page! : 1
+  const page = Math.min(requested, totalPages)
+  const rows = await sql.query(archivePageQuery, [...params, pageSize, (page - 1) * pageSize])
+  return { items: presentCatalogRows(rows as CatalogRow[]), total, page, totalPages }
+}
+
+type CatalogRow = {
+  item: CatalogDetail['item']; category: CatalogDetail['category']; assets: Media[]
+  facts: CatalogDetail['facts']; metadata_schema_key: string; image_count: number
+  description: string; tags: CatalogDetail['tags']; uses: CatalogDetail['uses']
+}
+
+function presentCatalogRows(rows: CatalogRow[]): CatalogDetail[] {
   return rows.map((row) => {
     const assets = row.assets as Media[]
     const media = assets.map(({ provider, externalUrl, bucket, objectPath, ...asset }) => ({
