@@ -146,6 +146,8 @@
 .record-art .record-disc { width: 135px; }
 .record-caption { writing-mode: vertical-rl; font-size: 7px; letter-spacing: 1.6px; color: #e1bfb8; }
 .discovery-card-copy { padding: 17px 15px 13px; }
+.discovery-card-compact .discovery-card-copy { padding: 12px 13px; }
+.discovery-card-compact h3 { overflow-wrap: anywhere; }
 .discovery-card h3 { font-size: 13px; font-weight: 800; }
 .discovery-card h3 a { text-align: left; }
 .discovery-card h3 a:hover { color: #b83333; }

@@ -62,8 +62,6 @@
 .search-results .item-artwork img { display: block; width: 100%; height: auto; }
 .search-results .discovery-card-copy { padding: 12px 13px; }
 .search-results .discovery-card h3 { font-size: 13px; overflow-wrap: anywhere; }
-.search-results .discovery-card-copy > p,
-.search-results .discovery-card-bottom { display: none; }
 .search-results .save-item { width: 36px; height: 36px; }
 
 @media (pointer: coarse) {
