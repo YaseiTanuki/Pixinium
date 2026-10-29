@@ -37,8 +37,9 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   return <div className="home-page category-page" data-kind={kind}>
     <a className="skip-home" href="#category-content">Skip to content</a>
     <SiteHeader />
-    <div className="page-shell"><CategoryNavigation categories={categories} current={slug} /></div>
-    <main className="page-shell" id="category-content">
+    <div className="page-shell catalog-layout">
+    <CategoryNavigation categories={categories} current={slug} />
+    <main id="category-content">
       <header className="category-banner">
         <div><p className="eyebrow">THE PIXINIUM COLLECTION</p><h1><Icon size={36} aria-hidden="true" />{category.name}<span>.</span></h1><p className="category-description">{category.description}</p></div>
         <div className="category-banner-mark" aria-hidden="true"><Icon strokeWidth={1} /></div>
@@ -59,6 +60,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         </div>
       </nav>}
     </main>
+    </div>
     <footer className="home-footer page-shell"><BrandLogo className="brand-logo-footer" /><p>A little archive. A lot to love.</p><Link href="/">Back to home ↑</Link></footer>
   </div>
 }

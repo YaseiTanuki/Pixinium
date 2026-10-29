@@ -64,8 +64,9 @@ export default function CatalogSearch({ items, categories, uses, total, page, to
   return (
     <main className="home-page archive-page">
       <SiteHeader query={query} onQueryChange={setQuery} searchUse={initialUse} />
-      <div className="page-shell"><CategoryNavigation categories={categories} current="all" /></div>
-      <div className="page-shell search-content">
+      <div className="page-shell catalog-layout">
+      <CategoryNavigation categories={categories} current="all" />
+      <div className="search-content">
         <header className="archive-intro">
           <div><p className="archive-kicker"><BookOpen size={15} aria-hidden="true" /> The Pixinium archive</p>
             <h1>Your little treasure pile<span>.</span></h1>
@@ -103,6 +104,7 @@ export default function CatalogSearch({ items, categories, uses, total, page, to
             </div>
           </nav>}
         </div>
+      </div>
       </div>
     </main>
   )
