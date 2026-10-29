@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { contentKind } from '../lib/content-types'
-import { itemHref, searchHref } from '../lib/catalog'
+import { categoryHref, itemHref, searchHref } from '../lib/catalog'
 import { playbackUrl } from '../lib/media'
 import { acceptedFileTypes, contentSchema, fileType } from '../lib/admin/content'
 import { CONTENT_LIMITS, MAX_ATTACHMENT_COUNT } from '../lib/admin/limits'
@@ -22,6 +22,11 @@ test('catalog URLs encode values without allowing extra query parameters or path
   assert.equal(url.searchParams.get('q'), query)
   assert.deepEqual(url.searchParams.getAll('use'), [use])
   assert.equal(searchHref(), '/search')
+  const categoryUrl = new URL(categoryHref('custom/type', { query, page: 3 }), 'https://example.test')
+  assert.equal(categoryUrl.pathname, '/categories/custom%2Ftype')
+  assert.equal(categoryUrl.searchParams.get('q'), query)
+  assert.equal(categoryUrl.searchParams.get('page'), '3')
+  assert.equal(categoryHref('music', { page: 1 }), '/categories/music')
   const card = { category: { slug: 'custom/type' }, item: { slug: 'title?#' } } as CatalogCard
   assert.equal(itemHref(card), '/items/custom%2Ftype/title%3F%23')
 })

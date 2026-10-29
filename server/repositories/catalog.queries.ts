@@ -1,5 +1,8 @@
 // Explicit public visibility checks apply even when the connection bypasses RLS.
 const cardsSelect = `SELECT
+  (SELECT count(*)::int FROM catalog.collection_items saved_item
+    JOIN catalog.collections saved_collection ON saved_collection.id = saved_item.collection_id
+    WHERE saved_item.item_id = i.id AND saved_collection.kind = 'saved') AS collect_count,
   jsonb_build_object('id', i.id::text, 'slug', i.slug, 'title', i.title,
     'summary', i.summary, 'accentColor', i.accent_color, 'isFeatured', i.is_featured) AS item,
   jsonb_build_object('id', c.id::text, 'slug', c.slug, 'name', c.name,

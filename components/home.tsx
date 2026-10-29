@@ -10,7 +10,7 @@ import { startTransition, useState, ViewTransition } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Heart, LayoutGrid, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
 import { MasonryGrid } from '@/components/masonry-grid'
-import { CATALOG_DISPLAY, itemHref, searchHref } from '@/lib/catalog'
+import { CATALOG_DISPLAY, categoryHref, itemHref } from '@/lib/catalog'
 import type { CatalogDetail, Category, ContentUse } from '@/lib/entities/catalog'
 import { categoryIcon } from '@/lib/category-icons'
 import { useSavedItems } from '@/lib/saved-items'
@@ -52,7 +52,7 @@ export default function Home({ items, categories, uses, spotlightId, musicId, in
         </div>
       </section>
 
-      <section className="category-grid" aria-label="Explore by category">{categories.map(({ id, slug, name, iconKey, description }, index) => { const Icon = categoryIcon(iconKey); return <Link key={id} href={searchHref({ use: slug })} className={`category-door category-${slug}`}><span className="category-icon"><Icon size={23} strokeWidth={1.6} aria-hidden="true" /></span><div><h2>{name}<span>{String(items.filter((item) => item.category.slug === slug).length).padStart(2, '0')}</span></h2><p>{description}</p></div><ArrowUpRight className="category-arrow" size={19} aria-hidden="true" /><span className="category-number" aria-hidden="true">0{index + 1}</span></Link> })}</section>
+      <section className="category-grid" aria-label="Explore by category">{categories.map(({ id, slug, name, iconKey, description }, index) => { const Icon = categoryIcon(iconKey); return <Link key={id} href={categoryHref(slug)} className={`category-door category-${slug}`}><span className="category-icon"><Icon size={23} strokeWidth={1.6} aria-hidden="true" /></span><div><h2>{name}<span>{String(items.filter((item) => item.category.slug === slug).length).padStart(2, '0')}</span></h2><p>{description}</p></div><ArrowUpRight className="category-arrow" size={19} aria-hidden="true" /><span className="category-number" aria-hidden="true">0{index + 1}</span></Link> })}</section>
 
       <section className="discover-section" id="discover" aria-labelledby="discover-title">
         <div className="section-heading"><div><p className="eyebrow">WORTH A LITTLE LOOK</p><h2 id="discover-title">Good things, right this way<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the whole archive <ArrowUpRight size={16} aria-hidden="true" /></Link></div>

@@ -112,6 +112,8 @@ export interface Profile {
 
 /** Presentation contracts: compose entities without exposing persistence details to components. */
 export interface CatalogCard {
+  /** Aggregate saved collections only; no collector identities are exposed. */
+  collectCount?: number
   item: Pick<Item, 'id' | 'slug' | 'title' | 'summary' | 'accentColor' | 'isFeatured'>
   category: Pick<Category, 'id' | 'slug' | 'name' | 'iconKey' | 'artworkStyle'>
   cover: { url: string; altText: string; focalX: number; focalY: number; width?: number | null; height?: number | null } | null

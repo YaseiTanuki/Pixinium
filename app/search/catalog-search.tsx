@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import { SiteHeader } from '@/components/site-header'
 import { CatalogCard } from '@/components/catalog-card'
 import { MasonryGrid } from '@/components/masonry-grid'
+import { CategoryNavigation } from '@/components/category-navigation'
 import { CATALOG_DISPLAY, searchHref } from '@/lib/catalog'
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react'
 import { ArrowLeft, ArrowRight, BookOpen, Gamepad2, Grid2X2, Image, Layers, Monitor, Music2, SearchX, Smartphone, Sparkles, UserRound, type LucideIcon } from 'lucide-react'
-import type { CatalogDetail, ContentUse } from '@/lib/entities/catalog'
+import type { CatalogDetail, Category, ContentUse } from '@/lib/entities/catalog'
 
 const filterIcons: Record<string, LucideIcon> = {
   images: Image, wallpaper: Smartphone, background: Monitor,
@@ -16,11 +17,12 @@ const filterIcons: Record<string, LucideIcon> = {
 }
 
 type Props = {
+  categories: Category[]
   items: CatalogDetail[]; uses: ContentUse[]; total: number; page: number; totalPages: number
   initialUse?: string; initialQuery?: string
 }
 
-export default function CatalogSearch({ items, uses, total, page, totalPages, initialUse = '', initialQuery = '' }: Props) {
+export default function CatalogSearch({ items, categories, uses, total, page, totalPages, initialUse = '', initialQuery = '' }: Props) {
   const [query, setQuery] = useState(initialQuery)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
@@ -62,6 +64,7 @@ export default function CatalogSearch({ items, uses, total, page, totalPages, in
   return (
     <main className="home-page archive-page">
       <SiteHeader query={query} onQueryChange={setQuery} searchUse={initialUse} />
+      <div className="page-shell"><CategoryNavigation categories={categories} current="all" /></div>
       <div className="page-shell search-content">
         <header className="archive-intro">
           <div><p className="archive-kicker"><BookOpen size={15} aria-hidden="true" /> The Pixinium archive</p>

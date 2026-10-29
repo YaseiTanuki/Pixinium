@@ -48,11 +48,11 @@ export async function listCatalogItems(filters: { category?: string; slug?: stri
   return presentCatalogRows(rows as CatalogRow[])
 }
 
-export async function listArchivePage(filters: { use?: string; query?: string; page?: number }) {
+export async function listArchivePage(filters: { category?: string; use?: string; query?: string; page?: number }) {
   const sql = database()
   // Search text is literal, including SQL wildcard characters entered by the user.
   const query = filters.query?.trim().replace(/[\\%_]/g, '\\$&')
-  const params = [null, null, query ? `%${query}%` : null, filters.use || null]
+  const params = [filters.category || null, null, query ? `%${query}%` : null, filters.use || null]
   const [count] = await sql.query(archiveCountQuery, params)
   const total = Number(count.total)
   const pageSize = CATALOG_DISPLAY.archivePageSize
@@ -64,6 +64,7 @@ export async function listArchivePage(filters: { use?: string; query?: string; p
 }
 
 type CatalogRow = {
+  collect_count: number
   item: CatalogDetail['item']; category: CatalogDetail['category']; assets: Media[]
   facts: CatalogDetail['facts']; metadata_schema_key: string; image_count: number
   music_metadata: Record<string, unknown>
@@ -88,7 +89,7 @@ function presentCatalogRows(rows: CatalogRow[]): CatalogDetail[] {
         : row.metadata_schema_key === CONTENT_SCHEMAS.music
           ? musicFacts(row.item.id, row.music_metadata, media, storedFacts)
           : storedFacts
-    return { item: row.item, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
+    return { item: row.item, collectCount: row.collect_count, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
       tags: row.tags, uses: row.uses, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY, width: cover.width, height: cover.height } : null } as CatalogDetail
   })

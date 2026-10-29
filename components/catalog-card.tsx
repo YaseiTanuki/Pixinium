@@ -3,10 +3,11 @@
 
 
 import Link from 'next/link'
-import { ArrowUpRight, Heart, Image as ImageIcon, Music2 } from 'lucide-react'
-import { itemHref } from '@/lib/catalog'
+import { Image as ImageIcon, Music2 } from 'lucide-react'
+import { categoryHref, itemHref } from '@/lib/catalog'
 import type { CatalogCard as Card } from '@/lib/entities/catalog'
-import { useSavedItems } from '@/lib/saved-items'
+import { categoryIcon } from '@/lib/category-icons'
+import { CollectButton } from '@/components/collect-button'
 
 export function ItemArtwork({ item }: { item: Card }) {
   return <div className="item-artwork" style={{ backgroundColor: item.item.accentColor }}>
@@ -15,19 +16,16 @@ export function ItemArtwork({ item }: { item: Card }) {
 }
 
 export function CatalogCard({ item, variant = 'compact' }: { item: Card; variant?: 'compact' | 'detailed' }) {
-  const { saved, toggleSaved, pending } = useSavedItems()
-  const isSaved = saved.includes(item.item.id)
+  const Icon = categoryIcon(item.category.iconKey)
   return <article className={`discovery-card discovery-card-${variant}`}>
     <div className="relative">
       <Link className="artwork-button" href={itemHref(item)} aria-label={`View ${item.item.title}`}><ItemArtwork item={item} /></Link>
-      {variant === 'detailed' && <span className="item-category">{item.category.name}</span>}
-      <button type="button" className={`save-item ${isSaved ? 'is-saved' : ''}`} onClick={() => toggleSaved(item.item.id)} aria-label={`${isSaved ? 'Remove from collection:' : 'Collect'} ${item.item.title}`} aria-pressed={isSaved} disabled={pending} aria-busy={pending}><Heart size={16} fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" /></button>
+      {variant === 'compact' && <CollectButton item={item} className="save-item" />}
     </div>
     <div className="discovery-card-copy">
       <h3><Link href={itemHref(item)}>{item.item.title}</Link></h3>
       {variant === 'detailed' && <>
-        <p>{item.item.summary || item.facts.map(fact => fact.value).join(' · ')}</p>
-        <div className="discovery-card-bottom"><span>{item.item.isFeatured ? 'PIXINIUM PICK' : item.category.name}</span><Link href={itemHref(item)}>Take a look <ArrowUpRight size={14} aria-hidden="true" /></Link></div>
+        <div className="discovery-card-bottom"><Link href={categoryHref(item.category.slug)} className="card-category-link"><Icon size={15} aria-hidden="true" />{item.category.name}</Link><CollectButton item={item} showCount /></div>
       </>}
     </div>
   </article>

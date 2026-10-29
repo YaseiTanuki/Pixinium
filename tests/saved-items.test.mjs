@@ -3,6 +3,7 @@ import test from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { migrate } from '../scripts/migrations.ts'
 import { collectItemQuery, ensureSavedCollectionQuery, savedItemsQuery, uncollectItemQuery } from '../server/repositories/saved-items.ts'
+import { cardsQuery } from '../server/repositories/catalog.queries.ts'
 
 test('collect persists once per account, isolates owners, and supports uncollect', async () => {
   const db = new PGlite()
@@ -37,6 +38,14 @@ test('collect persists once per account, isolates owners, and supports uncollect
     assert.deepEqual(await list(bob), [item.id])
     await db.exec('RESET ROLE')
     assert.equal((await db.query('SELECT count(*)::int AS total FROM catalog.collection_items WHERE item_id = $1', [item.id])).rows[0].total, 2)
+    // Public cards expose only the aggregate, excluding custom/editorial collections.
+    await db.query(`INSERT INTO catalog.collections(owner_user_id, kind, slug) VALUES ($1, 'custom', 'favorites')`, [alice])
+    await db.query(`INSERT INTO catalog.collection_items(collection_id, item_id)
+      SELECT id, $1 FROM catalog.collections WHERE kind = 'custom'`, [item.id])
+    const publicCard = (await db.query(cardsQuery, [null, 'collect-test', null])).rows[0]
+    assert.equal(publicCard.collect_count, 2)
+    assert.ok(!JSON.stringify(publicCard).includes(alice))
+    assert.ok(!JSON.stringify(publicCard).includes(bob))
     await db.query("UPDATE catalog.items SET status = 'archived' WHERE id = $1", [item.id])
     await db.exec('SET ROLE collect_runtime')
     await identity(alice)
