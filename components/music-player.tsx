@@ -5,6 +5,7 @@ import { Music2, Play } from 'lucide-react'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 
 import { playbackUrl } from '@/lib/media'
+import { formatDuration } from '@/lib/media-details'
 
 export function MusicPlayer({ item }: { item: CatalogDetail }) {
   const tracks = item.media.filter(asset => asset.role === 'download' && asset.mediaType === 'audio')
@@ -52,6 +53,7 @@ export function MusicPlayer({ item }: { item: CatalogDetail }) {
               aria-label={`Play ${entry.altText || `track ${index + 1}`}`}>
               <span className="music-track-number">{index === selected ? <Play size={14} aria-hidden="true" /> : String(index + 1).padStart(2, '0')}</span>
               <span className="music-track-label">{entry.altText || `Track ${index + 1}`}</span>
+              {formatDuration(entry.durationSeconds) && <span className="music-track-duration">{formatDuration(entry.durationSeconds)}</span>}
             </button>
           </li>)}
         </ol>

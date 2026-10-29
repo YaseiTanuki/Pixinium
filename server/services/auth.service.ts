@@ -23,7 +23,7 @@ export async function getAccount() {
         VALUES (${data.user.id}::uuid, ${username}, ${name}, 'member') ON CONFLICT DO NOTHING`,
     sql`INSERT INTO catalog.profiles (id, display_name, role)
         VALUES (${data.user.id}::uuid, ${name}, 'member') ON CONFLICT (id) DO NOTHING`,
-    sql`SELECT id, username, display_name, avatar_url, role FROM catalog.profiles WHERE id = ${data.user.id}::uuid`,
+    sql`SELECT id, username, display_name, role FROM catalog.profiles WHERE id = ${data.user.id}::uuid`,
   ]).catch((error: unknown) => {
     console.error('[auth.profile]', authDiagnostic(error))
     throw new Error('Your profile could not be loaded. Please try again later.')
@@ -33,7 +33,6 @@ export async function getAccount() {
   return { id: data.user.id, email: data.user.email ?? '',
     username: typeof profile.username === 'string' ? profile.username : null,
     displayName: String(profile.display_name), role: String(profile.role),
-    avatarUrl: typeof profile.avatar_url === 'string' && profile.avatar_url.startsWith('https://') ? profile.avatar_url : null,
     joinedAt: data.user.created_at }
 }
 

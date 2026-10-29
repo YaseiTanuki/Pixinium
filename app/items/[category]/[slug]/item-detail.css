@@ -78,6 +78,7 @@
 .music-player-tracks button { display: flex; flex: 1; min-width: 0; align-items: center; gap: 12px; padding: 14px 8px; min-height: 48px; text-align: left; font-size: 12px; border-radius: 8px; }
 .music-track-number { display: grid; place-items: center; flex: 0 0 24px; font-variant-numeric: tabular-nums; color: #776355; }
 .music-track-label { min-width: 0; overflow-wrap: anywhere; line-height: 1.5; }
+.music-track-duration { margin-left: auto; padding-left: 8px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .music-player-tracks li[data-active="true"] button, .music-player-tracks li[data-active="true"] .music-track-number { color: var(--red); font-weight: 700; }
 .music-player-tracks button:hover { background: #f0e7dc; }
 .music-player :is(button, a, audio):focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }

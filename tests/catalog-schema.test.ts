@@ -30,7 +30,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
   const db = new PGlite()
   try {
     await seedLegacy(db)
-    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql'])
+    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql', '0012_trim_unused_catalog_fields.sql'])
 
     await t.test('uses backfill and multi-use discovery preserve one item and hide archived items', async () => {
       const first = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items ORDER BY id LIMIT 1")).rows[0]
@@ -51,7 +51,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.equal(rows.length, 8)
       assert.equal(rows[0].item.id, '1')
       assert.equal(rows[0].category.slug, 'images')
-      assert.equal(rows[0].facts[0].label, 'Resolution')
+      assert.ok(!rows[0].facts.some(fact => fact.key === 'resolution'))
       assert.equal(rows[0].assets.length, 2)
       assert.equal(itemHref(rows[0]), `/items/images/${rows[0].item.slug}`)
       assert.equal((await db.query(cardsQuery, ['music', rows[0].item.slug, null])).rows.length, 0)
@@ -71,7 +71,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.equal((await db.query<{ name: string | null }>("SELECT to_regclass('catalog.legacy_item_keys') AS name")).rows[0].name, null)
       assert.equal((await db.query("SELECT id FROM catalog.items WHERE metadata ? 'legacy'")).rows.length, 0)
       assert.equal((await db.query('SELECT * FROM catalog.items')).rows.length, 8)
-      assert.equal((await db.query('SELECT * FROM catalog.item_facts')).rows.length, 16)
+      assert.equal((await db.query('SELECT * FROM catalog.item_facts')).rows.length, 13)
       assert.equal((await db.query('SELECT * FROM catalog.assets')).rows.length, 1)
       assert.equal((await db.query('SELECT * FROM catalog.item_assets')).rows.length, 10)
       const cover = (await db.query<{ focal_x: string; focal_y: string }>(`SELECT focal_x, focal_y FROM catalog.item_assets ia
@@ -129,10 +129,10 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
     await t.test('metadata write validates the persisted category before updating JSONB', async () => {
       const adapter = { query: (sql: string, values?: unknown[]) => db.query<Record<string, unknown>>(sql, values) }
       await db.exec('BEGIN')
-      await updateItemMetadata(adapter, '1', { width: 3840, height: 2160, image_count: 12 })
+      await updateItemMetadata(adapter, '1', {})
       await assert.rejects(updateItemMetadata(adapter, '1', { track_count: 8 }), /Unrecognized key/)
       await db.exec('COMMIT')
-      assert.deepEqual((await db.query<{ metadata: unknown }>('SELECT metadata FROM catalog.items WHERE id = 1')).rows[0].metadata, { width: 3840, height: 2160, image_count: 12 })
+      assert.deepEqual((await db.query<{ metadata: unknown }>('SELECT metadata FROM catalog.items WHERE id = 1')).rows[0].metadata, {})
       const imported = await db.query<{ metadata_schema_key: string; metadata: unknown }>(`SELECT c.metadata_schema_key, i.metadata FROM catalog.items i JOIN catalog.categories c ON c.id = i.category_id`)
       for (const row of imported.rows) parseCategoryMetadata(row.metadata_schema_key, row.metadata)
     })
@@ -142,7 +142,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       GRANT SELECT ON ALL TABLES IN SCHEMA catalog TO catalog_test_runtime;
       GRANT INSERT, UPDATE, DELETE ON catalog.collections, catalog.collection_items TO catalog_test_runtime;
       GRANT INSERT ON catalog.profiles TO catalog_test_runtime;
-      GRANT UPDATE(username, display_name, avatar_url) ON catalog.profiles TO catalog_test_runtime;
+      GRANT UPDATE(username, display_name) ON catalog.profiles TO catalog_test_runtime;
       GRANT USAGE ON SEQUENCE catalog.collections_id_seq TO catalog_test_runtime;
       INSERT INTO catalog.items(category_id, slug, title, status) VALUES (1, 'draft-item', 'Archived item', 'archived');
       INSERT INTO catalog.item_uses(item_id, use_slug) SELECT id, 'avatar' FROM catalog.items WHERE slug = 'draft-item';
@@ -158,17 +158,17 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.equal((await db.query('SELECT * FROM catalog.collections')).rows.length, 0)
       assert.equal((await db.query("SELECT * FROM catalog.item_uses WHERE use_slug = 'avatar'")).rows.length, 0)
       await assert.rejects(db.exec("INSERT INTO catalog.item_uses VALUES (1, 'avatar')"), /permission denied/)
-      await assert.rejects(db.exec(`INSERT INTO catalog.collections(owner_user_id, kind, slug, title) VALUES ('${alice}', 'saved', 'saved', 'Saved')`), /row-level security/)
+      await assert.rejects(db.exec(`INSERT INTO catalog.collections(owner_user_id, kind, slug) VALUES ('${alice}', 'saved', 'saved')`), /row-level security/)
       await assert.rejects(db.exec(`UPDATE catalog.items SET title = 'Not allowed' WHERE id = 1`), /permission denied/)
     })
 
     await t.test('verified owner can save once; another user cannot read, reassign, or mutate that collection', async () => {
       await db.query("SELECT set_config('app.user_id', $1, false)", [alice])
       await db.query(`INSERT INTO catalog.profiles(id, username) VALUES ($1, 'alice')`, [alice])
-      await db.query(`INSERT INTO catalog.collections(owner_user_id, kind, slug, title) VALUES ($1, 'saved', 'saved', 'Saved')`, [alice])
+      await db.query(`INSERT INTO catalog.collections(owner_user_id, kind, slug) VALUES ($1, 'saved', 'saved')`, [alice])
       await db.exec(`INSERT INTO catalog.collection_items(collection_id, item_id)
         SELECT id, 1 FROM catalog.collections WHERE slug = 'saved'`)
-      await assert.rejects(db.query(`INSERT INTO catalog.collections(owner_user_id, kind, slug, title) VALUES ($1, 'saved', 'another-saved', 'Saved')`, [alice]), /unique constraint/)
+      await assert.rejects(db.query(`INSERT INTO catalog.collections(owner_user_id, kind, slug) VALUES ($1, 'saved', 'another-saved')`, [alice]), /unique constraint/)
       await assert.rejects(db.exec(`UPDATE catalog.collections SET owner_user_id = '${bob}'`), /row-level security/)
       await assert.rejects(db.exec(`UPDATE catalog.collections SET is_public = true`), /check constraint/)
       const collection = (await db.query<{ id: number }>('SELECT id FROM catalog.collections')).rows[0].id
@@ -177,7 +177,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.equal((await db.query('SELECT * FROM catalog.collection_items')).rows.length, 0)
       await assert.rejects(db.query('INSERT INTO catalog.collection_items(collection_id, item_id) VALUES ($1, 2)', [collection]), /row-level security/)
       assert.equal((await db.query('DELETE FROM catalog.collections RETURNING id')).rows.length, 0)
-      assert.equal((await db.query('UPDATE catalog.collection_items SET sort_order = 9 RETURNING item_id')).rows.length, 0)
+      assert.equal((await db.query('UPDATE catalog.collection_items SET added_at = now() RETURNING item_id')).rows.length, 0)
       await db.query("SELECT set_config('app.user_id', $1, false)", [alice])
       assert.equal((await db.query('SELECT * FROM catalog.collection_items')).rows.length, 1)
     })
@@ -194,13 +194,13 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       await db.exec('RESET ROLE; GRANT UPDATE ON catalog.profiles TO catalog_test_runtime; SET ROLE catalog_test_runtime;')
       await assert.rejects(db.exec(`UPDATE catalog.profiles SET role = 'admin'`), /Only trusted profile administrators/)
       await assert.rejects(db.exec(`UPDATE catalog.profiles SET id = '${alice}'`), /Profile identity cannot be changed/)
-      await db.exec('RESET ROLE; REVOKE UPDATE ON catalog.profiles FROM catalog_test_runtime; GRANT UPDATE(username, display_name, avatar_url) ON catalog.profiles TO catalog_test_runtime; SET ROLE catalog_test_runtime;')
+      await db.exec('RESET ROLE; REVOKE UPDATE ON catalog.profiles FROM catalog_test_runtime; GRANT UPDATE(username, display_name) ON catalog.profiles TO catalog_test_runtime; SET ROLE catalog_test_runtime;')
       await db.query("SELECT set_config('app.user_id', $1, false)", [alice])
       assert.equal((await db.query<{ display_name: string }>('SELECT display_name FROM catalog.profiles')).rows[0].display_name, '')
     })
 
     await t.test('public collections are readable but still writable only by their owner', async () => {
-      await db.query(`INSERT INTO catalog.collections(owner_user_id, slug, title, is_public) VALUES ($1, 'favorites', 'Favorites', true)`, [alice])
+      await db.query(`INSERT INTO catalog.collections(owner_user_id, slug, is_public) VALUES ($1, 'favorites', true)`, [alice])
       const publicId = (await db.query<{ id: number }>(`SELECT id FROM catalog.collections WHERE slug = 'favorites'`)).rows[0].id
       await db.query('INSERT INTO catalog.collection_items(collection_id, item_id) VALUES ($1, 2)', [publicId])
       await db.query("SELECT set_config('app.user_id', '', false)")
@@ -249,7 +249,7 @@ test('upgrading an existing catalog backfills profiles and cascades collection c
 
 test('Zod rejects unknown schema keys, incompatible fields, invalid types, and partial dimensions', () => {
   assert.deepEqual(parseCategoryMetadata('music.v1', { track_count: 8, duration_seconds: 1920 }), { track_count: 8, duration_seconds: 1920 })
-  assert.deepEqual(parseCategoryMetadata('games.v1', { platforms: ['windows'], size_bytes: 326000000 }), { platforms: ['windows'], size_bytes: 326000000 })
+  assert.deepEqual(parseCategoryMetadata('games.v1', {}), {})
   for (const [key, input] of [
     ['music.v1', { track_count: '8' }], ['music.v1', { track_count: -1 }],
     ['music.v1', { track_count: 1.5 }], ['music.v1', { owner_user_id: alice }],

@@ -15,7 +15,6 @@ export interface Category {
   description: string
   /** Resolve through a frontend icon registry, with a grid fallback. */
   iconKey: string
-  accentColor: string
   artworkStyle: ArtworkStyle
   metadataSchemaKey: string
   sortOrder: number
@@ -91,8 +90,6 @@ type CollectionOwnership =
 export type Collection = CollectionOwnership & {
   id: EntityId
   slug: string
-  title: string
-  description: string
   createdAt: Timestamp
   updatedAt: Timestamp
 }
@@ -100,7 +97,6 @@ export type Collection = CollectionOwnership & {
 export interface CollectionItem {
   collectionId: EntityId
   itemId: EntityId
-  sortOrder: number
   addedAt: Timestamp
 }
 
@@ -109,7 +105,6 @@ export interface Profile {
   /** Lowercase, unique; null until onboarding has chosen a username. */
   username: string | null
   displayName: string
-  avatarUrl: string | null
   role: 'member' | 'editor' | 'admin'
   createdAt: Timestamp
   updatedAt: Timestamp
@@ -129,5 +124,5 @@ export interface CatalogDetail extends CatalogCard {
   description: string
   tags: Tag[]
   /** URLs are resolved per request; signed Supabase URLs must never be persisted. */
-  media: Array<ItemAsset & { url: string; mediaType: Asset['mediaType']; width?: number | null; height?: number | null; mimeType?: string | null }>
+  media: Array<ItemAsset & { url: string; mediaType: Asset['mediaType']; width?: number | null; height?: number | null; mimeType?: string | null; byteSize?: string | null; durationSeconds?: number | null }>
 }

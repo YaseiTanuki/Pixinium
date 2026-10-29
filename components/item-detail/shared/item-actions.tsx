@@ -1,6 +1,7 @@
 import { ChevronDown, Download } from 'lucide-react'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 import { SaveItemButton } from './save-item-button'
+import { formatByteSize } from '@/lib/media-details'
 
 export function ItemActions({ item }: { item: CatalogDetail }) {
   const downloads = item.media.filter(asset => asset.role === 'download')
@@ -12,6 +13,7 @@ export function ItemActions({ item }: { item: CatalogDetail }) {
         <a className="detail-download-button" href={single.url}>
           <Download size={19} aria-hidden="true" />
           {single.mimeType === 'application/zip' ? 'Download ZIP' : 'Download original'}
+          {formatByteSize(single.byteSize) && <span> · {formatByteSize(single.byteSize)}</span>}
         </a>
       )}
       {downloads.length > 1 && (
@@ -22,7 +24,7 @@ export function ItemActions({ item }: { item: CatalogDetail }) {
           </summary>
           <ul>
             {downloads.map((asset, index) => (
-              <li key={asset.id}><a href={asset.url}>{asset.altText || `File ${index + 1}`}</a></li>
+              <li key={asset.id}><a href={asset.url}>{asset.altText || `File ${index + 1}`}{formatByteSize(asset.byteSize) && <span> · {formatByteSize(asset.byteSize)}</span>}</a></li>
             ))}
           </ul>
         </details>

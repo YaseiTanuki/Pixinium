@@ -32,15 +32,15 @@ erDiagram
 
 | Entity | Purpose | Current screen |
 | --- | --- | --- |
-| `categories` | Slug, display name, description, icon key, accent, artwork style, display order, active flag | Category doors, search filters, breadcrumbs |
+| `categories` | Slug, display name, description, icon key, artwork style, display order, active flag | Category doors, search filters, breadcrumbs |
 | `items` | Stable ID, slug, title, summary, description, category, publication state, featured flag, ordering | Archive cards, spotlight, detail heading and about section |
-| `item_facts` | Ordered key/label/value facts | `Resolution / 4K`, `Tracks / 8 tracks`, `Platform / Windows` |
-| `assets` | Reusable external, Supabase Storage, or R2 reference; optional dimensions, duration, size | Artwork, audio/video previews, future downloads |
+| `item_facts` | Ordered custom key/label/value facts and creator attribution | Image resolution/format and pack quantity/format are computed on read, not stored again |
+| `assets` | Reusable external, S3, Supabase Storage, or R2 reference; dimensions, duration, byte size | Artwork, download sizes, audio track durations |
 | `item_assets` | Media role, alt text, crop focal point, display order | One cover per item, preview and download attachments |
 | `tags`, `item_tags` | Many-to-many labels across categories | Cozy, night, chaos, future mood discovery |
-| `collections`, `collection_items` | Ordered saved, custom, or editorial groups | Your collection, future named lists and curated shelves |
+| `collections`, `collection_items` | Ownership, visibility, membership, and time saved | Saved items ordered by `added_at`; no unused title/description or manual ordering column |
 | `content_uses`, `item_uses` | Multiple intended uses per item | Wallpaper, background and avatar without duplicate uploads |
-| `profiles` | Supabase UUID, unique lowercase username, display name, avatar URL, application role | Account and collection ownership |
+| `profiles` | Supabase UUID, unique lowercase username, display name, application role | Account and collection ownership; avatar initials derive from the display name |
 
 Content IDs use `bigint GENERATED ALWAYS AS IDENTITY`; expose them as
 decimal strings in JSON/TypeScript to avoid JavaScript's integer precision limit.
@@ -74,7 +74,7 @@ SELECT id, 'weights', 'Weights', '6 weights', 0
 FROM catalog.items WHERE slug = 'soft-serif';
 ```
 
-New items default to draft. Publishing requires `status = 'published'` and a
+New items default to published. Publishing requires `status = 'published'` and a
 non-null `published_at`. Deactivating a category hides its items from runtime
 reads. The timestamp records publication; it is not a scheduled-publication job.
 
@@ -85,15 +85,22 @@ schemas selected by the category's persisted `metadata_schema_key`:
 
 | Key | Optional machine-readable fields |
 | --- | --- |
-| `images.v1` | `width` + `height`, `image_count`, image `formats` |
+| `images.v1` | No custom metadata; dimensions and MIME type come from the original asset |
 | `music.v1` | `track_count`, `duration_seconds`, audio `formats` |
-| `games.v1` | `size_bytes`, `platforms`, `version` |
+| `games.v1` | No custom metadata; file size comes from the download, platforms/version use display facts |
+| `assets.v1` | Required server-derived `image_count`, displayed as pack quantity |
 | `generic.v1` | No custom fields; safe default for a new category |
 
 Unknown schema keys/fields, wrong types, negative counts, fractional counts,
-unsafe integers, and incomplete image dimensions are rejected. Imported legacy
-snapshots are removed and rejected by the current schemas. Fields remain optional
-so draft content and migrated rows do not need fabricated technical metadata.
+unsafe integers are rejected. Imported legacy snapshots are removed and rejected
+by the current schemas. Music fields remain optional for migrated rows without
+measured audio metadata. They populate Tracks, Running time, and Formats on the
+detail page; per-track durations and file sizes come from assets.
+
+Migration `0012_trim_unused_catalog_fields.sql` removes five unused columns,
+deduplicates generated image/pack facts, and clears descriptions identical to the
+summary. Uploads persist only creator attribution for images/packs. Historical
+game platforms/version metadata is moved into visible facts before removal.
 
 `server/services/catalog-metadata.ts` validates updates after reading and locking
 the actual item's category; the caller must supply one trusted connection inside
@@ -160,7 +167,7 @@ These grants belong on that role (replace `pixinium_runtime` with its name):
 GRANT USAGE ON SCHEMA catalog TO pixinium_runtime;
 GRANT SELECT ON ALL TABLES IN SCHEMA catalog TO pixinium_runtime;
 GRANT INSERT ON catalog.profiles TO pixinium_runtime;
-GRANT UPDATE(username, display_name, avatar_url) ON catalog.profiles TO pixinium_runtime;
+GRANT UPDATE(username, display_name) ON catalog.profiles TO pixinium_runtime;
 GRANT INSERT, UPDATE, DELETE ON catalog.collections, catalog.collection_items TO pixinium_runtime;
 GRANT USAGE ON SEQUENCE catalog.collections_id_seq TO pixinium_runtime;
 ```

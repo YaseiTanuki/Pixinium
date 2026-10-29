@@ -9,8 +9,8 @@ export const savedItemsQuery = `
   ORDER BY ci.added_at DESC, ci.item_id DESC`
 
 export const ensureSavedCollectionQuery = `
-  INSERT INTO catalog.collections (owner_user_id, kind, slug, title)
-  VALUES ($1::uuid, 'saved', 'saved', 'Saved finds')
+  INSERT INTO catalog.collections (owner_user_id, kind, slug)
+  VALUES ($1::uuid, 'saved', 'saved')
   ON CONFLICT (owner_user_id) WHERE kind = 'saved' DO NOTHING`
 
 export const collectItemQuery = `

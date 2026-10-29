@@ -10,7 +10,7 @@ WITH actor AS MATERIALIZED (
     published_at, accent_color, is_featured, sort_order, metadata)
   OVERRIDING SYSTEM VALUE
   SELECT coalesce((doc->>'reservedItemId')::bigint, nextval(pg_get_serial_sequence('catalog.items', 'id'))),
-    c.id, doc->>'slug', doc->>'title', doc->>'summary', doc->>'description', doc->>'status',
+    c.id, doc->>'slug', doc->>'title', doc->>'summary', coalesce(nullif(doc->>'description', doc->>'summary'), ''), doc->>'status',
     CASE WHEN doc->>'status' = 'published' THEN now() ELSE NULL END,
     doc->>'accentColor', (doc->>'isFeatured')::boolean, (doc->>'sortOrder')::integer, doc->'metadata'
   FROM input CROSS JOIN category c CROSS JOIN actor RETURNING id, slug

@@ -5,6 +5,7 @@ const cardsSelect = `SELECT
   jsonb_build_object('id', c.id::text, 'slug', c.slug, 'name', c.name,
     'iconKey', c.icon_key, 'artworkStyle', c.artwork_style) AS category,
   i.description, c.metadata_schema_key, i.metadata->'image_count' AS image_count,
+  CASE WHEN c.metadata_schema_key = 'music.v1' THEN i.metadata ELSE '{}'::jsonb END AS music_metadata,
   coalesce((SELECT jsonb_agg(jsonb_build_object('slug', u.slug, 'name', u.name)
     ORDER BY u.sort_order, u.slug) FROM catalog.item_uses iu
     JOIN catalog.content_uses u ON u.slug = iu.use_slug WHERE iu.item_id = i.id), '[]') AS uses,
@@ -18,6 +19,7 @@ const cardsSelect = `SELECT
     'assetId', a.id::text, 'role', ia.role, 'altText', ia.alt_text,
     'focalX', ia.focal_x, 'focalY', ia.focal_y, 'sortOrder', ia.sort_order,
     'width', a.width, 'height', a.height, 'mimeType', a.mime_type,
+    'byteSize', a.byte_size::text, 'durationSeconds', a.duration_seconds,
     'mediaType', a.media_type, 'provider', a.provider, 'externalUrl', a.external_url,
     'bucket', a.bucket, 'objectPath', a.object_path) ORDER BY ia.sort_order, ia.id)
     FROM catalog.item_assets ia JOIN catalog.assets a ON a.id = ia.asset_id

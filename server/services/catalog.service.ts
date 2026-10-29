@@ -3,6 +3,7 @@ import 'server-only'
 import { cache } from 'react'
 import { imageFacts } from '../../lib/image-facts'
 import { assetFacts } from '../../lib/asset-facts'
+import { musicFacts } from '../../lib/music-facts'
 import { neon } from '@neondatabase/serverless'
 import type { CatalogDetail, Category, Asset, ContentUse } from '../../lib/entities/catalog'
 import { archiveCountQuery, archivePageQuery, cardsQuery } from '../repositories/catalog.queries'
@@ -33,7 +34,7 @@ function assetUrl(asset: Media): string {
 
 export const listCategories = cache(async (): Promise<Category[]> => {
   return await database().query(`SELECT id::text, slug, name, description, icon_key AS "iconKey",
-    accent_color AS "accentColor", artwork_style AS "artworkStyle", metadata_schema_key AS "metadataSchemaKey",
+    artwork_style AS "artworkStyle", metadata_schema_key AS "metadataSchemaKey",
     sort_order AS "sortOrder", is_active AS "isActive", created_at::text AS "createdAt", updated_at::text AS "updatedAt"
     FROM catalog.categories WHERE is_active ORDER BY sort_order, id`) as Category[]
 })
@@ -65,6 +66,7 @@ export async function listArchivePage(filters: { use?: string; query?: string; p
 type CatalogRow = {
   item: CatalogDetail['item']; category: CatalogDetail['category']; assets: Media[]
   facts: CatalogDetail['facts']; metadata_schema_key: string; image_count: number
+  music_metadata: Record<string, unknown>
   description: string; tags: CatalogDetail['tags']; uses: CatalogDetail['uses']
 }
 
@@ -83,7 +85,9 @@ function presentCatalogRows(rows: CatalogRow[]): CatalogDetail[] {
         ? assetFacts(row.item.id, row.image_count,
           media.find(asset => asset.role === 'download')?.mimeType,
           storedFacts.find(fact => fact.key === 'creator')?.value ?? 'Unknown')
-        : storedFacts
+        : row.metadata_schema_key === CONTENT_SCHEMAS.music
+          ? musicFacts(row.item.id, row.music_metadata, media, storedFacts)
+          : storedFacts
     return { item: row.item, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
       tags: row.tags, uses: row.uses, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY, width: cover.width, height: cover.height } : null } as CatalogDetail
