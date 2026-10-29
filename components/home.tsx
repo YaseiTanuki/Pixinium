@@ -6,29 +6,20 @@ import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'
 import { BrandLogo } from '@/components/brand-logo'
 import { useRouter } from 'next/navigation'
-import { startTransition, useState, ViewTransition } from 'react'
-import { ArrowDown, ArrowRight, ArrowUpRight, Heart, LayoutGrid, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
+import { ViewTransition } from 'react'
+import { ArrowDown, ArrowRight, ArrowUpRight, Heart, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { CATALOG_DISPLAY, categoryHref, itemHref } from '@/lib/catalog'
-import type { CatalogDetail, Category, ContentUse } from '@/lib/entities/catalog'
+import type { CatalogDetail, Category } from '@/lib/entities/catalog'
 import { categoryIcon } from '@/lib/category-icons'
-import { useSavedItems } from '@/lib/saved-items'
 
-export default function Home({ items, categories, uses, spotlightId, musicId, initialFilter = '', initialQuery = '' }: { items: CatalogDetail[]; categories: Category[]; uses: ContentUse[]; spotlightId: string | null; musicId: string | null; initialFilter?: string; initialQuery?: string }) {
-  const [filter, setFilter] = useState(initialFilter)
+export default function Home({ items, categories, spotlightId, musicId, initialQuery = '' }: { items: CatalogDetail[]; categories: Category[]; spotlightId: string | null; musicId: string | null; initialQuery?: string }) {
   const router = useRouter()
-  const { saved } = useSavedItems()
-  const filters = uses
   const visible = items.filter((card) =>
-    (filter === 'saved' ? saved.includes(card.item.id) : !filter || card.uses.some(use => use.slug === filter)) &&
     `${card.item.title} ${card.item.summary} ${card.category.name} ${card.tags.map(tag => tag.name).join(' ')}`.toLowerCase().includes(initialQuery.toLowerCase())).slice(0, CATALOG_DISPLAY.homeItems)
   const spotlight = items.find(card => card.item.id === spotlightId)
   const music = items.find(card => card.item.id === musicId)
-
-  function chooseFilter(value: string) {
-    startTransition(() => setFilter(value))
-  }
 
   return <div className="home-page">
     <a className="skip-home" href="#main">Skip to content</a>
@@ -56,9 +47,9 @@ export default function Home({ items, categories, uses, spotlightId, musicId, in
 
       <section className="discover-section" id="discover" aria-labelledby="discover-title">
         <div className="section-heading"><div><p className="eyebrow">WORTH A LITTLE LOOK</p><h2 id="discover-title">Good things, right this way<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the whole archive <ArrowUpRight size={16} aria-hidden="true" /></Link></div>
-        <div className="discovery-toolbar"><div className="discovery-filters" aria-label="Filter discoveries">{filters.map(({ slug, name }) => <button key={slug} aria-pressed={filter === slug} className={filter === slug ? 'active' : ''} onClick={() => chooseFilter(slug)}>{slug === '' && <LayoutGrid size={13} aria-hidden="true" />}{slug === 'saved' && <Heart size={13} aria-hidden="true" />}{name}{slug === 'saved' && <span>{saved.length}</span>}</button>)}</div><p role="status">{visible.length} little {visible.length === 1 ? 'find' : 'finds'} <ArrowDown size={12} aria-hidden="true" /></p></div>
+        <div className="discovery-toolbar"><p role="status">{visible.length} little {visible.length === 1 ? 'find' : 'finds'} <ArrowDown size={12} aria-hidden="true" /></p></div>
         <MasonryGrid className="discovery-grid">{visible.map((item) => <ViewTransition key={item.item.id} enter="home-fade" exit="home-fade"><CatalogCard item={item} variant="detailed" /></ViewTransition>)}</MasonryGrid>
-        {visible.length === 0 && <div className="collection-empty"><Heart size={30} aria-hidden="true" /><h3>A little space for your favorites.</h3><p>{filter === 'saved' ? 'Tap the heart on any find to save it to your account.' : 'Try another category or search.'}</p><button className="primary-button" onClick={() => chooseFilter('')}>Find something to love <ArrowRight size={16} aria-hidden="true" /></button></div>}
+        {visible.length === 0 && <div className="collection-empty"><Heart size={30} aria-hidden="true" /><h3>A little space for your favorites.</h3><p>Try another category or search.</p><Link className="primary-button" href="/search">Find something to love <ArrowRight size={16} aria-hidden="true" /></Link></div>}
       </section>
 
       <ViewTransition><section className="mood-section" aria-labelledby="mood-title"><div><p className="eyebrow">FOLLOW YOUR FEELING</p><h2 id="mood-title">There’s a find for every mood.</h2><p>No need to know exactly what you’re looking for.</p></div><div className="mood-links"><Link href="/search?q=cozy"><Sun size={18} aria-hidden="true" /><span>A cozy moment<small>Slow down a little</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/search?q=night"><Moon size={18} aria-hidden="true" /><span>After hours<small>For the night owls</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/search?q=chaos"><Zap size={18} aria-hidden="true" /><span>A little chaos<small>Embrace the fun</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link></div></section></ViewTransition>

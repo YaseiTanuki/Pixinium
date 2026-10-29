@@ -7,7 +7,7 @@ export function categoryHref(slug: string, { query, page }: { query?: string; pa
   if (query) params.set('q', query)
   if (page && page > 1) params.set('page', String(page))
   const search = params.toString()
-  return `/categories/${encodeURIComponent(slug)}${search ? `?${search}` : ''}`
+  return `/${encodeURIComponent(slug)}${search ? `?${search}` : ''}`
 }
 
 export function searchHref({ use, query, page }: { use?: string; query?: string; page?: number } = {}): string {
