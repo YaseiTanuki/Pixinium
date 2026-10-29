@@ -5,6 +5,7 @@ import { hasPermission } from '@/lib/auth/permissions'
 import { logout } from '@/app/actions/auth'
 import { listCatalogItems } from '@/server/services/catalog.service'
 import { ProfileAvatar } from '@/components/profile-avatar'
+import { ProfileAvatarUpload } from '@/components/profile-avatar-upload'
 import { ProfileCollection } from '@/components/profile-collection'
 
 export const dynamic = 'force-dynamic'
@@ -20,7 +21,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   return <div className="workspace-page profile-page">
     {access === 'denied' && <p role="alert" className="account-notice">You don’t have access to that area.</p>}
     <header className="profile-identity">
-      <ProfileAvatar name={name} />
+      <div className="profile-avatar-control"><ProfileAvatar name={name} avatarPath={account.avatarPath} /><ProfileAvatarUpload /></div>
       <div className="profile-identity-copy"><p className="profile-kicker">YOUR PROFILE</p><h1>{name}</h1><p className="profile-email"><Mail size={15} aria-hidden="true" /><span>{account.email}</span></p><span className="profile-verified"><BadgeCheck size={14} aria-hidden="true" /> Email verified</span></div>
     </header>
     <div className="profile-content-grid">

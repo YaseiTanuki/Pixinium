@@ -82,6 +82,7 @@ pixinium/
   game/<item-id>/originals/<file-id>.<ext>
   game/<item-id>/thumbnail.webp
   staging/<admin-id>/<upload-id>.<ext>
+  profile/avatar/<user-id>.<ext>
 ```
 
 Categories `images`, `music`, and `games` map to `image`, `audio`, and `game`.

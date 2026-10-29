@@ -105,6 +105,8 @@ export interface Profile {
   /** Lowercase, unique; null until onboarding has chosen a username. */
   username: string | null
   displayName: string
+  /** Object key in the private `pixinium` bucket, under profile/avatar/. */
+  avatarPath: string | null
   role: 'member' | 'editor' | 'admin'
   createdAt: Timestamp
   updatedAt: Timestamp

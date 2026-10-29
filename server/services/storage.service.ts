@@ -44,6 +44,29 @@ export async function signUpload(path: string, mime: string, size: number) {
   return { bucket, url }
 }
 
+/** Avatar objects have a separate, user-owned prefix and are never staged. */
+export async function signAvatarUpload(path: string, mime: string, size: number) {
+  if (!/^profile\/avatar\/[0-9a-f-]+\.(?:jpg|png|webp)$/.test(path)) throw new Error('Invalid avatar path.')
+  const { storage, bucket } = await requirePrivateStorage()
+  const url = await getSignedUrl(storage, new PutObjectCommand({
+    Bucket: bucket, Key: path, ContentType: mime, ContentLength: size,
+    CacheControl: 'private, max-age=31536000, immutable',
+  }), { expiresIn: 300, signableHeaders: new Set(['content-type', 'content-length']) })
+  return { bucket, url }
+}
+
+export async function inspectAvatarUpload(path: string) {
+  if (!/^profile\/avatar\/[0-9a-f-]+\.(?:jpg|png|webp)$/.test(path)) throw new Error('Invalid avatar path.')
+  const { storage, bucket } = await adminStorage()
+  return storage.send(new HeadObjectCommand({ Bucket: bucket, Key: path }))
+}
+
+export async function deleteAvatar(path: string) {
+  if (!/^profile\/avatar\/[0-9a-f-]+\.(?:jpg|png|webp)$/.test(path)) throw new Error('Invalid avatar path.')
+  const { storage, bucket } = await adminStorage()
+  await storage.send(new DeleteObjectCommand({ Bucket: bucket, Key: path }))
+}
+
 export async function inspectUpload(path: string) {
   const { storage, bucket } = adminStorage()
   return storage.send(new HeadObjectCommand({ Bucket: bucket, Key: `staging/${path}` }))
