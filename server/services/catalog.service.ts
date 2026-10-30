@@ -6,7 +6,7 @@ import { assetFacts } from '../../lib/asset-facts'
 import { musicFacts } from '../../lib/music-facts'
 import { neon } from '@neondatabase/serverless'
 import type { CatalogDetail, Category, Asset, ContentUse } from '../../lib/entities/catalog'
-import { archiveCountQuery, archivePageQuery, cardsQuery } from '../repositories/catalog.queries'
+import { archiveCountQuery, archivePageQuery, cardsQuery, categoriesQuery } from '../repositories/catalog.queries'
 import { CATALOG_DISPLAY } from '../../lib/catalog'
 
 function database() {
@@ -33,10 +33,7 @@ function assetUrl(asset: Media): string {
 }
 
 export const listCategories = cache(async (): Promise<Category[]> => {
-  return await database().query(`SELECT id::text, slug, name, description, icon_key AS "iconKey",
-    artwork_style AS "artworkStyle", metadata_schema_key AS "metadataSchemaKey",
-    sort_order AS "sortOrder", is_active AS "isActive", created_at::text AS "createdAt", updated_at::text AS "updatedAt"
-    FROM catalog.categories WHERE is_active ORDER BY sort_order, id`) as Category[]
+  return await database().query(categoriesQuery) as Category[]
 })
 
 export const listContentUses = cache(async (): Promise<ContentUse[]> =>

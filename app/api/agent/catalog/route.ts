@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   return agentEndpoint(request, async () => {
     const sql = neon(process.env.CATALOG_ADMIN_DATABASE_URL!)
     const [categories, uses] = await Promise.all([
-      sql`SELECT id::text,slug,name,metadata_schema_key AS "metadataSchemaKey" FROM catalog.categories WHERE is_active ORDER BY sort_order,id`,
+      sql`SELECT id::text,slug,name,metadata_schema_key AS "metadataSchemaKey" FROM catalog.categories WHERE is_active AND slug <> 'stories' ORDER BY sort_order,id`,
       sql`SELECT slug,name FROM catalog.content_uses ORDER BY sort_order,slug`,
     ])
     return agentJson({ categories, uses, fileTypes, limits: { maxFileBytes: MAX_CONTENT_FILE_BYTES, maxFiles: CONTENT_LIMITS.files,

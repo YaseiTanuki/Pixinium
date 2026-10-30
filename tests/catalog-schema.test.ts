@@ -6,7 +6,7 @@ import { migrate, type MigrationConnection } from '../scripts/migrations'
 import { results } from './fixtures/legacy-archive'
 import { parseCategoryMetadata } from '../lib/entities/metadata'
 import { updateItemMetadata } from '../server/services/catalog-metadata'
-import { cardsQuery } from '../server/repositories/catalog.queries'
+import { cardsQuery, categoriesQuery } from '../server/repositories/catalog.queries'
 import { itemHref } from '../lib/catalog'
 import type { CatalogCard } from '../lib/entities/catalog'
 
@@ -64,6 +64,21 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
         assert.equal((await db.query(cardsQuery, ['music', null, null])).rows.length, 0)
       } finally { await db.exec('ROLLBACK') }
       assert.equal((await db.query(cardsQuery, [null, null, '%werewolf%'])).rows.length, 1)
+    })
+
+    await t.test('removed stories category and items stay out of public catalog queries', async () => {
+      await db.exec('BEGIN')
+      try {
+        await db.exec(`INSERT INTO catalog.categories(slug, name) VALUES ('stories', 'Stories');
+          INSERT INTO catalog.items(category_id, slug, title, status, published_at)
+          SELECT id, 'example-story', 'Example Story', 'published', now()
+          FROM catalog.categories WHERE slug = 'stories'`)
+
+        const categories = (await db.query<{ slug: string }>(categoriesQuery)).rows
+        const items = (await db.query<CatalogCard & { assets: unknown[] }>(cardsQuery, [null, null, null])).rows
+        assert.ok(categories.every(category => category.slug !== 'stories'))
+        assert.ok(items.every(item => item.category.slug !== 'stories'))
+      } finally { await db.exec('ROLLBACK') }
     })
 
     await t.test('backfill preserves the archive, splits facts, deduplicates assets, and preserves focal points', async () => {
