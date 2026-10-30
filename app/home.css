@@ -22,6 +22,7 @@
 .home-page ::selection { background: #f5b5aa; }
 .home-page button, .item-preview button { cursor: pointer; touch-action: manipulation; }
 .home-page :is(a, button, input):focus-visible, .item-preview button:focus-visible { outline: 2px solid #c93636; outline-offset: 5px; }
+.home-page .page-shell [role="search"] input:focus-visible { outline: none; box-shadow: inset 0 0 0 1px #b9a79a; }
 .home-page h1, .home-page h2 { text-wrap: balance; }
 .skip-home { position: absolute; top: -100px; left: 20px; z-index: 20; padding: 15px; background: white; }
 .skip-home:focus { top: 12px; }
