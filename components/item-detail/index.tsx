@@ -4,7 +4,7 @@ import { SiteHeader } from '@/components/site-header'
 import { BrandLogo } from '@/components/brand-logo'
 import type { CatalogCard, CatalogDetail } from '@/lib/entities/catalog'
 import { contentKind, type ContentKind } from '@/lib/content-types'
-import { searchHref } from '@/lib/catalog'
+import { categoryHref } from '@/lib/catalog'
 import type { ComponentType } from 'react'
 import { ItemInformation } from './shared/item-information'
 import { RelatedItems } from './shared/related-items'
@@ -41,7 +41,7 @@ export default function ItemDetail({ item, related }: ItemDetailProps) {
         <nav className="detail-breadcrumb" aria-label="Breadcrumb">
           <Link href="/search"><ArrowLeft size={14} aria-hidden="true" /> The archive</Link>
           <ChevronRight size={12} aria-hidden="true" />
-          <Link href={searchHref({ use: item.category.slug })}>{item.category.name}</Link>
+          <Link href={categoryHref(item.category.slug)}>{item.category.name}</Link>
           <ChevronRight size={12} aria-hidden="true" />
           <span aria-current="page">{item.item.title}</span>
         </nav>
