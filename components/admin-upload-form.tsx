@@ -146,7 +146,6 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
         {attachments.map((asset, index) => <div className="studio-attachment" key={asset.path}><div className="studio-grid">
           <p className="account-help">Original download{fileType(asset.path)?.mediaType === 'image' && attachments.find(a => fileType(a.path)?.mediaType === 'image')?.path === asset.path ? ' · Thumbnail generated automatically' : ''}</p>
           <label>Description / download label<input className="account-input" value={asset.altText} maxLength={CONTENT_LIMITS.attachmentLabel} onChange={e => setAttachments(current => current.map((a, i) => i === index ? { ...a, altText: e.target.value } : a))} /></label>
-          {fileType(asset.path)?.mediaType === 'image' && attachments.find(a => fileType(a.path)?.mediaType === 'image')?.path === asset.path && <>{(['focalX', 'focalY'] as const).map(key => <label key={key}>{key === 'focalX' ? 'Thumbnail horizontal focus (%)' : 'Thumbnail vertical focus (%)'}<input className="account-input" type="number" min={0} max={100} value={asset[key]} onChange={e => setAttachments(current => current.map((a, i) => i === index ? { ...a, [key]: Number(e.target.value) } : a))} /></label>)}</>}
         </div><button type="button" className="account-text-link" onClick={() => void removeUploads([asset.path])}><Trash2 size={14} aria-hidden="true" /> Remove attachment</button></div>)}
       </section>}
       <div role="status" className="account-help">{progress}</div>

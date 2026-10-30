@@ -47,7 +47,7 @@ export function MusicPlayer({ item }: { item: CatalogDetail }) {
             document.querySelectorAll('audio').forEach(player => { if (player !== event.currentTarget) player.pause() })
           }} />
         {failed && <p className="music-player-error" role="status">This track could not play. Try another track or download it to listen.</p>}
-        <ol className="music-player-tracks" aria-label="Tracks">
+        {tracks.length > 1 && <ol className="music-player-tracks" aria-label="Tracks">
           {tracks.map((entry, index) => <li key={entry.id} data-active={index === selected}>
             <button type="button" onClick={() => void selectTrack(index)} aria-current={index === selected ? 'true' : undefined}
               aria-label={`Play ${entry.altText || `track ${index + 1}`}`}>
@@ -56,7 +56,7 @@ export function MusicPlayer({ item }: { item: CatalogDetail }) {
               {formatDuration(entry.durationSeconds) && <span className="music-track-duration">{formatDuration(entry.durationSeconds)}</span>}
             </button>
           </li>)}
-        </ol>
+        </ol>}
       </> : <p className="music-player-title">No tracks available yet.</p>}
     </div>
   </section>
