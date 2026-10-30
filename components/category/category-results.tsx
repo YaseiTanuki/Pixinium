@@ -4,9 +4,10 @@ import { ImageGallery } from './image-gallery'
 import { MusicList } from './music-list'
 import { GameGrid } from './game-grid'
 import { AssetGrid } from './asset-grid'
+import { StoryGrid } from './story-grid'
 
 // Layouts follow the stable schema; new or renamed categories need no route changes.
-const layouts = { image: ImageGallery, music: MusicList, game: GameGrid, asset: AssetGrid } satisfies Record<ContentKind, unknown>
+const layouts = { image: ImageGallery, music: MusicList, game: GameGrid, asset: AssetGrid, story: StoryGrid } satisfies Record<ContentKind, unknown>
 
 export function CategoryResults({ items, schemaKey }: { items: CatalogDetail[]; schemaKey: string }) {
   const Layout = layouts[contentKind(schemaKey)]

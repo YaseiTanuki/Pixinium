@@ -1,0 +1,8 @@
+.story-book-object { position: relative; width: min(100%, 220px); margin-inline: auto; padding: 0 9px 0 12px; perspective: 900px; }
+.story-book-pages { position: absolute; top: 5px; right: 3px; bottom: 5px; width: 10px; border-radius: 0 7px 7px 0; background: repeating-linear-gradient(0deg, #f8f2e8 0 2px, #d8caba 2px 3px); box-shadow: 3px 4px 5px #3b2c2226; }
+.story-book-face { position: relative; isolation: isolate; overflow: hidden; aspect-ratio: .72; border: 1px solid #ffffff3d; border-radius: 4px 9px 9px 4px; box-shadow: 5px 8px 14px #3b2c2230, inset 4px 0 7px #120d0b38; transform: rotateY(-5deg); transition: transform 180ms ease; }
+.story-book-face::before { position: absolute; z-index: 1; inset: 0 auto 0 0; width: 13px; content: ''; background: linear-gradient(90deg, #120e0c52, #ffffff12 55%, transparent); }
+.story-book-face::after { position: absolute; z-index: 0; inset: 0; content: ''; box-shadow: inset 0 0 0 8px #fff2, inset 0 0 0 9px #fff3; pointer-events: none; }
+.story-book-face > img { position: absolute; z-index: -1; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.story-book-fallback { position: absolute; top: 27%; left: 50%; width: 58px; height: 58px; color: #fff9e7b0; transform: translateX(-50%); }
+@media (prefers-reduced-motion: reduce) { .story-book-face { transition: none; } }

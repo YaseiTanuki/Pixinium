@@ -5,6 +5,7 @@ export const CONTENT_SCHEMAS = {
   music: 'music.v1',
   game: 'games.v1',
   asset: 'assets.v1',
+  story: 'stories.v1',
 } as const
 
 export type ContentKind = keyof typeof CONTENT_SCHEMAS

@@ -10,6 +10,7 @@ import type { CatalogCard } from '../lib/entities/catalog'
 test('category behavior follows the schema rather than a renamed slug', () => {
   const category = { slug: 'soundtracks', metadataSchemaKey: 'music.v1' }
   assert.equal(contentKind(category.metadataSchemaKey), 'music')
+  assert.equal(contentKind('stories.v1'), 'story')
   for (const schema of [undefined, 'future.v2', 'toString', '__proto__']) {
     assert.equal(contentKind(schema), 'asset')
   }
@@ -27,6 +28,7 @@ test('catalog URLs encode values without allowing extra query parameters or path
   assert.equal(categoryUrl.searchParams.get('q'), query)
   assert.equal(categoryUrl.searchParams.get('page'), '3')
   assert.equal(categoryHref('music', { page: 1 }), '/music')
+  assert.equal(categoryHref('stories'), '/stories')
   const card = { category: { slug: 'custom/type' }, item: { slug: 'title?#' } } as CatalogCard
   assert.equal(itemHref(card), '/items/custom%2Ftype/title%3F%23')
 })

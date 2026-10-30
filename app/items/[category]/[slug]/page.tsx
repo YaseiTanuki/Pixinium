@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ItemDetail from '@/components/item-detail'
 import { CATALOG_DISPLAY } from '@/lib/catalog'
-import { getCatalogItem, listCatalogItems } from '@/server/services/catalog.service'
+import { contentKind } from '@/lib/content-types'
+import { getCatalogItem, listCatalogItems, listStoryChapters } from '@/server/services/catalog.service'
 import './item-detail.css'
 
 export const dynamic = 'force-dynamic'
@@ -20,8 +21,11 @@ export default async function Page({ params }: Props) {
   const item = await getCatalogItem(category, slug)
   if (!item) notFound()
 
-  const items = await listCatalogItems({ category })
+  const [items, chapters] = await Promise.all([
+    listCatalogItems({ category }),
+    contentKind(item.category.metadataSchemaKey) === 'story' ? listStoryChapters(item.item.id) : Promise.resolve([]),
+  ])
   const related = items.filter(card => card.item.id !== item.item.id).slice(0, CATALOG_DISPLAY.relatedItems)
 
-  return <ItemDetail key={item.item.id} item={item} related={related} />
+  return <ItemDetail key={item.item.id} item={item} related={related} chapters={chapters} />
 }

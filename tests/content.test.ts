@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
-import { contentSchema, attachmentSchema, fileType } from '../lib/admin/content'
+import { contentSchema, attachmentSchema, fileType, validateStoryContent } from '../lib/admin/content'
 import { parseCategoryMetadata } from '../lib/entities/metadata'
 import { createContentQuery } from '../server/repositories/content-write'
 import { deleteContentQuery } from '../server/repositories/content-delete'
@@ -29,8 +29,14 @@ test('automatic item slugs handle repeated titles, Unicode and URL-unsafe charac
 test('content validation rejects invalid publication, facts, roles and category metadata', () => {
   const valid = { ...item, attachments: [{ path: `${admin}/${member}.png`, altText: 'Original image' }] }
   assert.equal(contentSchema.safeParse(valid).success, true)
+  const { description: _description, ...withoutDescription } = valid
+  const storyInput = contentSchema.safeParse(withoutDescription)
+  assert.equal(storyInput.success, true)
+  if (storyInput.success) assert.equal(storyInput.data.description, '')
   assert.equal(contentSchema.safeParse({ ...valid, status: 'draft' }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, uses: ['wallpaper', 'background', 'avatar'] }).success, true)
+  assert.equal(contentSchema.safeParse({ ...valid, initialChapter: { chapterNumber: 1, contentMarkdown: '# Chapter 1' } }).success, true)
+  assert.equal(contentSchema.safeParse({ ...valid, initialChapter: { chapterNumber: 0, contentMarkdown: '# Chapter 1' } }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, uses: ['avatar', 'avatar'] }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, attachments: [] }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, status: 'published', attachments: [{ path: `${admin}/${member}.png`, role: 'download', altText: 'Original sunset' }] }).success, true)
@@ -45,6 +51,10 @@ test('content validation rejects invalid publication, facts, roles and category 
   assert.equal(fileType('payload.svg'), null)
   assert.equal(fileType('game.ZIP')?.mediaType, 'file')
   assert.equal(fileType('track.flac')?.mediaType, 'audio')
+  const storyCover = { path: `${admin}/${member}.png`, altText: 'Book cover', role: 'download' as const, focalX: 50, focalY: 50 }
+  assert.equal(validateStoryContent([storyCover]), null)
+  assert.equal(validateStoryContent([]), 'Upload one image to use as the book cover.')
+  assert.equal(validateStoryContent([storyCover, storyCover]), 'Upload one image to use as the book cover.')
   assert.throws(() => parseCategoryMetadata('images.v1', { width: 1920 }))
   assert.throws(() => parseCategoryMetadata('games.v1', { platforms: ['invalid'] }))
   assert.throws(() => parseCategoryMetadata('music.v1', { track_count: -1 }))
@@ -55,12 +65,13 @@ test('content write is atomic, rechecks admin role and rejects category schema r
   const db = new PGlite()
   try {
     await db.exec('BEGIN')
-    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql']) {
+    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql', '0012_trim_unused_catalog_fields.sql', '0013_profile_avatar_path.sql', '0014_stories_content_type.sql', '0015_story_chapters.sql']) {
       await db.exec(await readFile(`db/migrations/${file}`, 'utf8'))
     }
     await db.exec('COMMIT')
     await db.query(`INSERT INTO catalog.profiles(id, role) VALUES ($1, 'admin'), ($2, 'member')`, [admin, member])
     const category = (await db.query<{ id: string; metadata_schema_key: string }>(`SELECT id::text, metadata_schema_key FROM catalog.categories ORDER BY id LIMIT 1`)).rows[0]
+    const storyCategory = (await db.query<{ id: string }>("SELECT id::text FROM catalog.categories WHERE slug = 'stories'")).rows[0]
     const write = (actor: string, slug: string, schema = category.metadata_schema_key, attachments: unknown[] = []) => db.query(createContentQuery,
       [actor, category.id, schema, JSON.stringify({ ...item, slug, attachments }), 'private-uploads'])
     assert.equal((await write(member, 'forbidden')).rows.length, 0)
@@ -68,10 +79,21 @@ test('content write is atomic, rechecks admin role and rejects category schema r
     assert.equal((await write(admin, 'valid')).rows.length, 1)
     assert.equal((await db.query('SELECT * FROM catalog.item_facts')).rows.length, 1)
     assert.equal((await db.query('SELECT * FROM catalog.item_tags')).rows.length, 1)
-    assert.deepEqual((await db.query<{ use_slug: string }>('SELECT use_slug FROM catalog.item_uses')).rows.map(row => row.use_slug), ['images'])
+    const storyText = 'Once upon a time, the moon was listening.'
+    const storyDescription = 'A quiet tale about following a mysterious blue light.'
+    const storyResult = await db.query(createContentQuery, [admin, storyCategory.id, 'stories.v1',
+        JSON.stringify({ ...item, slug: 'moon-listener', title: 'Moon Listener', summary: storyText, description: storyDescription,
+          initialChapter: { chapterNumber: 1, contentMarkdown: `# Chapter One\n\n${storyText}` },
+          facts: [], tags: [], attachments: [] }), 'private-uploads'])
+      assert.equal(storyResult.rows.length, 1)
+      assert.equal((await db.query<{ description: string }>("SELECT description FROM catalog.items WHERE slug = 'moon-listener'")).rows[0].description, storyDescription)
+      assert.deepEqual((await db.query<{ chapter_number: number; content_markdown: string }>(
+        "SELECT chapter_number, content_markdown FROM catalog.story_chapters WHERE item_id = (SELECT id FROM catalog.items WHERE slug = 'moon-listener')"))
+        .rows[0], { chapter_number: 1, content_markdown: `# Chapter One\n\n${storyText}` })
+    assert.deepEqual((await db.query<{ use_slug: string }>('SELECT use_slug FROM catalog.item_uses ORDER BY use_slug')).rows.map(row => row.use_slug), ['images', 'stories'])
     const withUses = { ...item, slug: 'multi-use', uses: ['images', 'wallpaper', 'background', 'avatar'] }
     await db.query(createContentQuery, [admin, category.id, category.metadata_schema_key, JSON.stringify(withUses), 'private-uploads'])
-    assert.equal((await db.query('SELECT * FROM catalog.item_uses')).rows.length, 5)
+    assert.equal((await db.query('SELECT * FROM catalog.item_uses')).rows.length, 6)
     await assert.rejects(db.query(createContentQuery, [admin, category.id, category.metadata_schema_key,
       JSON.stringify({ ...item, slug: 'unknown-use', uses: ['avatar', 'missing'] }), 'private-uploads']))
     assert.equal((await db.query("SELECT * FROM catalog.items WHERE slug = 'unknown-use'")).rows.length, 0)

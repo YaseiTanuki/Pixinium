@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { BrandLogo } from '@/components/brand-logo'
-import type { CatalogCard, CatalogDetail } from '@/lib/entities/catalog'
+import type { CatalogCard, CatalogDetail, StoryChapter } from '@/lib/entities/catalog'
 import { contentKind, type ContentKind } from '@/lib/content-types'
 import { categoryHref } from '@/lib/catalog'
 import type { ComponentType } from 'react'
@@ -12,11 +12,14 @@ import { ImageDetail } from './variants/image-detail'
 import { MusicDetail } from './variants/music-detail'
 import { GameDetail } from './variants/game-detail'
 import { AssetDetail } from './variants/asset-detail'
+import { StoryDetail } from './variants/story-detail'
 import { AssetPackPreview } from './variants/asset-pack-preview'
+import { StoryReader } from './story-reader'
 
 interface ItemDetailProps {
   item: CatalogDetail
   related: CatalogCard[]
+  chapters: StoryChapter[]
 }
 
 const detailVariants = {
@@ -24,6 +27,7 @@ const detailVariants = {
   music: MusicDetail,
   game: GameDetail,
   asset: AssetDetail,
+  story: StoryDetail,
 } satisfies Record<ContentKind, ComponentType<{ item: CatalogDetail }>>
 
 // Resolve by the persisted schema so renamed category slugs keep their behavior.
@@ -32,9 +36,10 @@ function DetailMedia({ item }: { item: CatalogDetail }) {
   return <Variant item={item} />
 }
 
-export default function ItemDetail({ item, related }: ItemDetailProps) {
+export default function ItemDetail({ item, related, chapters }: ItemDetailProps) {
+  const kind = contentKind(item.category.metadataSchemaKey)
   return (
-    <div className="home-page item-detail-page">
+    <div className="home-page item-detail-page" data-kind={kind}>
       <a className="skip-home" href="#item-main">Skip to content</a>
       <SiteHeader />
       <main id="item-main" className="home-shell">
@@ -51,12 +56,13 @@ export default function ItemDetail({ item, related }: ItemDetailProps) {
           <ItemInformation item={item} />
         </div>
 
-        {contentKind(item.category.metadataSchemaKey) === 'asset' && <AssetPackPreview item={item} />}
+        {kind === 'asset' && <AssetPackPreview item={item} />}
 
+        {kind === 'story' && <StoryReader item={item} chapters={chapters} />}
         {item.description && item.description !== item.item.summary && <section className="detail-about" aria-labelledby="about-title">
           <div>
-            <p className="eyebrow">ABOUT THIS FIND</p>
-            <h2 id="about-title">A closer look<span>.</span></h2>
+            <p className="eyebrow">{kind === 'story' ? 'ABOUT THIS STORY' : 'ABOUT THIS FIND'}</p>
+            <h2 id="about-title">{kind === 'story' ? 'The story so far' : 'A closer look'}<span>.</span></h2>
           </div>
           <div>
             <p>{item.description}</p>

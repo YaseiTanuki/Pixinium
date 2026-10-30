@@ -81,6 +81,11 @@ export interface Tag { id: EntityId; slug: string; name: string }
 export interface ItemTag { itemId: EntityId; tagId: EntityId }
 export interface ContentUse { slug: string; name: string }
 export interface ItemUse { itemId: EntityId; useSlug: string }
+export interface StoryChapter {
+  chapterNumber: number
+  contentMarkdown: string
+  createdAt: Timestamp
+}
 
 type CollectionOwnership =
   | { kind: 'saved'; ownerUserId: UserId; isPublic: false }
@@ -116,6 +121,7 @@ export interface Profile {
 export interface CatalogCard {
   /** Aggregate saved collections only; no collector identities are exposed. */
   collectCount?: number
+  chapterCount?: number
   item: Pick<Item, 'id' | 'slug' | 'title' | 'summary' | 'accentColor' | 'isFeatured'>
   category: Pick<Category, 'id' | 'slug' | 'name' | 'iconKey' | 'artworkStyle'>
   cover: { url: string; altText: string; focalX: number; focalY: number; width?: number | null; height?: number | null } | null

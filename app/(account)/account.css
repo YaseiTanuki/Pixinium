@@ -100,8 +100,17 @@
 .studio-recent li > div { min-width: 0; overflow-wrap: anywhere; }
 .studio-recent li .workspace-muted { display: block; }
 .studio-status { padding: 5px 9px; border: 1px solid var(--line); border-radius: 6px; font-size: 11px; }
+.story-chapter-upload { display: grid; gap: 12px; }
+.story-chapter-upload-fields { display: grid; grid-template-columns: minmax(100px, .7fr) minmax(180px, 1.5fr) auto; align-items: end; gap: 12px; }
+.story-chapter-upload-fields label { display: grid; gap: 6px; min-width: 0; font-size: 12px; font-weight: 700; }
+.story-chapter-upload-fields input[type="file"] { min-width: 0; }
+.story-initial-chapter { display: grid; gap: 10px; min-width: 0; border: 1px solid var(--line); border-radius: 9px; padding: 16px; }
+.story-initial-chapter legend { padding-inline: 6px; font-size: 13px; font-weight: 800; }
+.story-initial-chapter > .account-help { margin: 0; }
+.story-chapter-upload .account-notice, .story-chapter-upload .account-help { margin: 0; }
 @media (max-width: 600px) {
   .studio-grid, .studio-fact { grid-template-columns: 1fr; }
+  .story-chapter-upload-fields { grid-template-columns: 1fr; }
   .workspace-panel { padding: 18px; }
   .studio-submit .account-button { width: 100%; }
 }

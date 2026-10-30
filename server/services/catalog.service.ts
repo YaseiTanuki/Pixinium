@@ -5,7 +5,7 @@ import { imageFacts } from '../../lib/image-facts'
 import { assetFacts } from '../../lib/asset-facts'
 import { musicFacts } from '../../lib/music-facts'
 import { neon } from '@neondatabase/serverless'
-import type { CatalogDetail, Category, Asset, ContentUse } from '../../lib/entities/catalog'
+import type { CatalogDetail, Category, Asset, ContentUse, StoryChapter } from '../../lib/entities/catalog'
 import { archiveCountQuery, archivePageQuery, cardsQuery } from '../repositories/catalog.queries'
 import { CATALOG_DISPLAY } from '../../lib/catalog'
 
@@ -42,6 +42,18 @@ export const listCategories = cache(async (): Promise<Category[]> => {
 export const listContentUses = cache(async (): Promise<ContentUse[]> =>
   await database().query('SELECT slug, name FROM catalog.content_uses ORDER BY sort_order, slug') as ContentUse[])
 
+export async function listStoryChapters(itemId: string): Promise<StoryChapter[]> {
+  const rows = await database().query(`SELECT sc.chapter_number AS "chapterNumber",
+      sc.content_markdown AS "contentMarkdown", sc.created_at::text AS "createdAt"
+    FROM catalog.story_chapters sc
+    JOIN catalog.items i ON i.id = sc.item_id
+    JOIN catalog.categories c ON c.id = i.category_id
+    WHERE sc.item_id = $1::bigint AND i.status = 'published' AND c.is_active
+      AND c.metadata_schema_key = 'stories.v1'
+    ORDER BY sc.chapter_number`, [itemId])
+  return rows as StoryChapter[]
+}
+
 export async function listCatalogItems(filters: { category?: string; slug?: string; query?: string } = {}): Promise<CatalogDetail[]> {
   const rows = await database().query(cardsQuery, [filters.category ?? null, filters.slug ?? null,
     filters.query?.trim() ? `%${filters.query.trim()}%` : null])
@@ -68,6 +80,7 @@ type CatalogRow = {
   item: CatalogDetail['item']; category: CatalogDetail['category']; assets: Media[]
   facts: CatalogDetail['facts']; metadata_schema_key: string; image_count: number
   music_metadata: Record<string, unknown>
+  story_chapter_count: number
   description: string; tags: CatalogDetail['tags']; uses: CatalogDetail['uses']
 }
 
@@ -89,7 +102,8 @@ function presentCatalogRows(rows: CatalogRow[]): CatalogDetail[] {
         : row.metadata_schema_key === CONTENT_SCHEMAS.music
           ? musicFacts(row.item.id, row.music_metadata, media, storedFacts)
           : storedFacts
-    return { item: row.item, collectCount: row.collect_count, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
+    return { item: row.item, collectCount: row.collect_count, chapterCount: row.story_chapter_count,
+      category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
       tags: row.tags, uses: row.uses, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY, width: cover.width, height: cover.height } : null } as CatalogDetail
   })

@@ -32,8 +32,8 @@ erDiagram
 
 | Entity | Purpose | Current screen |
 | --- | --- | --- |
-| `categories` | Slug, display name, description, icon key, artwork style, display order, active flag | Category doors, search filters, breadcrumbs |
-| `items` | Stable ID, slug, title, summary, description, category, publication state, featured flag, ordering | Archive cards, spotlight, detail heading and about section |
+| `categories` | Slug, display name, description, icon key, artwork style, display order, active flag | Category doors, search filters, breadcrumbs and category-specific layouts |
+| `items` | Stable ID, slug, title, summary, description, category, publication state, featured flag, ordering | Archive cards, spotlight, detail heading and about section; story descriptions are reader text |
 | `item_facts` | Ordered custom key/label/value facts and creator attribution | Image resolution/format and pack quantity/format are computed on read, not stored again |
 | `assets` | Reusable external, S3, Supabase Storage, or R2 reference; dimensions, duration, byte size | Artwork, download sizes, audio track durations |
 | `item_assets` | Media role, alt text, crop focal point, display order | One cover per item, preview and download attachments |
@@ -89,6 +89,7 @@ schemas selected by the category's persisted `metadata_schema_key`:
 | `music.v1` | `track_count`, `duration_seconds`, audio `formats` |
 | `games.v1` | No custom metadata; file size comes from the download, platforms/version use display facts |
 | `assets.v1` | Required server-derived `image_count`, displayed as pack quantity |
+| `stories.v1` | No custom metadata; story text is stored in `items.description` and the single image attachment is the book cover |
 | `generic.v1` | No custom fields; safe default for a new category |
 
 Unknown schema keys/fields, wrong types, negative counts, fractional counts,

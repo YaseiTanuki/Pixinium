@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { CONTENT_LIMITS, MAX_ATTACHMENT_COUNT } from './limits'
+import { MAX_STORY_CHAPTER_BYTES } from '../story-chapters'
 export { MAX_CONTENT_FILE_BYTES } from './limits'
 
 export const fileTypes: Record<string, { mime: string; mediaType: 'image' | 'audio' | 'video' | 'file' }> = {
@@ -21,6 +22,14 @@ export function acceptedFileTypes(mediaType?: 'image' | 'audio' | 'video' | 'fil
     .filter(([, type]) => !mediaType || type.mediaType === mediaType)
     .map(([extension]) => `.${extension}`).join(',')
 }
+
+export function validateStoryContent(attachments: AttachmentInput[]) {
+  if (attachments.length !== 1 || fileType(attachments[0].path)?.mediaType !== 'image') {
+    return 'Upload one image to use as the book cover.'
+  }
+  return null
+}
+
 const slug = z.string().min(1).max(120).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
 export const attachmentSchema = z.object({
   path: z.string().max(200).regex(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.[a-z0-9]+$/),
@@ -32,10 +41,14 @@ export const attachmentSchema = z.object({
 export const contentSchema = z.object({
   categoryId: z.string().regex(/^[1-9][0-9]*$/),
   title: z.string().trim().min(1).max(CONTENT_LIMITS.title), summary: z.string().trim().max(CONTENT_LIMITS.summary),
-  description: z.string().trim().max(CONTENT_LIMITS.description), status: z.literal('published').default('published'),
+  description: z.string().trim().max(CONTENT_LIMITS.description).default(''), status: z.literal('published').default('published'),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#f1e5dd'), isFeatured: z.boolean().default(false),
   sortOrder: z.number().int().min(0).max(CONTENT_LIMITS.sortOrder).default(0),
   metadata: z.record(z.string(), z.unknown()),
+  initialChapter: z.object({
+    chapterNumber: z.number().int().min(1).max(100_000),
+    contentMarkdown: z.string().min(1).max(MAX_STORY_CHAPTER_BYTES),
+  }).optional(),
   uses: z.array(slug).max(20).default([]),
   tags: z.array(z.object({ slug, name: z.string().trim().min(1).max(60) })).max(20),
   facts: z.array(z.object({ key: z.string().regex(/^[a-z][a-z0-9_]*$/).max(CONTENT_LIMITS.factKey),

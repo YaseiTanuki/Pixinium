@@ -8,7 +8,7 @@ import { neon } from '@neondatabase/serverless'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { hasPermission } from '@/lib/auth/permissions'
-import { contentSchema, fileType, MAX_CONTENT_FILE_BYTES, type ContentResult } from '@/lib/admin/content'
+import { contentSchema, fileType, MAX_CONTENT_FILE_BYTES, type ContentResult, validateStoryContent } from '@/lib/admin/content'
 import { parseCategoryMetadata } from '@/lib/entities/metadata'
 import { requirePrivateStorage, signUpload, inspectUpload, finalizeUpload, storeImageThumbnail, deleteStagingUploads, cleanupExpiredStaging, readStoredBytes } from '@/server/services/storage.service'
 import { readAudioMetadata } from '@/server/services/audio-metadata'
@@ -22,6 +22,7 @@ import { validateAssetPackFiles } from '@/lib/admin/asset-pack'
 import { CONTENT_LIMITS } from '@/lib/admin/limits'
 import { storeGeneratedImage, storeGeneratedZip, deleteGeneratedPackFiles } from '@/server/services/storage.service'
 import { authDiagnostic } from '@/lib/auth/errors'
+import { MAX_STORY_CHAPTER_BYTES } from '@/lib/story-chapters'
 
 export type ContentActor = { id: string; role: string }
 
@@ -71,6 +72,18 @@ export async function createContentForActor(account: ContentActor | null, input:
     const isMusic = schemaKey === CONTENT_SCHEMAS.music
     const isGame = schemaKey === CONTENT_SCHEMAS.game
     const isAssetPack = schemaKey === CONTENT_SCHEMAS.asset
+    const isStory = schemaKey === CONTENT_SCHEMAS.story
+    if (isStory) {
+      const storyError = validateStoryContent(value.attachments)
+      if (storyError) return { error: storyError }
+      if (value.initialChapter && (!value.initialChapter.contentMarkdown.trim() ||
+          value.initialChapter.contentMarkdown.includes('\0') ||
+          new TextEncoder().encode(value.initialChapter.contentMarkdown).byteLength > MAX_STORY_CHAPTER_BYTES)) {
+        return { error: 'Choose a non-empty UTF-8 Markdown file up to 512 KB.' }
+      }
+    } else if (value.initialChapter) {
+      return { error: 'Markdown chapters can only be uploaded to a story.' }
+    }
     if (!isAssetPack && value.attachments.length > CONTENT_LIMITS.files) {
       return { error: `Attach up to ${CONTENT_LIMITS.files} files per item.` }
     }

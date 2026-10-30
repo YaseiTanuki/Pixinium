@@ -18,6 +18,7 @@ export const metadataSchemas = {
   }),
   // Game size lives on the download asset; platforms/version use display facts.
   [CONTENT_SCHEMAS.game]: z.strictObject({}),
+  [CONTENT_SCHEMAS.story]: z.strictObject({}),
 } as const
 
 export type MetadataSchemaKey = keyof typeof metadataSchemas

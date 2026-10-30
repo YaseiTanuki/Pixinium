@@ -30,7 +30,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
   const db = new PGlite()
   try {
     await seedLegacy(db)
-    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql', '0012_trim_unused_catalog_fields.sql', '0013_profile_avatar_path.sql'])
+    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql', '0012_trim_unused_catalog_fields.sql', '0013_profile_avatar_path.sql', '0014_stories_content_type.sql', '0015_story_chapters.sql'])
 
     await t.test('uses backfill and multi-use discovery preserve one item and hide archived items', async () => {
       const first = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items ORDER BY id LIMIT 1")).rows[0]
@@ -84,6 +84,29 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
     })
 
     await t.test('new categories need only rows; rename does not break references', async () => {
+      const storyCategory = (await db.query<{ metadata_schema_key: string }>(
+        "SELECT metadata_schema_key FROM catalog.categories WHERE slug = 'stories'")).rows[0]
+      assert.equal(storyCategory.metadata_schema_key, 'stories.v1')
+      assert.deepEqual(parseCategoryMetadata(storyCategory.metadata_schema_key, {}), {})
+      await db.exec(`INSERT INTO catalog.items(category_id, slug, title, summary, description, status, published_at)
+        SELECT id, 'lantern-keeper', 'The Lantern Keeper', 'A quiet tale.', 'An introduction to a lantern mystery.', 'published', now()
+        FROM catalog.categories WHERE slug = 'stories'`)
+      const storyId = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items WHERE slug = 'lantern-keeper'")).rows[0].id
+      await db.query(`INSERT INTO catalog.story_chapters(item_id, chapter_number, content_markdown)
+        VALUES ($1, 1, '# The Lantern Keeper\\n\\nShe followed the small blue lantern through the rain.')`, [storyId])
+      const storySearch = (await db.query<CatalogCard & { description: string; story_chapter_count: number }>(
+        cardsQuery, ['stories', null, '%small blue lantern%'])).rows
+      assert.equal(storySearch.length, 1)
+      assert.equal(storySearch[0].description, 'An introduction to a lantern mystery.')
+      assert.equal(storySearch[0].story_chapter_count, 1)
+      await assert.rejects(db.query(`INSERT INTO catalog.story_chapters(item_id, chapter_number, content_markdown)
+        VALUES ($1, 1, 'Duplicate')`, [storyId]), /unique constraint/)
+      await db.exec(`INSERT INTO catalog.items(category_id, slug, title, description, status)
+        SELECT id, 'cascade-test', 'Cascade test', '', 'published' FROM catalog.categories WHERE slug = 'stories'`)
+      const cascadeId = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items WHERE slug = 'cascade-test'")).rows[0].id
+      await db.query("INSERT INTO catalog.story_chapters(item_id, chapter_number, content_markdown) VALUES ($1, 1, 'Test')", [cascadeId])
+      await db.query('DELETE FROM catalog.items WHERE id = $1', [cascadeId])
+      assert.equal((await db.query('SELECT * FROM catalog.story_chapters WHERE item_id = $1', [cascadeId])).rows.length, 0)
       await db.exec(`INSERT INTO catalog.categories(slug, name) VALUES ('fonts', 'Fonts');
         INSERT INTO catalog.items(category_id, slug, title, status, published_at)
         SELECT id, 'soft-serif', 'Soft Serif', 'published', now() FROM catalog.categories WHERE slug = 'fonts';
@@ -153,7 +176,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       SET ROLE catalog_test_runtime;`)
 
     await t.test('public reads exclude archived items and their assets, and expose no private collections', async () => {
-      assert.equal((await db.query('SELECT * FROM catalog.items')).rows.length, 9)
+      assert.equal((await db.query('SELECT * FROM catalog.items')).rows.length, 10)
       assert.equal((await db.query('SELECT * FROM catalog.assets')).rows.length, 1)
       assert.equal((await db.query('SELECT * FROM catalog.collections')).rows.length, 0)
       assert.equal((await db.query("SELECT * FROM catalog.item_uses WHERE use_slug = 'avatar'")).rows.length, 0)
@@ -279,7 +302,7 @@ test('empty database can migrate without demo seeding', async () => {
   const db = new PGlite()
   try {
     await migrate(connection(db))
-    assert.equal((await db.query('SELECT * FROM catalog.categories')).rows.length, 4)
+    assert.equal((await db.query('SELECT * FROM catalog.categories')).rows.length, 5)
     assert.equal((await db.query('SELECT * FROM catalog.items')).rows.length, 0)
   } finally {
     await db.close()

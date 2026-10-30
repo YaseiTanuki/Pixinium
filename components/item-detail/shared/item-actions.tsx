@@ -1,10 +1,12 @@
 import { ChevronDown, Download } from 'lucide-react'
+import { contentKind } from '@/lib/content-types'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 import { SaveItemButton } from './save-item-button'
 import { formatByteSize } from '@/lib/media-details'
 
 export function ItemActions({ item }: { item: CatalogDetail }) {
-  const downloads = item.media.filter(asset => asset.role === 'download')
+  const downloads = contentKind(item.category.metadataSchemaKey) === 'story'
+    ? [] : item.media.filter(asset => asset.role === 'download')
   const single = downloads.length === 1 ? downloads[0] : undefined
 
   return (

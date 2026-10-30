@@ -8,6 +8,7 @@ const cardsSelect = `SELECT
   jsonb_build_object('id', c.id::text, 'slug', c.slug, 'name', c.name,
     'iconKey', c.icon_key, 'artworkStyle', c.artwork_style) AS category,
   i.description, c.metadata_schema_key, i.metadata->'image_count' AS image_count,
+  (SELECT count(*)::int FROM catalog.story_chapters sc WHERE sc.item_id = i.id) AS story_chapter_count,
   CASE WHEN c.metadata_schema_key = 'music.v1' THEN i.metadata ELSE '{}'::jsonb END AS music_metadata,
   coalesce((SELECT jsonb_agg(jsonb_build_object('slug', u.slug, 'name', u.name)
     ORDER BY u.sort_order, u.slug) FROM catalog.item_uses iu
@@ -33,6 +34,9 @@ const catalogConditions = `WHERE i.status = 'published' AND c.is_active
   AND ($1::text IS NULL OR c.slug = $1)
   AND ($2::text IS NULL OR i.slug = $2)
   AND ($3::text IS NULL OR i.title ILIKE $3 OR i.summary ILIKE $3 OR c.name ILIKE $3
+    OR (c.metadata_schema_key = 'stories.v1' AND EXISTS (
+      SELECT 1 FROM catalog.story_chapters sc WHERE sc.item_id = i.id AND sc.content_markdown ILIKE $3
+    ))
     OR EXISTS (SELECT 1 FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id
       WHERE it.item_id = i.id AND t.name ILIKE $3)
     OR EXISTS (SELECT 1 FROM catalog.item_uses iu JOIN catalog.content_uses u ON u.slug = iu.use_slug

@@ -59,6 +59,24 @@
 .detail-record-label { font-size: 12px; font-weight: 700; letter-spacing: 4px; }
 .detail-record-caption { font-size: 8px; letter-spacing: 2px; }
 .detail-preview-music .detail-stamp { background: #ecc6aa; }
+.story-reader { max-width: 800px; margin: 30px auto 0; padding: clamp(24px, 5vw, 54px); border: 1px solid #e8dfd3; border-radius: 18px; background: #fffdf8; box-shadow: 0 12px 38px #4c34220b; }
+.story-reader > header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px; padding-bottom: 20px; border-bottom: 1px solid #e8dfd3; text-align: center; }
+.story-reader > header > div { flex: 1; }
+.story-epub-download { width: auto; min-height: 42px; padding: 9px 14px; }
+.story-reader > header .eyebrow { color: #815b3f; }
+.story-reader h2 { margin-top: 8px; font-size: clamp(25px, 4vw, 36px); font-weight: 800; letter-spacing: -.03em; text-wrap: balance; }
+.story-reader h2 > span { color: var(--red); }
+.story-reader-chapters { max-width: 650px; margin: 0 auto; }
+.story-reader-chapter { padding-top: 34px; }
+.story-reader-chapter + .story-reader-chapter { margin-top: 30px; border-top: 1px solid #e8dfd3; }
+.story-reader-chapter h3 { margin-bottom: 20px; color: #815b3f; font-size: 19px; font-weight: 800; text-align: center; }
+.story-reader-text { color: #403832; font-family: var(--font-display); font-size: clamp(16px, 1.5vw, 18px); line-height: 2; overflow-wrap: anywhere; }
+.story-reader-text :is(p, ul, ol, blockquote, pre) + :is(p, ul, ol, blockquote, pre) { margin-top: 1em; }
+.story-reader-text :is(ul, ol) { padding-left: 1.5em; }
+.story-reader-text blockquote { padding-left: 1em; border-left: 3px solid #d5bd9f; color: #746355; }
+.story-reader-text pre { overflow-x: auto; padding: 14px; border-radius: 8px; background: #f3eee6; font-size: .85em; line-height: 1.6; }
+.story-reader-text a { color: #ac343f; text-decoration: underline; }
+.story-reader-empty { margin-top: 28px; color: var(--muted); text-align: center; }
 @media (max-width: 1000px) { .detail-hero { gap: 30px; } .detail-art { min-height: 390px; } .detail-preview-top { padding-inline: 17px; letter-spacing: .6px; } }
 @media (max-width: 760px) { .detail-hero { grid-template-columns: 1fr; gap: 32px; } .detail-art { min-height: 0; height: auto; aspect-ratio: 1.2; } .detail-copy h1 { font-size: clamp(30px, 7vw, 40px); } .detail-preview { max-width: 600px; width: 100%; margin-inline: auto; } .detail-about { grid-template-columns: 1fr; gap: 20px; margin-top: 35px; } .detail-description { max-width: none; } .detail-copy { padding-top: 0; max-width: none; } }
 @media (max-width: 420px) { .detail-breadcrumb { gap: 7px; font-size: 10px; padding-block: 22px; } .detail-preview-top { font-size: 7px; padding: 15px 12px; } .detail-stamp { font-size: 8px; padding: 10px 12px; bottom: 15px; left: 15px; } .detail-record { gap: 20px; } .detail-record-label { font-size: 9px; letter-spacing: 2px; } .detail-record-caption { font-size: 6px; letter-spacing: 1px; } }
@@ -87,6 +105,40 @@
 
 .detail-media-column { min-width: 0; }
 @media (max-width: 760px) { .detail-media-column { width: 100%; max-width: 600px; margin-inline: auto; } }
+
+.story-detail-art .story-book-object { width: min(72%, 280px); }
+.story-reader { position: relative; max-width: 920px; margin-top: 36px; padding: clamp(25px, 6vw, 68px); overflow: hidden; border-color: #e4d6c3; border-radius: 28px 22px 30px 24px; background: radial-gradient(ellipse at 100% 0%, #f4e8d366, transparent 40%), linear-gradient(135deg, #fffdf7, #fffaf0); box-shadow: 0 20px 50px #4c34220d, inset 0 1px #fff; }
+.story-reader::before { position: absolute; top: 0; right: 34px; width: 44px; height: 54px; border: 1px solid #dfcfba; border-top: 0; border-radius: 0 0 7px 7px; background: #f0dfc8; box-shadow: 2px 3px 0 #d9c5aa; content: ''; opacity: .8; }
+.story-reader > header { position: relative; align-items: center; padding-bottom: 25px; border-color: #e7dac9; text-align: left; }
+.story-reader > header > div { flex: 1 1 250px; }
+.story-reader > header .eyebrow { color: #92704f; }
+.story-reader h2 { font-family: var(--font-display); font-size: clamp(29px, 4vw, 42px); }
+.story-reader-subtitle { margin-top: 7px; color: #8a7969; font-size: 12px; }
+.story-epub-download { min-height: 46px; padding-inline: 18px; border-color: #8d5f3e; border-radius: 99px; background: #8d5f3e; box-shadow: 0 4px 0 #734a3166; }
+.story-epub-download:hover { border-color: #70472f; background: #70472f; }
+.story-reader-chapters { max-width: 690px; }
+.story-reader-chapter { padding-top: 42px; }
+.story-reader-chapter + .story-reader-chapter { margin-top: 34px; padding-top: 40px; border-color: #e6d9c9; }
+.story-chapter-kicker { display: flex; align-items: center; justify-content: center; gap: 12px; color: #a47c56; font-size: 9px; font-weight: 800; letter-spacing: 2px; }
+.story-chapter-kicker > span:last-child { color: #cb9870; font-size: 13px; }
+.story-reader-chapter h3 { margin: 10px 0 24px; color: #624a37; font-family: var(--font-display); font-size: clamp(21px, 2.5vw, 27px); }
+.story-reader-text { color: #453b32; font-family: var(--font-content), Georgia, serif; font-size: clamp(17px, 1.6vw, 19px); line-height: 1.95; }
+.story-reader-text blockquote { border-color: #bf9b76; color: #79644f; }
+.story-reader-text pre { border: 1px solid #e8dbc8; background: #f7efe3; }
+.story-reader-text a { color: #9b5549; }
+.story-reader-empty { display: grid; justify-items: center; gap: 12px; margin-top: 28px; padding: 36px 20px; border: 1px dashed #d9c5ad; border-radius: 18px; color: #806349; background: #f7efe3; }
+.story-reader-footer { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 38px; padding-top: 18px; border-top: 1px dashed #e2d3c0; color: #8b7967; font-family: var(--font-display); font-size: 12px; font-style: italic; text-align: center; }
+.story-reader-footer > span { color: #b88562; font-size: 17px; }
+@media (max-width: 760px) {
+  .story-reader { margin-top: 22px; padding: 26px 22px; border-radius: 22px 18px 24px 19px; }
+  .story-reader::before { right: 20px; width: 34px; height: 43px; }
+  .story-reader > header { align-items: flex-start; gap: 17px; }
+  .story-reader > header > div { flex-basis: 100%; }
+  .story-epub-download { width: 100%; }
+  .story-reader-chapter { padding-top: 30px; }
+  .story-reader-text { font-size: 17px; line-height: 1.85; }
+}
+@media (prefers-reduced-motion: reduce) { .category-story-card, .story-book-face { transition: none; } }
 
 /* Let the artwork set the atmosphere, without cropping the actual preview. */
 .artwork-gallery { min-width: 0; margin: 0; }
