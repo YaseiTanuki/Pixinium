@@ -6,6 +6,7 @@ import { useSavedItems } from '@/lib/saved-items'
 import type { CatalogCard } from '@/lib/entities/catalog'
 
 export function CollectButton({ item, showCount = false, className = '' }: { item: CatalogCard; showCount?: boolean; className?: string }) {
+
   const { saved, toggleSaved, pending, loaded } = useSavedItems()
   const isSaved = saved.includes(item.item.id)
   const [count, setCount] = useState(item.collectCount ?? 0)
