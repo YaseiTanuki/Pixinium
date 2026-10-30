@@ -23,10 +23,10 @@ test('catalog URLs encode values without allowing extra query parameters or path
   assert.deepEqual(url.searchParams.getAll('use'), [use])
   assert.equal(searchHref(), '/search')
   const categoryUrl = new URL(categoryHref('custom/type', { query, page: 3 }), 'https://example.test')
-  assert.equal(categoryUrl.pathname, '/categories/custom%2Ftype')
+  assert.equal(categoryUrl.pathname, '/custom%2Ftype')
   assert.equal(categoryUrl.searchParams.get('q'), query)
   assert.equal(categoryUrl.searchParams.get('page'), '3')
-  assert.equal(categoryHref('music', { page: 1 }), '/categories/music')
+  assert.equal(categoryHref('music', { page: 1 }), '/music')
   const card = { category: { slug: 'custom/type' }, item: { slug: 'title?#' } } as CatalogCard
   assert.equal(itemHref(card), '/items/custom%2Ftype/title%3F%23')
 })

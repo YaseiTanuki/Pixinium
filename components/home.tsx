@@ -11,6 +11,7 @@ import { ArrowDown, ArrowRight, ArrowUpRight, Heart, Moon, Music2, Search, Shuff
 import { CatalogCard } from '@/components/catalog-card'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { CATALOG_DISPLAY, categoryHref, itemHref } from '@/lib/catalog'
+import { contentKind } from '@/lib/content-types'
 import type { CatalogDetail, Category } from '@/lib/entities/catalog'
 import { categoryIcon } from '@/lib/category-icons'
 
@@ -20,6 +21,10 @@ export default function Home({ items, categories, spotlightId, musicId, initialQ
     `${card.item.title} ${card.item.summary} ${card.category.name} ${card.tags.map(tag => tag.name).join(' ')}`.toLowerCase().includes(initialQuery.toLowerCase())).slice(0, CATALOG_DISPLAY.homeItems)
   const spotlight = items.find(card => card.item.id === spotlightId)
   const music = items.find(card => card.item.id === musicId)
+  const imageCategory = categories.find(category => contentKind(category.metadataSchemaKey) === 'image')
+  const musicCategory = categories.find(category => contentKind(category.metadataSchemaKey) === 'music')
+  const imageCategoryHref = imageCategory ? categoryHref(imageCategory.slug) : '/search'
+  const musicCategoryHref = musicCategory ? categoryHref(musicCategory.slug) : '/search'
 
   return <div className="home-page">
     <a className="skip-home" href="#main">Skip to content</a>
@@ -32,13 +37,13 @@ export default function Home({ items, categories, spotlightId, musicId, initialQ
       </section>
 
       <section className="feature-grid" aria-label="Discoveries">
-        <Link className="feature-main" href={spotlight ? itemHref(spotlight) : '/search?use=images'}>
+        <Link className="feature-main" href={spotlight ? itemHref(spotlight) : imageCategoryHref}>
           <div className="feature-topline"><span className="feature-label"><Sparkles size={13} aria-hidden="true" /> THE SPOTLIGHT</span><span className="edition">{spotlight?.category.name.toUpperCase() ?? 'PIXINIUM'}</span></div>
           <div className="feature-art"><div className="feature-orbit" /><img src={spotlight?.cover?.url ?? '/images/character-fallback.svg'} width={650} height={400} fetchPriority="high" alt={spotlight?.cover?.altText ?? 'Playful illustrated werewolf characters'} style={spotlight?.cover ? { objectPosition: `${spotlight.cover.focalX}% ${spotlight.cover.focalY}%` } : undefined} /><span className="art-stamp">A LITTLE<br />GOOD THING.<Sparkles size={17} aria-hidden="true" /></span></div>
           <div className="feature-main-bottom"><div><p>{spotlight?.category.name.toUpperCase() ?? 'PIXINIUM'}</p><h2>{spotlight?.item.title ?? 'A little space for happy finds.'}</h2><span>{spotlight?.item.summary ?? 'Fresh inspiration is on its way.'}</span></div><span className="round-arrow"><ArrowUpRight size={25} aria-hidden="true" /></span></div>
         </Link>
         <div className="feature-side">
-          <Link className="feature-music" href={music ? itemHref(music) : '/search?use=music'}><div><p className="feature-label"><Music2 size={13} aria-hidden="true" /> ON THE RECORD</p><h2>Stay in.<br />Tune out.</h2><p className="music-description">{music?.item.title ?? 'A little quiet. A little rhythm.'}<br /><span>{music?.item.summary ?? 'New sounds are on their way.'}</span></p><span className="text-action">{music ? 'Explore the mix' : 'Explore music'} <ArrowUpRight size={16} aria-hidden="true" /></span></div><div className="hero-record" aria-hidden="true"><div className="record-disc"><span><Moon size={28} fill="currentColor" /></span></div></div><span className="music-index" aria-hidden="true">SIDE A — AFTER HOURS</span></Link>
+          <Link className="feature-music" href={music ? itemHref(music) : musicCategoryHref}><div><p className="feature-label"><Music2 size={13} aria-hidden="true" /> ON THE RECORD</p><h2>Stay in.<br />Tune out.</h2><p className="music-description">{music?.item.title ?? 'A little quiet. A little rhythm.'}<br /><span>{music?.item.summary ?? 'New sounds are on their way.'}</span></p><span className="text-action">{music ? 'Explore the mix' : 'Explore music'} <ArrowUpRight size={16} aria-hidden="true" /></span></div><div className="hero-record" aria-hidden="true"><div className="record-disc"><span><Moon size={28} fill="currentColor" /></span></div></div><span className="music-index" aria-hidden="true">SIDE A — AFTER HOURS</span></Link>
           <div className="feature-surprise"><span className="surprise-icon"><Shuffle size={22} aria-hidden="true" /></span><div><p className="eyebrow">LET CURIOSITY PICK</p><h2>No plan? Perfect.</h2><p>Your next favorite could be a happy accident.</p></div><button onClick={() => { const item = items[Math.floor(Math.random() * items.length)]; if (item) router.push(itemHref(item)) }} disabled={!items.length} className="surprise-button">Surprise me <ArrowUpRight size={17} aria-hidden="true" /></button></div>
         </div>
       </section>
