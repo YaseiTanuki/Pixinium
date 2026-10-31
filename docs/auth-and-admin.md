@@ -114,8 +114,15 @@ the same operator path with `member`; each subsequent upload rereads the role.
   `/api/assets/[id]`, which verifies published/active status before issuing a
   no-store signed redirect valid for 60 seconds. Existing signed links remain
   usable until expiry. Download assets use attachment disposition.
-- The studio currently creates new content and lists the 20 most recent items;
-  editing existing items and profile editing are not part of this form.
+- The studio creates new content and lists the 20 most recent items. Admins can
+  edit an item at `/admin/[id]/edit`: title, summary, description, uses, tags and
+  (for categories whose facts are not generated from files) display facts. The
+  update is one transaction that rechecks the admin role. Admins may also replace
+  the files: the new files are validated like a new upload and stored under a fresh
+  `v-<uuid>` folder, the old assets are unlinked and, if no other item uses them,
+  deleted from the catalog; their storage objects are deleted after commit (a failed
+  cleanup is reported). Category and URL slug are not editable; profile editing is
+  not part of this form.
 - Removing an attachment from the form does not delete its storage object. Failed
   or abandoned submissions can leave private orphan uploads. Reconcile paths
   against `catalog.assets` before operator cleanup; never delete by age alone.

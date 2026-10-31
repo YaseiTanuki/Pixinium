@@ -10,17 +10,12 @@ import { z } from 'zod'
 import { hasPermission } from '@/lib/auth/permissions'
 import { contentSchema, fileType, MAX_CONTENT_FILE_BYTES, type ContentResult } from '@/lib/admin/content'
 import { parseCategoryMetadata } from '@/lib/entities/metadata'
-import { requirePrivateStorage, signUpload, inspectUpload, finalizeUpload, storeImageThumbnail, deleteStagingUploads, cleanupExpiredStaging, readStoredBytes } from '@/server/services/storage.service'
-import { readAudioMetadata } from '@/server/services/audio-metadata'
-import { validateMusicFiles } from '@/lib/admin/music'
-import { validateGameFiles } from '@/lib/admin/game'
+import { requirePrivateStorage, signUpload, deleteStagingUploads, cleanupExpiredStaging } from '@/server/services/storage.service'
 import { ownedStagingPaths } from '@/lib/admin/staging'
 import { itemStorageDirectory } from '@/lib/admin/storage-paths'
 import { createContentWithTitleSlug } from '@/server/services/content-create'
-import { createAssetPack } from '@/server/services/asset-pack'
-import { validateAssetPackFiles } from '@/lib/admin/asset-pack'
-import { CONTENT_LIMITS } from '@/lib/admin/limits'
-import { storeGeneratedImage, storeGeneratedZip, deleteGeneratedPackFiles } from '@/server/services/storage.service'
+import { validateContentFiles, inspectContentFiles, finalizeContentFiles } from '@/server/services/content-files'
+import { deleteGeneratedPackFiles } from '@/server/services/storage.service'
 import { authDiagnostic } from '@/lib/auth/errors'
 
 export type ContentActor = { id: string; role: string }
@@ -71,75 +66,22 @@ export async function createContentForActor(account: ContentActor | null, input:
     const isMusic = schemaKey === CONTENT_SCHEMAS.music
     const isGame = schemaKey === CONTENT_SCHEMAS.game
     const isAssetPack = schemaKey === CONTENT_SCHEMAS.asset
-    if (!isAssetPack && value.attachments.length > CONTENT_LIMITS.files) {
-      return { error: `Attach up to ${CONTENT_LIMITS.files} files per item.` }
-    }
-    if (isAssetPack) {
-      const error = validateAssetPackFiles(value.attachments)
-      if (error) return { error }
-    } else if (value.attachments.some(asset => asset.role !== 'download')) {
-      return { error: 'Separate thumbnails are only supported for asset packs.' }
-    }
-    if (isGame) {
-      const error = validateGameFiles(value.attachments, value.status === 'published')
-      if (error) return { error }
-    }
-    if (isMusic) {
-      const error = validateMusicFiles(value.attachments, value.status === 'published')
-      if (error) return { error }
-    }
+    const fileError = validateContentFiles(schemaKey, value.attachments)
+    if (fileError) return { error: fileError }
     let metadata = parseCategoryMetadata(schemaKey, isAssetPack
       ? { image_count: value.attachments.filter(asset => asset.role === 'download').length }
       : isMusic ? {} : value.metadata)
     const { bucket } = await requirePrivateStorage()
-    const attachments = []
-    for (const asset of value.attachments) {
-      if (!asset.path.startsWith(`${account.id}/`)) return { error: 'Upload each attachment from your account.' }
-      const type = fileType(asset.path)!
-      const data = await inspectUpload(asset.path)
-      if (!data.ContentLength || data.ContentLength > MAX_CONTENT_FILE_BYTES || data.ContentType !== type.mime || !data.ETag) {
-        return { error: 'An attachment is missing, oversized or has an unexpected file type. Upload it again.' }
-      }
-      attachments.push({ ...asset, ...type, byteSize: data.ContentLength, etag: data.ETag })
-    }
+    const inspected = await inspectContentFiles(account.id, value.attachments)
+    if ('error' in inspected) return { error: inspected.error }
+    const attachments = inspected.attachments
     // Allocate a stable identity before copying files; failed saves may leave sequence gaps.
     const [reservation] = await sql`SELECT nextval(pg_get_serial_sequence('catalog.items', 'id'))::text AS id`
     const reservedItemId = String(reservation.id)
     const directory = itemStorageDirectory(String(categories[0].slug), reservedItemId)
-    const finalized = []
-    let hasThumbnail = false
-    const tracks: Awaited<ReturnType<typeof readAudioMetadata>>[] = []
-    if (isAssetPack) {
-      const pack = await createAssetPack(attachments, directory, {
-        read: asset => readStoredBytes(`staging/${asset.path}`, asset.byteSize, asset.etag),
-        putImage: storeGeneratedImage,
-        putZip: storeGeneratedZip,
-        remove: paths => deleteGeneratedPackFiles(directory, paths),
-      })
-      pendingPack = { directory, paths: pack.map(asset => asset.path) }
-      finalized.push(...pack)
-    } else for (const asset of attachments) {
-      if ((isMusic || isGame) && asset.mediaType === 'image') {
-        // Artwork is temporary input: retain only its generated thumbnail.
-        const thumbnail = await storeImageThumbnail(`staging/${asset.path}`, asset.byteSize, directory, asset.etag)
-        finalized.push({ ...asset, ...thumbnail, role: 'cover' as const })
-        continue
-      }
-      const audio = isMusic && asset.mediaType === 'audio'
-        ? await readAudioMetadata(await readStoredBytes(`staging/${asset.path}`, asset.byteSize, asset.etag), asset.extension) : undefined
-      if (audio) tracks.push(audio)
-      const original = { ...asset, path: await finalizeUpload(asset.path, asset.etag, asset.mime, asset.byteSize, directory) }
-      if (asset.mediaType === 'image' && !hasThumbnail) {
-        const thumbnail = await storeImageThumbnail(original.path, asset.byteSize, directory)
-        finalized.push({ ...original, width: thumbnail.originalWidth, height: thumbnail.originalHeight, mime: thumbnail.originalMime })
-        finalized.push({ ...asset, ...thumbnail, role: 'cover' as const })
-        hasThumbnail = true
-      } else finalized.push({ ...original, ...(audio ? { durationSeconds: audio.durationSeconds } : {}) })
-    }
-    if (isMusic) metadata = parseCategoryMetadata(schemaKey, tracks.length ? {
-      track_count: tracks.length, duration_seconds: Math.round(tracks.reduce((sum, track) => sum + track.durationSeconds, 0)),
-      formats: [...new Set(tracks.map(track => track.format))],
-    } : {})
+    const { finalized, pack, musicMetadata } = await finalizeContentFiles(schemaKey, attachments, directory)
+    pendingPack = pack
+    if (musicMetadata) metadata = musicMetadata
     let facts = value.facts
     if (schemaKey === CONTENT_SCHEMAS.image || isAssetPack) {
       const [profile] = source === 'studio' && account.role !== 'admin'
