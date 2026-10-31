@@ -3,15 +3,19 @@
 .category-page[data-kind='game'] { --category-tint: #e8e8d7; --category-accent: #66734e; }
 .category-page[data-kind='asset'] { --category-tint: #e0e9e7; --category-accent: #49756e; }
 .category-page > main { padding-block: 24px 48px; }
-.category-banner { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 190px; overflow: hidden; padding: 32px 40px; border: 1px solid var(--line); border-radius: 18px; background: var(--category-tint); }
-.category-banner::after { content: ''; position: absolute; right: 75px; width: 190px; height: 190px; border: 1px solid var(--category-accent); border-radius: 50%; opacity: .13; pointer-events: none; }
+.category-banner { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 0; overflow: hidden; padding: 18px 28px; border: 1px solid var(--line); border-radius: 14px; background: var(--category-tint); }
+.category-banner::after { display: none; }
 .category-banner .eyebrow { color: var(--category-accent); }
-.category-banner h1 { display: flex; align-items: center; gap: 12px; margin-top: 12px; font-size: clamp(30px, 4vw, 48px); font-weight: 900; line-height: 1.15; letter-spacing: -.035em; overflow-wrap: anywhere; }
-.category-banner h1 > svg { flex-shrink: 0; color: var(--category-accent); }
+.category-banner h1 { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: clamp(24px, 3vw, 32px); font-weight: 900; line-height: 1.15; letter-spacing: -.035em; overflow-wrap: anywhere; }
+.category-banner h1 > svg { flex-shrink: 0; width: 28px; height: 28px; color: var(--category-accent); }
 .category-banner h1 > span { margin-left: -10px; color: var(--red); }
-.category-description { max-width: 600px; margin-top: 12px; color: #655c58; font-size: 14px; line-height: 1.7; }
-.category-banner-mark { display: grid; place-items: center; flex-shrink: 0; width: 120px; height: 120px; margin-right: 52px; border: 1px solid var(--category-accent); border-radius: 28px; color: var(--category-accent); transform: rotate(-8deg); opacity: .55; }
-.category-banner-mark > svg { width: 60px; height: 60px; }
+.category-description { max-width: 600px; margin-top: 6px; color: #655c58; font-size: 14px; line-height: 1.6; }
+.category-banner-mark { display: grid; place-items: center; flex-shrink: 0; width: 72px; height: 72px; margin-right: 8px; border: 1px solid var(--category-accent); border-radius: 20px; color: var(--category-accent); transform: rotate(-8deg); opacity: .55; }
+.category-banner-mark > svg { width: 36px; height: 36px; }
+.category-page[data-kind='music'] .category-banner-mark { border: 0; border-radius: 50%; opacity: 1; transform: none; }
+.category-page[data-kind='music'] .category-banner-mark .record-disc { width: 100%; box-shadow: 3px 3px 0 var(--ink); }
+.category-page[data-kind='music'] .category-banner-mark .record-disc > span { border-width: 4px; }
+.category-page[data-kind='music'] .category-banner-mark .record-disc > span::after { content: ''; width: 14%; aspect-ratio: 1; border-radius: 50%; background: var(--paper); }
 .category-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-block: 28px 22px; }
 .category-toolbar h2 { font-size: 18px; font-weight: 800; overflow-wrap: anywhere; }
 .category-toolbar p { margin-top: 5px; font-size: 12px; color: var(--muted); }
@@ -78,7 +82,7 @@
 }
 @media (max-width: 640px) {
   .category-page > main { padding-top: 18px; }
-  .category-banner { min-height: 160px; padding: 24px; border-radius: 14px; }
+  .category-banner { min-height: 0; padding: 16px 18px; border-radius: 12px; }
   .category-banner-mark, .category-banner::after { display: none; }
   .category-description { font-size: 13px; }
   .category-toolbar { align-items: stretch; flex-direction: column; gap: 16px; margin-block: 22px 18px; }

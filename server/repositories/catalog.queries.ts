@@ -1,5 +1,6 @@
 // Explicit public visibility checks apply even when the connection bypasses RLS.
 const cardsSelect = `SELECT
+  i.view_count::int AS view_count, i.download_count::int AS download_count,
   (SELECT count(*)::int FROM catalog.collection_items saved_item
     JOIN catalog.collections saved_collection ON saved_collection.id = saved_item.collection_id
     WHERE saved_item.item_id = i.id AND saved_collection.kind = 'saved') AS collect_count,

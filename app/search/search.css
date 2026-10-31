@@ -9,27 +9,21 @@
 .archive-empty p { max-width: 340px; margin-block: 10px 20px; font-size: 13px; line-height: 1.7; }
 .archive-empty a { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 9px; font-size: 12px; font-weight: 700; color: #a8323c; }
 .archive-empty a:hover { background: #f2e9df; }
-.archive-page .search-all-grid { --masonry-column-width: 210px; --masonry-gap: 12px; }
+.archive-page .search-all-grid { --masonry-column-width: 320px; --masonry-gap: 16px; }
 .search-all-grid .discovery-card { display: flex; flex-direction: column; border-radius: 9px; }
-.search-all-grid .discovery-card .item-artwork { height: auto; aspect-ratio: 3 / 1; }
+.search-all-grid .discovery-card .item-artwork { height: auto; aspect-ratio: 4 / 3; }
 .search-all-grid .discovery-card .item-artwork:has(img) { height: auto; }
 .search-all-grid .discovery-card .item-artwork img { width: 100%; height: 100%; object-fit: cover; }
-.search-all-grid .discovery-card-copy { box-sizing: border-box; display: flex; flex: 0 0 58px; flex-direction: column; justify-content: flex-start; gap: 2px; padding: 3px 8px; }
-.search-all-grid .discovery-card h3 { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; line-height: 1.2; line-clamp: 1; -webkit-line-clamp: 1; }
-.search-all-grid .discovery-card-detailed .discovery-card-bottom { align-items: center; justify-content: space-between; margin-top: auto; padding-top: 0; border-top: 0; }
-.search-all-grid .discovery-card-detailed .card-category-link { min-width: 0; max-width: 58%; overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-.search-all-grid .discovery-card-detailed .card-category-link svg { flex-shrink: 0; color: var(--red); }
-.search-all-grid .discovery-card-detailed .collect-button { min-width: 0; min-height: 20px; gap: 3px; padding: 0; font-size: 9px; }
-.search-all-grid .discovery-card-detailed .collect-button svg { width: 12px; height: 12px; }
-.search-all-grid .discovery-card-detailed .collect-label { font-size: 8px; }
+.search-all-grid .discovery-card h3 { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; font-size: 16px; line-clamp: 2; -webkit-line-clamp: 2; }
+.search-all-grid .discovery-card-overlay { padding: 48px 16px 14px; }
+.search-all-grid .card-category-chip { width: 36px; height: 36px; top: 12px; left: 12px; }
+.search-all-grid .discovery-card-overlay .collect-button { min-height: 24px; gap: 5px; padding: 0; font-size: 13px; }
+.search-all-grid .discovery-card-overlay .collect-button svg { width: 16px; height: 16px; }
+.search-all-grid .card-stats { font-size: 13px; }
+.search-all-grid .discovery-card-overlay .collect-label { font-size: 12px; }
 .search-all-grid .archive-save-item { top: 6px; right: 6px; width: 26px; height: 26px; min-width: 26px; min-height: 26px; padding: 4px; border-radius: 5px; }
 @media (max-width: 800px) {
-  .archive-page .search-all-grid { --masonry-column-width: 135px; --masonry-gap: 8px; --masonry-max-columns: 2; }
-}
-@media (max-width: 640px) {
-  .search-all-grid .collect-button { min-width: 34px; min-height: 34px; gap: 3px; padding: 4px; }
-  .search-all-grid .collect-label { display: none; }
-  .search-all-grid .discovery-card-detailed .collect-button { min-width: 0; min-height: 20px; padding: 0; }
+  .archive-page .search-all-grid { --masonry-column-width: 220px; --masonry-gap: 10px; --masonry-max-columns: 2; }
 }
 .archive-pagination {
   display: flex;

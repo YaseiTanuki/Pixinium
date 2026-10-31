@@ -187,7 +187,6 @@
 .profile-section-heading > a:hover { color: var(--ink); }
 .profile-saved-grid { columns: 2; column-gap: 16px; }
 .profile-saved-grid > .discovery-card { display: inline-block; vertical-align: top; width: 100%; break-inside: avoid; margin-bottom: 16px; }
-.profile-saved-grid .discovery-card-copy { padding: 16px; }
 .profile-saved-grid .discovery-card h3 { overflow-wrap: anywhere; }
 .profile-collection-placeholder { display: grid; place-items: center; min-height: 260px; color: var(--muted); font-size: 13px; border: 1px solid var(--line); border-radius: 12px; }
 .profile-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; padding: 32px; border: 1px dashed #ccbbaa; border-radius: 12px; background: #f3eee7; text-align: center; }

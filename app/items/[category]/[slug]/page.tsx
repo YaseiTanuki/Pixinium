@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ItemDetail from '@/components/item-detail'
 import { CATALOG_DISPLAY } from '@/lib/catalog'
-import { getCatalogItem, listCatalogItems } from '@/server/services/catalog.service'
+import { getCatalogItem, listCatalogItems, recordItemView } from '@/server/services/catalog.service'
 import './item-detail.css'
 
 export const dynamic = 'force-dynamic'
@@ -20,6 +20,7 @@ export default async function Page({ params }: Props) {
   const item = await getCatalogItem(category, slug)
   if (!item) notFound()
 
+  await recordItemView(item.item.id)
   const items = await listCatalogItems({ category })
   const related = items.filter(card => card.item.id !== item.item.id).slice(0, CATALOG_DISPLAY.relatedItems)
 

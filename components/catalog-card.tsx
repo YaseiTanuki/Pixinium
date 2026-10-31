@@ -3,7 +3,7 @@
 
 
 import Link from 'next/link'
-import { Image as ImageIcon, Music2 } from 'lucide-react'
+import { Download, Eye, Image as ImageIcon, Music2 } from 'lucide-react'
 import { categoryHref, itemHref } from '@/lib/catalog'
 import type { CatalogCard as Card } from '@/lib/entities/catalog'
 import { categoryIcon } from '@/lib/category-icons'
@@ -15,18 +15,25 @@ export function ItemArtwork({ item }: { item: Card }) {
   </div>
 }
 
+function compact(value = 0) {
+  return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+}
+
 export function CatalogCard({ item, variant = 'compact' }: { item: Card; variant?: 'compact' | 'detailed' }) {
   const Icon = categoryIcon(item.category.iconKey)
   return <article className={`discovery-card discovery-card-${variant}`}>
     <div className="relative">
       <Link className="artwork-button" href={itemHref(item)} aria-label={`View ${item.item.title}`}><ItemArtwork item={item} /></Link>
+      <Link href={categoryHref(item.category.slug)} className="card-category-chip" aria-label={item.category.name} title={item.category.name}><Icon size={15} aria-hidden="true" /></Link>
+      <div className="discovery-card-overlay">
+        <h3><Link href={itemHref(item)}>{item.item.title}</Link></h3>
+        {variant === 'detailed' && <div className="card-stats">
+          <span title="Views" aria-label={`${item.viewCount ?? 0} views`}><Eye size={15} aria-hidden="true" />{compact(item.viewCount)}</span>
+          <CollectButton item={item} showCount />
+          <span title="Downloads" aria-label={`${item.downloadCount ?? 0} downloads`}><Download size={15} aria-hidden="true" />{compact(item.downloadCount)}</span>
+        </div>}
+      </div>
       {variant === 'compact' && <CollectButton item={item} className="save-item" />}
-    </div>
-    <div className="discovery-card-copy">
-      <h3><Link href={itemHref(item)}>{item.item.title}</Link></h3>
-      {variant === 'detailed' && <>
-        <div className="discovery-card-bottom"><Link href={categoryHref(item.category.slug)} className="card-category-link"><Icon size={15} aria-hidden="true" />{item.category.name}</Link><CollectButton item={item} showCount /></div>
-      </>}
     </div>
   </article>
 }

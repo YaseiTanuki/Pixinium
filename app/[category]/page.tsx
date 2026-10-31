@@ -42,7 +42,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     <main id="category-content">
       <header className="category-banner">
         <div><p className="eyebrow">THE PIXINIUM COLLECTION</p><h1><Icon size={36} aria-hidden="true" />{category.name}<span>.</span></h1><p className="category-description">{category.description}</p></div>
-        <div className="category-banner-mark" aria-hidden="true"><Icon strokeWidth={1} /></div>
+        <div className="category-banner-mark" aria-hidden="true">{kind === 'music' ? <div className="record-disc"><span /></div> : <Icon strokeWidth={1} />}</div>
       </header>
       <div className="category-toolbar">
         <div><h2>{query ? `Results for “${query}”` : `Explore ${category.name.toLowerCase()}`}</h2><p>{total.toLocaleString('en')} {total === 1 ? 'find' : 'finds'}{items.length > 0 && ` · Showing ${first}–${first + items.length - 1}`}</p></div>

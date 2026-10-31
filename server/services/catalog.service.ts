@@ -32,6 +32,14 @@ function assetUrl(asset: Media): string {
   return url.href
 }
 
+export async function recordItemView(itemId: string) {
+  try {
+    await database().query("UPDATE catalog.items SET view_count = view_count + 1 WHERE id = $1::bigint AND status = 'published'", [itemId])
+  } catch {
+    // A failed counter must never break the page.
+  }
+}
+
 export const listCategories = cache(async (): Promise<Category[]> => {
   return await database().query(categoriesQuery) as Category[]
 })
@@ -61,7 +69,7 @@ export async function listArchivePage(filters: { category?: string; use?: string
 }
 
 type CatalogRow = {
-  collect_count: number
+  collect_count: number; view_count: number; download_count: number
   item: CatalogDetail['item']; category: CatalogDetail['category']; assets: Media[]
   facts: CatalogDetail['facts']; metadata_schema_key: string; image_count: number
   music_metadata: Record<string, unknown>
@@ -86,7 +94,7 @@ function presentCatalogRows(rows: CatalogRow[]): CatalogDetail[] {
         : row.metadata_schema_key === CONTENT_SCHEMAS.music
           ? musicFacts(row.item.id, row.music_metadata, media, storedFacts)
           : storedFacts
-    return { item: row.item, collectCount: row.collect_count, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
+    return { item: row.item, collectCount: row.collect_count, viewCount: row.view_count, downloadCount: row.download_count, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
       tags: row.tags, uses: row.uses, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY, width: cover.width, height: cover.height } : null } as CatalogDetail
   })

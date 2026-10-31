@@ -32,6 +32,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         },
       })
     }
+    if (rows[0].download) {
+      await sql`UPDATE catalog.items SET download_count = download_count + 1 WHERE id IN (
+        SELECT item_id FROM catalog.item_assets WHERE asset_id = ${id}::bigint AND role = 'download')`
+    }
     const url = await signDownload(String(rows[0].object_path), Boolean(rows[0].download),
       rows[0].mime_type === 'application/zip' ? `asset-pack-${id}.zip` : undefined)
     return new NextResponse(null, { status: 307, headers: { ...headers, Location: url } })
