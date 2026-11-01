@@ -38,7 +38,7 @@ export function MusicUploadFields({ attachments, ready, upload, remove, editLabe
     </section>
     <section className="workspace-panel" aria-labelledby="music-tracks-title">
       <h2 id="music-tracks-title">Audio tracks</h2>
-      <p className="workspace-muted">Upload the original audio for download. Track count, duration and formats are detected when you save.</p>
+      <p className="workspace-muted">Upload the original audio for playback and download. Add any details you want to display in Display facts.</p>
       <label className="studio-file-picker"><Music2 size={20} aria-hidden="true" /> Upload tracks
         <input className="account-input" type="file" multiple accept={acceptedFileTypes('audio')} disabled={!ready}
           onChange={event => { void upload(event.target.files, 'audio'); event.target.value = '' }} />

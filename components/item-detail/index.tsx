@@ -33,6 +33,7 @@ function DetailMedia({ item }: { item: CatalogDetail }) {
 }
 
 export default function ItemDetail({ item, related }: ItemDetailProps) {
+  const description = item.description.trim() || item.item.summary.trim()
   return (
     <div className="home-page item-detail-page">
       <a className="skip-home" href="#item-main">Skip to content</a>
@@ -53,15 +54,14 @@ export default function ItemDetail({ item, related }: ItemDetailProps) {
 
         {contentKind(item.category.metadataSchemaKey) === 'asset' && <AssetPackPreview item={item} />}
 
-        {item.description && item.description !== item.item.summary && <section className="detail-about" aria-labelledby="about-title">
+        <section className="detail-about" aria-labelledby="about-title">
           <div>
-            <p className="eyebrow">ABOUT THIS FIND</p>
-            <h2 id="about-title">A closer look<span>.</span></h2>
+            <h2 id="about-title">Description<span>.</span></h2>
           </div>
           <div>
-            <p>{item.description}</p>
+            <p>{description || 'No description has been added yet.'}</p>
           </div>
-        </section>}
+        </section>
         <RelatedItems items={related} />
       </main>
       <footer className="home-footer home-shell">

@@ -1,8 +1,7 @@
-import { CONTENT_SCHEMAS } from '../../lib/content-types'
+import { CONTENT_SCHEMAS, usesAutomaticFacts } from '../../lib/content-types'
 import 'server-only'
 
 import { imageFacts, imageCreator } from '@/lib/image-facts'
-import { assetFacts } from '@/lib/asset-facts'
 import { randomUUID } from 'node:crypto'
 import { neon } from '@neondatabase/serverless'
 import { revalidatePath } from 'next/cache'
@@ -83,15 +82,12 @@ export async function createContentForActor(account: ContentActor | null, input:
     pendingPack = pack
     if (musicMetadata) metadata = musicMetadata
     let facts = value.facts
-    if (schemaKey === CONTENT_SCHEMAS.image || isAssetPack) {
+    if (usesAutomaticFacts(schemaKey)) {
       const [profile] = source === 'studio' && account.role !== 'admin'
         ? await sql`SELECT username FROM catalog.profiles WHERE id = ${account.id}::uuid` : []
       const original = finalized.find(asset => asset.role === 'download' && asset.mediaType === 'image')
       const creator = imageCreator(source, profile?.username as string | null | undefined, account.role)
-      facts = (isAssetPack
-        ? assetFacts(reservedItemId, value.attachments.filter(asset => asset.role === 'download').length,
-          finalized.find(asset => asset.role === 'download')?.mime, creator)
-        : imageFacts(reservedItemId, original ? { ...original, mimeType: original.mime } : undefined, creator))
+      facts = imageFacts(reservedItemId, original ? { ...original, mimeType: original.mime } : undefined, creator)
         .filter(fact => fact.key === 'creator')
     }
     const rows = await createContentWithTitleSlug((text, values) => sql.query(text, values),

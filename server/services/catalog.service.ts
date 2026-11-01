@@ -1,9 +1,6 @@
-import { CONTENT_SCHEMAS } from '../../lib/content-types'
 import 'server-only'
 import { cache } from 'react'
-import { imageFacts } from '../../lib/image-facts'
-import { assetFacts } from '../../lib/asset-facts'
-import { musicFacts } from '../../lib/music-facts'
+import { catalogFacts } from '../../lib/catalog-facts'
 import { neon } from '@neondatabase/serverless'
 import type { CatalogDetail, Category, Asset, ContentUse } from '../../lib/entities/catalog'
 import { archiveCountQuery, archivePageQuery, cardsQuery, categoriesQuery } from '../repositories/catalog.queries'
@@ -84,16 +81,7 @@ function presentCatalogRows(rows: CatalogRow[]): CatalogDetail[] {
     }))
     const cover = media.find((asset) => asset.role === 'cover')
     const storedFacts = row.facts as CatalogDetail['facts']
-    const facts = row.metadata_schema_key === CONTENT_SCHEMAS.image
-      ? imageFacts(row.item.id, media.find(asset => asset.role === 'download' && asset.mediaType === 'image'),
-        storedFacts.find(fact => fact.key === 'creator')?.value ?? 'Unknown')
-      : row.metadata_schema_key === CONTENT_SCHEMAS.asset
-        ? assetFacts(row.item.id, row.image_count,
-          media.find(asset => asset.role === 'download')?.mimeType,
-          storedFacts.find(fact => fact.key === 'creator')?.value ?? 'Unknown')
-        : row.metadata_schema_key === CONTENT_SCHEMAS.music
-          ? musicFacts(row.item.id, row.music_metadata, media, storedFacts)
-          : storedFacts
+    const facts = catalogFacts(row.metadata_schema_key, row.item.id, media, storedFacts)
     return { item: row.item, collectCount: row.collect_count, viewCount: row.view_count, downloadCount: row.download_count, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
       tags: row.tags, uses: row.uses, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY, width: cover.width, height: cover.height } : null } as CatalogDetail

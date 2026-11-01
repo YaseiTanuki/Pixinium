@@ -67,7 +67,7 @@ export function AdminEditForm({ content, uses, factsEditable }: Props) {
           <label className="studio-full">Tags<input className="account-input" name="tags" defaultValue={content.tags.join(', ')} maxLength={1000} /><span className="account-help">Separate tags with commas, for example: cozy, night, pixel art.</span></label>
         </div>
       </section>
-      {factsEditable && <section className="workspace-panel"><h2>Display facts</h2><p className="workspace-muted">Rows appear in this order.</p>
+      {factsEditable && <section className="workspace-panel"><h2>Display facts</h2><p className="workspace-muted">Facts are saved as entered and appear in this order. You can add, change or remove any row.</p>
         {facts.map((fact, index) => <div className="studio-fact" key={index}>{(['key', 'label', 'value'] as const).map(key => <label key={key}>{key}<input className="account-input" required value={fact[key]} maxLength={key === 'key' ? CONTENT_LIMITS.factKey : key === 'label' ? CONTENT_LIMITS.factLabel : CONTENT_LIMITS.factValue} onChange={e => setFacts(current => current.map((f, i) => i === index ? { ...f, [key]: e.target.value } : f))} /></label>)}<button type="button" className="account-text-link" aria-label={`Remove fact ${index + 1}`} onClick={() => setFacts(current => current.filter((_, i) => i !== index))}><Trash2 size={16} aria-hidden="true" /></button></div>)}
         <button type="button" className="account-text-link" disabled={facts.length >= CONTENT_LIMITS.facts} onClick={() => setFacts(current => [...current, { key: '', label: '', value: '' }])}><Plus size={16} aria-hidden="true" /> Add fact</button>
       </section>}

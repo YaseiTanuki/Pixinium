@@ -9,6 +9,10 @@ export const CONTENT_SCHEMAS = {
 
 export type ContentKind = keyof typeof CONTENT_SCHEMAS
 
+export function usesAutomaticFacts(schemaKey?: string): boolean {
+  return schemaKey === CONTENT_SCHEMAS.image
+}
+
 export function contentKind(schemaKey?: string): ContentKind {
   return (Object.keys(CONTENT_SCHEMAS) as ContentKind[])
     .find(kind => CONTENT_SCHEMAS[kind] === schemaKey) ?? 'asset'

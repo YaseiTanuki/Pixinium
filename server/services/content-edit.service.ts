@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { hasPermission } from '@/lib/auth/permissions'
 import { authDiagnostic } from '@/lib/auth/errors'
 import { contentUpdateSchema, type ContentResult } from '@/lib/admin/content'
-import { CONTENT_SCHEMAS } from '@/lib/content-types'
+import { CONTENT_SCHEMAS, usesAutomaticFacts } from '@/lib/content-types'
 import { parseCategoryMetadata } from '@/lib/entities/metadata'
 import { itemStorageDirectory } from '@/lib/admin/storage-paths'
 import { currentAssetIdsQuery, editableContentQuery, updateContentStatements } from '@/server/repositories/content-edit'
@@ -20,9 +20,6 @@ export type EditableContent = {
   schemaKey: string; uses: string[]; tags: string[]; facts: Array<{ key: string; label: string; value: string }>
   files: Array<{ label: string; role: string; mediaType: string }>
 }
-
-// Image and asset-pack facts are generated from their files, so they are not hand-edited.
-const factsEditable = (schemaKey: string) => schemaKey !== CONTENT_SCHEMAS.image && schemaKey !== CONTENT_SCHEMAS.asset
 
 export async function getEditableContentForActor(account: ContentActor | null, id: string): Promise<EditableContent | null> {
   if (!account || !hasPermission(account.role, 'admin:access') || !/^[1-9][0-9]{0,18}$/.test(id) || BigInt(id) > BigInt('9223372036854775807')) return null
@@ -71,7 +68,7 @@ export async function updateContentForActor(account: ContentActor | null, input:
       files = { oldAssetIds: existing.ids as string[], attachments: finalized, bucket, metadata }
     }
     const results = await sql.transaction(txn => updateContentStatements({
-      actor: account.id, id: value.id, editFacts: factsEditable(schemaKey), files,
+      actor: account.id, id: value.id, editFacts: !usesAutomaticFacts(schemaKey), files,
       text: { title: value.title, summary: value.summary, description: value.description, uses: value.uses, tags: value.tags, facts: value.facts },
     }).map(([text, values]) => txn.query(text, values)))
     const [row] = results[results.length - 1] as Array<Record<string, unknown>>

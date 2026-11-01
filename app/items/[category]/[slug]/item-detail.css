@@ -48,7 +48,8 @@
 .detail-about, .asset-pack-preview { margin-top: 28px; padding-block: 22px; border-block: 1px solid var(--line); }
 .detail-about { display: grid; grid-template-columns: 1fr 1.25fr; gap: 40px; }
 .detail-about h2, .asset-pack-preview h2 { margin-top: 12px; font-size: 26px; font-weight: 900; letter-spacing: -.8px; text-wrap: balance; }
-.detail-about > div > p:not(.eyebrow) { max-width: 590px; font-size: 13px; line-height: 1.9; color: var(--muted); }
+.detail-about h2 { margin-top: 0; }
+.detail-about > div > p:not(.eyebrow) { max-width: 70ch; font-size: 14px; line-height: 1.9; color: var(--muted); white-space: pre-line; overflow-wrap: anywhere; }
 .detail-about > div > p + p { margin-top: 12px; }
 .detail-about a { display: inline-flex; align-items: center; gap: 7px; margin-top: 17px; padding-block: 5px; font-size: 11px; font-weight: 700; color: var(--red); }
 .detail-about a:hover { text-decoration: underline; }
