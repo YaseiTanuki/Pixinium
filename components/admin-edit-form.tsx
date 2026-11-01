@@ -15,7 +15,7 @@ import { useContentUploads } from '@/components/use-content-uploads'
 
 type Props = { content: EditableContent; uses: ContentUse[]; factsEditable: boolean }
 
-export function AdminEditForm({ content, uses, factsEditable }: Props) {
+export function AdminEditForm({ content, factsEditable }: Props) {
   const router = useRouter()
   const [facts, setFacts] = useState(content.facts)
   const [saving, setSaving] = useState(false)
@@ -39,7 +39,7 @@ export function AdminEditForm({ content, uses, factsEditable }: Props) {
     saveInProgress.current = true
     setResult({})
     try {
-      const response = await updateContent({ id: content.id, uses: form.getAll('uses'), title: form.get('title'),
+      const response = await updateContent({ id: content.id, uses: content.uses, title: form.get('title'),
         summary: form.get('summary'), description: form.get('description'),         tags, facts: factsEditable ? facts : content.facts,
                 ...(replacing ? { attachments } : {}) })
               setResult(response)
@@ -61,7 +61,6 @@ export function AdminEditForm({ content, uses, factsEditable }: Props) {
       <section className="workspace-panel"><h2>Content details</h2>
         <div className="studio-grid">
           <label>Title<input className="account-input" name="title" required defaultValue={content.title} maxLength={CONTENT_LIMITS.title} /></label>
-          <fieldset className="studio-full"><legend className="text-sm font-bold">Suitable for</legend><div className="flex flex-wrap gap-x-6 gap-y-2">{uses.map(use => <label key={use.slug} className="studio-checkbox"><input type="checkbox" name="uses" value={use.slug} defaultChecked={content.uses.includes(use.slug)} />{use.name}</label>)}</div></fieldset>
           <label className="studio-full">Summary<textarea className="account-input" name="summary" rows={2} defaultValue={content.summary} maxLength={CONTENT_LIMITS.summary} /></label>
           <label className="studio-full">Description<textarea className="account-input" name="description" rows={6} defaultValue={content.description} maxLength={CONTENT_LIMITS.description} /></label>
           <label className="studio-full">Tags<input className="account-input" name="tags" defaultValue={content.tags.join(', ')} maxLength={1000} /><span className="account-help">Separate tags with commas, for example: cozy, night, pixel art.</span></label>

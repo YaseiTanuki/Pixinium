@@ -14,7 +14,7 @@ import { createContent } from '@/app/actions/content'
 
 type Props = { categories: Pick<Category, 'id' | 'name' | 'metadataSchemaKey'>[]; uses: ContentUse[]; ready: boolean }
 
-export function AdminUploadForm({ categories, uses, ready }: Props) {
+export function AdminUploadForm({ categories, ready }: Props) {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '')
@@ -40,7 +40,7 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
     saveInProgress.current = true
     setResult({})
     try {
-      const response = await createContent({ categoryId, uses: form.getAll('uses'), title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', metadata, tags, facts: isImage ? [] : facts, attachments })
+      const response = await createContent({ categoryId, uses: [], title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', metadata, tags, facts: isImage ? [] : facts, attachments })
       setResult(response)
       if (response.message) { pendingUploads.current.clear(); router.refresh() }
     } catch { setResult({ error: 'Could not save content. Your entries are preserved; please retry.' }) }
@@ -54,7 +54,6 @@ export function AdminUploadForm({ categories, uses, ready }: Props) {
         <div className="studio-grid">
           <label>Category<select className="account-input" value={categoryId} onChange={e => { setCategoryId(e.target.value); setProgress(''); setResult({}) }} required><option value="" disabled>Select a category</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
           <label>Title<input className="account-input" name="title" required maxLength={CONTENT_LIMITS.title} /></label>
-          <fieldset className="studio-full"><legend className="text-sm font-bold">Suitable for</legend><p className="account-help">Choose all that apply. One upload can have several uses.</p><div className="flex flex-wrap gap-x-6 gap-y-2">{uses.map(use => <label key={use.slug} className="studio-checkbox"><input type="checkbox" name="uses" value={use.slug} />{use.name}</label>)}</div></fieldset>
           <label className="studio-full">Summary<textarea className="account-input" name="summary" rows={2} maxLength={CONTENT_LIMITS.summary} /></label>
           <label className="studio-full">Description<textarea className="account-input" name="description" rows={6} maxLength={CONTENT_LIMITS.description} /></label>
           <label className="studio-full">Tags<input className="account-input" name="tags" maxLength={1000} /><span className="account-help">Separate tags with commas, for example: cozy, night, pixel art.</span></label>
