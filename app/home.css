@@ -34,7 +34,14 @@
 .brand-logo { display: inline-flex; align-items: center; gap: 9px; width: fit-content; min-width: 0; min-height: 44px; flex-shrink: 0; border-radius: 10px; color: var(--ink); text-decoration: none; }
 .brand-logo-mark { flex-shrink: 0; width: 40px; height: 40px; object-fit: contain; }
 .brand-logo-name { font-family: var(--font-display); font-size: 22px; font-weight: 900; letter-spacing: -.035em; line-height: 1; white-space: nowrap; }
-.brand-logo-dot { color: #e94343; }
+.brand-logo-dot { color: #e94343; animation: pixel-blink 1.1s steps(1, end) infinite; }
+.brand-logo-crystal { position: relative; display: inline-flex; flex-shrink: 0; }
+.brand-sparkle { position: absolute; width: 5px; height: 5px; background: #fff; box-shadow: 0 0 0 1px #f4b942, 5px 0 #fff, -5px 0 #fff, 0 5px #fff, 0 -5px #fff; opacity: 0; transform: scale(0); animation: pixel-twinkle 2.4s steps(4, end) infinite; pointer-events: none; }
+.brand-sparkle-a { top: 6px; right: 2px; }
+.brand-sparkle-b { bottom: 8px; left: 0; animation-delay: 1.2s; transform-origin: center; }
+@keyframes pixel-blink { 50% { opacity: 0; } }
+@keyframes pixel-twinkle { 0%, 60%, 100% { opacity: 0; transform: scale(0); } 70% { opacity: 1; transform: scale(1); } 85% { opacity: 1; transform: scale(0.6); } }
+@media (prefers-reduced-motion: reduce) { .brand-logo-dot { animation: none; } .brand-sparkle { display: none; } }
 .brand-logo:hover .brand-logo-name { color: var(--red); }
 .brand-logo-footer .brand-logo-mark { width: 32px; height: 32px; }
 .brand-logo-footer .brand-logo-name { font-size: 20px; }
@@ -50,7 +57,7 @@
 .collection-link { margin-left: auto; display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 700; }
 .collection-count { display: grid; place-items: center; min-width: 23px; height: 23px; border: 1px solid var(--line); border-radius: 7px; font-size: 10px; font-variant-numeric: tabular-nums; }
 .home-navigation a:hover, .collection-link:hover, .archive-link:hover, .home-footer a:hover { color: var(--red); }
-.home-intro { display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: 70px; padding: 55px 0 42px; }
+.home-intro { position: relative; display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: 70px; padding: 55px 0 42px; }
 .eyebrow { display: flex; align-items: center; gap: 7px; color: #ad3434; font-size: 9px; font-weight: 800; letter-spacing: 1.6px; }
 .status-dot { width: 6px; height: 6px; background: #e94343; border-radius: 50%; }
 .home-intro h1 { font-size: clamp(40px, 4.6vw, 64px); line-height: 1.06; font-weight: 900; letter-spacing: -0.035em; margin-top: 20px; }
@@ -110,8 +117,8 @@
 .surprise-button { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px; max-width: 95px; padding: 10px; border: 1px solid #bdae9a; border-radius: 9px; font-size: 10px; font-weight: 800; background: #fffaf1; }
 .surprise-button:hover { background: #211d20; color: white; }
 .category-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 17px; margin-top: 22px; }
-.category-door { position: relative; overflow: hidden; display: flex; align-items: center; gap: 16px; padding: 24px 21px; border: 1px solid var(--line); border-radius: 13px; background: #fffcf8; transition: transform 180ms ease, border-color 180ms ease; }
-.category-door:hover { transform: translateY(-3px); border-color: #bc8970; }
+.category-door { position: relative; overflow: hidden; display: flex; align-items: center; gap: 16px; padding: 24px 21px; border: 1px solid var(--line); border-radius: 13px; background: #fffcf8; transition: border-color 180ms ease; }
+.category-door:hover { border-color: #bc8970; }
 .category-door > div { min-width: 0; }
 .category-icon { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; background: #ede2d7; border-radius: 12px; }
 .category-music .category-icon { background: #eadfe5; }
@@ -353,3 +360,8 @@
   .home-page *, .item-preview * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }
+
+.floating-pixels { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.floating-pixels span { position: absolute; opacity: 0.5; animation: pixel-drift ease-in-out infinite; }
+@keyframes pixel-drift { 50% { transform: translateY(-14px) rotate(90deg); opacity: 0.8; } }
+@media (prefers-reduced-motion: reduce) { .floating-pixels span { animation: none; } }

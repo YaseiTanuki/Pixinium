@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Nunito } from 'next/font/google'
+import { MotionProvider } from '@/components/motion'
 import './globals.css'
 
 // Change these two font loaders to try a different pairing site-wide.
@@ -42,7 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${contentFont.variable} ${headingFont.variable}`}>
       <body className="antialiased">
-        {children}
+        <MotionProvider>{children}</MotionProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

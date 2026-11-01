@@ -7,6 +7,7 @@ import { listCatalogItems, listCategories } from '@/server/services/catalog.serv
 import { ProfileAvatar } from '@/components/profile-avatar'
 import { ProfileAvatarUpload } from '@/components/profile-avatar-upload'
 import { ProfileCollection } from '@/components/profile-collection'
+import '../search/search.css'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +29,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <Link className="profile-browse" href="/search">Explore the archive <ArrowUpRight size={16} aria-hidden="true" /></Link>
     </header>
     <div className="profile-content-grid">
-      <ProfileCollection items={catalog.items.map(({ item, category, cover, facts, viewCount, collectCount, downloadCount }) => ({ item, category, cover, facts, viewCount, collectCount, downloadCount }))} categories={catalog.categories.map(({ id, name, iconKey, metadataSchemaKey, slug }) => ({ id, name, iconKey, metadataSchemaKey, slug }))} unavailable={catalog.unavailable} />
+      <ProfileCollection items={catalog.items.map(({ item, category, cover, facts, tags, viewCount, collectCount, downloadCount }) => ({ item, category, cover, facts, tags, viewCount, collectCount, downloadCount }))} categories={catalog.categories.map(({ id, name, iconKey, metadataSchemaKey, slug }) => ({ id, name, iconKey, metadataSchemaKey, slug }))} unavailable={catalog.unavailable} />
       <aside className="profile-sidebar" aria-label="Account details and actions">
         <section className="profile-info-card"><h2>Account details</h2><dl>
           <div><dt><UserRound size={14} aria-hidden="true" /> Username</dt><dd>{account.username ?? 'Not chosen yet'}</dd></div>

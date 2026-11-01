@@ -3,7 +3,7 @@ import test from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { migrate } from '../scripts/migrations.ts'
 import { archiveCountQuery, archivePageQuery, archiveTagsQuery } from '../server/repositories/catalog.queries.ts'
-import { CATALOG_DISPLAY, searchHref } from '../lib/catalog.ts'
+import { CATALOG_DISPLAY, searchHref, categoryHref } from '../lib/catalog.ts'
 import { searchTags, searchSort, searchCategories } from '../lib/search-filters.ts'
 
 test('archive pages respect the configured size, preserve filters and exclude unpublished content', async () => {
@@ -83,5 +83,7 @@ test('archive pages respect the configured size, preserve filters and exclude un
     assert.equal(searchHref({ category: 'images', tag: 'wallpaper', query: 'cat & moon', page: 2 }), '/search?tag=wallpaper&category=images&q=cat+%26+moon&page=2')
     assert.equal(searchHref({ tag: 'wallpaper', query: 'cat & moon', page: 2 }), '/search?tag=wallpaper&q=cat+%26+moon&page=2')
     assert.equal(searchHref({ page: 1 }), '/search')
+    assert.equal(categoryHref('images', { query: 'cat & moon', tag: 'cat moon', sort: 'views', tagMatch: 'any', page: 2 }), '/images?q=cat+%26+moon&tag=cat+moon&sort=views&match=any&page=2')
+    assert.equal(categoryHref('music', { tag: 'piano', page: 1 }), '/music?tag=piano')
   } finally { await db.close() }
 })

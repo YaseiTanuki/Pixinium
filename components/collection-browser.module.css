@@ -12,7 +12,7 @@
 .category[aria-pressed='true'] { border-color: var(--tone); background: var(--tint); }
 .results { margin-top: 24px; }
 .prompt { padding: 18px 0; color: var(--muted); font-size: 13px; }
-.heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.heading { display: flex; flex: 1; min-width: 0; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
 .heading h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; font-size: 18px; font-weight: 800; }
 .heading h3 > span { color: var(--muted); font-size: 12px; font-weight: 400; }
 .heading > a, .empty a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 12px; font-weight: 700; }
@@ -41,6 +41,10 @@
 .empty > svg { margin: 0 auto 12px; color: var(--muted); }
 .empty h4 { font-size: 16px; font-weight: 800; }
 .empty p { margin: 8px 0; color: var(--muted); font-size: 13px; }
+.empty button { min-height: 44px; padding: 8px 14px; color: #a22f3d; font-size: 13px; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+.entry[data-kind='game'] .artwork :global(.item-artwork) { height: auto; aspect-ratio: 3 / 4; }
+.entry[data-kind='asset'] .artwork :global(.item-artwork) { background: #e0e9e7; }
+.entry[data-kind='asset'] .artwork img { object-fit: contain; }
 .browser button:focus-visible, .browser a:focus-visible { outline: 2px solid #a22f3d; outline-offset: 3px; }
 @media (max-width: 1023px) {
   .items[data-kind='music'] { grid-template-columns: minmax(0, 1fr); }

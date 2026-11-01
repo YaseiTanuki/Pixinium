@@ -9,6 +9,7 @@ import { itemHref } from '@/lib/catalog'
 import { formatDuration } from '@/lib/media-details'
 import { playbackUrl } from '@/lib/media'
 import type { CatalogDetail } from '@/lib/entities/catalog'
+import { motion } from 'motion/react'
 import styles from './music-list.module.css'
 
 const countFormat = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
@@ -31,7 +32,7 @@ function MusicRow({ item, index }: { item: CatalogDetail; index: number }) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) setFailed(true)
     }
   }
-  return <li className={styles.track} data-playing={playing}>
+  return <motion.li className={styles.track} data-playing={playing} initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: Math.min(index, 4) * 0.06 }}>
     <div className={styles.artwork}>
       <div className={styles.vinyl} aria-hidden="true"><span /></div>
       <Link className={styles.cover} href={itemHref(item)} aria-label={`View ${item.item.title}`}><ItemArtwork item={item} /></Link>
@@ -70,7 +71,7 @@ function MusicRow({ item, index }: { item: CatalogDetail; index: number }) {
       onTimeUpdate={event => setPosition(event.currentTarget.currentTime)}
       onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} onError={() => { setFailed(true); setPlaying(false); setSeekable(false) }}
       onPlay={event => { setPlaying(true); document.querySelectorAll('audio').forEach(player => { if (player !== event.currentTarget) player.pause() }) }} />}
-  </li>
+  </motion.li>
 }
 
 export function MusicList({ items }: { items: CatalogDetail[] }) {

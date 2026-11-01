@@ -2,7 +2,7 @@
 
 import { ArrowRight, Heart, Layers3, Monitor } from 'lucide-react'
 import { useSavedItems } from '@/lib/saved-items'
-import type { CatalogCard as Card } from '@/lib/entities/catalog'
+import type { SavedCatalogCard as Card } from '@/lib/collection-filters'
 import { CollectionBrowser, type CollectionCategory } from '@/components/collection-browser'
 
 export function ProfileCollection({ items, categories: availableCategories, unavailable }: { items: Card[]; categories: CollectionCategory[]; unavailable: boolean }) {

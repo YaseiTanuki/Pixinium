@@ -6,6 +6,8 @@ export const SEARCH_SORT_OPTIONS = [
   { value: 'title', label: 'Title A–Z' },
 ] as const
 
+export type CatalogFilterValues = { category: string; tag: string; sort: string; tagMatch: string; query?: string }
+
 export function searchTags(value: string): string[] {
   return [...new Set(value.toLowerCase().split(/[\s,]+/).map(tag => tag.replace(/^#+/, '')).filter(Boolean))]
 }

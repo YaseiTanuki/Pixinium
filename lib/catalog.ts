@@ -2,9 +2,12 @@ import type { CatalogCard } from './entities/catalog'
 
 export const CATALOG_DISPLAY = { relatedItems: 9, homeItems: 9, archivePageSize: 18 } as const
 
-export function categoryHref(slug: string, { query, page }: { query?: string; page?: number } = {}): string {
+export function categoryHref(slug: string, { query, page, tag, sort, tagMatch }: { query?: string; page?: number; tag?: string; sort?: string; tagMatch?: string } = {}): string {
   const params = new URLSearchParams()
   if (query) params.set('q', query)
+  if (tag) params.set('tag', tag)
+  if (sort) params.set('sort', sort)
+  if (tag && tagMatch === 'any') params.set('match', 'any')
   if (page && page > 1) params.set('page', String(page))
   const search = params.toString()
   return `/${encodeURIComponent(slug)}${search ? `?${search}` : ''}`

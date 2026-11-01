@@ -2,13 +2,14 @@ import Link from 'next/link'
 import { Download, Eye, FolderHeart } from 'lucide-react'
 import { ItemArtwork } from '@/components/catalog-card'
 import { CollectButton } from '@/components/collect-button'
+import { MotionArticle, Reveal, popIn } from '@/components/motion'
 import { itemHref } from '@/lib/catalog'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 
 const countFormat = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
 
 export function AssetGrid({ items }: { items: CatalogDetail[] }) {
-  return <div className="category-asset-grid">{items.map(item => <article className="asset-pack-card" key={item.item.id}>
+  return <Reveal step={0.06} className="category-asset-grid">{items.map(item => <MotionArticle variants={popIn} className="asset-pack-card" key={item.item.id}>
     <div className="asset-pack-tab" aria-hidden="true"><FolderHeart size={14} /></div>
     <div className="asset-pack-sleeve">
       <div className="asset-pack-paper" aria-hidden="true" />
@@ -19,5 +20,5 @@ export function AssetGrid({ items }: { items: CatalogDetail[] }) {
         </div>
       </div>
     </div>
-  </article>)}</div>
+  </MotionArticle>)}</Reveal>
 }
