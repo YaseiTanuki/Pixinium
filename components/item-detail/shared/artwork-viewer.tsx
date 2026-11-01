@@ -1,13 +1,14 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { Maximize2, Sparkles, X } from 'lucide-react'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 
-export function ArtworkViewer({ cover, title, category }: {
+export function ArtworkViewer({ cover, title, category, children }: {
   cover: NonNullable<CatalogDetail['cover']>
   title: string
   category: string
+  children?: ReactNode
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
 
@@ -20,6 +21,7 @@ export function ArtworkViewer({ cover, title, category }: {
           <img className="artwork-image" src={cover.url} alt={cover.altText || title} width={cover.width || 1600} height={cover.height || 1000} fetchPriority="high" />
           <span className="artwork-expand"><Maximize2 size={15} aria-hidden="true" /> View fullscreen</span>
         </button>
+        {children && <div className="artwork-controls">{children}</div>}
       </div>
       <figcaption className="artwork-caption"><span>{category} <span aria-hidden="true">/</span> Preview</span><span>Made for a closer look <Maximize2 size={12} aria-hidden="true" /></span></figcaption>
       <dialog ref={dialog} className="artwork-dialog" aria-label={title} onClick={event => { if (event.target === event.currentTarget) dialog.current?.close() }}>

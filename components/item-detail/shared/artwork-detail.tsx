@@ -1,12 +1,13 @@
 import { Image as ImageIcon, Moon, Sparkles } from 'lucide-react'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 import { ArtworkViewer } from './artwork-viewer'
+import type { ReactNode } from 'react'
 
-// Image and game share the same artwork presentation.
-export function ArtworkDetail({ item }: { item: CatalogDetail }) {
+// All detail categories share the same artwork presentation.
+export function ArtworkDetail({ item, children }: { item: CatalogDetail; children?: ReactNode }) {
   const isRecordArtwork = item.category.artworkStyle === 'record'
 
-  if (item.cover) return <ArtworkViewer cover={item.cover} title={item.item.title} category={item.category.name} />
+  if (item.cover) return <ArtworkViewer cover={item.cover} title={item.item.title} category={item.category.name}>{children}</ArtworkViewer>
 
   return (
     <div className="detail-media-column">
@@ -27,6 +28,7 @@ export function ArtworkDetail({ item }: { item: CatalogDetail }) {
             </div>
           ) : <ImageIcon size={60} aria-label="No cover artwork" />}
         </div>
+        {children && <div className="artwork-controls">{children}</div>}
       </section>
     </div>
   )

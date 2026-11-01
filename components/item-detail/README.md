@@ -11,7 +11,9 @@ Category names and URL slugs can change without changing the renderer.
 - `variants/asset-detail.tsx`: asset packs with a separate thumbnail, ZIP download and up to five previews.
 - `shared/`: artwork preview, download/save actions, information and related items.
 
-Image and game compose the same `ArtworkDetail` presentation.
+All categories compose the same `ArtworkDetail` presentation, including the
+ambient backdrop, contained artwork and fullscreen viewer. Music adds a compact
+`MusicPlayer` inside the artwork frame through its children slot; asset packs retain their separate pack preview section.
 Add category-specific presentation in the corresponding variant; keep reusable UI in `shared/`.
 The page shell and information render on the server. Browser state stays in the
 save button and music player. Keep the media subtree keyed by item ID so navigation

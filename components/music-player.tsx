@@ -30,13 +30,8 @@ export function MusicPlayer({ item }: { item: CatalogDetail }) {
   }
 
   return <section className="music-player" aria-label={`${item.item.title} music player`}>
-    <div className="music-player-art" style={{ backgroundColor: item.item.accentColor }}>
-      {item.cover ? <img src={item.cover.url} alt={item.cover.altText} width={800} height={650} fetchPriority="high"
-        style={{ objectPosition: `${item.cover.focalX}% ${item.cover.focalY}%` }} />
-        : <Music2 size={64} aria-label="No cover artwork" />}
-    </div>
     <div className="music-player-body">
-      <div className="music-player-heading"><span className="music-player-eyebrow"><Music2 size={13} aria-hidden="true" /> {playing ? 'Now playing' : 'Press play, stay a while'}</span><span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span></div>
+      <div className="music-player-heading"><span className="music-player-status"><Music2 size={15} aria-hidden="true" /> {playing ? 'Now playing' : 'Listen to a preview'}</span><span>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}</span></div>
       {track ? <>
         <p className="music-player-title">{label}</p>
         <audio ref={audio} controls preload="none" src={playbackUrl(track.url)} aria-label={`Listen to ${label}`}
