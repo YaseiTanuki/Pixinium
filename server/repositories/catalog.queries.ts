@@ -34,7 +34,7 @@ export const categoriesQuery = `SELECT id::text, slug, name, description, icon_k
 
 const catalogConditions = `WHERE i.status = 'published' AND c.is_active
   AND c.slug <> 'stories'
-  AND ($1::text IS NULL OR c.slug = $1)
+  AND ($1::text IS NULL OR c.slug = ANY(string_to_array($1, ',')))
   AND ($2::text IS NULL OR i.slug = $2)
   AND ($3::text IS NULL OR i.title ILIKE $3 OR i.summary ILIKE $3 OR c.name ILIKE $3
     OR EXISTS (SELECT 1 FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id
@@ -43,12 +43,31 @@ const catalogConditions = `WHERE i.status = 'published' AND c.is_active
 export const cardsQuery = `${cardsSelect} ${catalogConditions} ORDER BY i.sort_order, i.id`
 
 const archiveConditions = `${catalogConditions}
-  AND ($4::text IS NULL OR EXISTS (SELECT 1 FROM catalog.item_tags selected_tag
-    JOIN catalog.tags t ON t.id = selected_tag.tag_id
-    WHERE selected_tag.item_id = i.id AND t.slug = $4))`
+  AND ($4::text IS NULL OR CASE WHEN $5::text = 'any' THEN
+    EXISTS (SELECT 1 FROM catalog.item_tags selected_tag
+      JOIN catalog.tags t ON t.id = selected_tag.tag_id
+      WHERE selected_tag.item_id = i.id
+      AND (lower(t.slug) = ANY(regexp_split_to_array(lower($4), '[[:space:],]+'))
+        OR lower(t.name) = ANY(regexp_split_to_array(lower($4), '[[:space:],]+'))))
+    ELSE NOT EXISTS (SELECT 1 FROM regexp_split_to_table(lower($4), '[[:space:],]+') wanted(tag)
+      WHERE NOT EXISTS (SELECT 1 FROM catalog.item_tags selected_tag
+        JOIN catalog.tags t ON t.id = selected_tag.tag_id
+        WHERE selected_tag.item_id = i.id AND (lower(t.slug) = wanted.tag OR lower(t.name) = wanted.tag))) END)`
 
 export const archiveCountQuery = `SELECT count(*)::int AS total
   FROM catalog.items i JOIN catalog.categories c ON c.id = i.category_id ${archiveConditions}`
 
+export const archiveTagsQuery = `SELECT t.id::text, t.slug, t.name FROM catalog.tags t
+  WHERE EXISTS (SELECT 1 FROM catalog.item_tags it
+    JOIN catalog.items i ON i.id = it.item_id
+    JOIN catalog.categories c ON c.id = i.category_id
+    WHERE it.tag_id = t.id AND i.status = 'published' AND c.is_active AND c.slug <> 'stories')
+  ORDER BY t.name, t.id`
+
 export const archivePageQuery = `${cardsSelect} ${archiveConditions}
-  ORDER BY i.sort_order, i.id LIMIT $5::int OFFSET $6::bigint`
+  ORDER BY
+    CASE WHEN $8::text = 'newest' THEN i.published_at END DESC NULLS LAST,
+    CASE WHEN $8::text = 'views' THEN i.view_count END DESC,
+    CASE WHEN $8::text = 'downloads' THEN i.download_count END DESC,
+    CASE WHEN $8::text = 'title' THEN lower(i.title) END ASC,
+    i.sort_order, i.id LIMIT $6::int OFFSET $7::bigint`

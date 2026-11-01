@@ -2,9 +2,10 @@ import 'server-only'
 import { cache } from 'react'
 import { catalogFacts } from '../../lib/catalog-facts'
 import { neon } from '@neondatabase/serverless'
-import type { CatalogDetail, Category, Asset } from '../../lib/entities/catalog'
-import { archiveCountQuery, archivePageQuery, cardsQuery, categoriesQuery } from '../repositories/catalog.queries'
+import type { CatalogDetail, Category, Asset, Tag } from '../../lib/entities/catalog'
+import { archiveCountQuery, archivePageQuery, archiveTagsQuery, cardsQuery, categoriesQuery } from '../repositories/catalog.queries'
 import { CATALOG_DISPLAY } from '../../lib/catalog'
+import { searchTags, searchSort, searchCategories } from '../../lib/search-filters'
 
 function database() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required to load the catalog.')
@@ -41,24 +42,30 @@ export const listCategories = cache(async (): Promise<Category[]> => {
   return await database().query(categoriesQuery) as Category[]
 })
 
+export const listArchiveTags = cache(async (): Promise<Tag[]> => {
+  return await database().query(archiveTagsQuery) as Tag[]
+})
+
 export async function listCatalogItems(filters: { category?: string; slug?: string; query?: string } = {}): Promise<CatalogDetail[]> {
   const rows = await database().query(cardsQuery, [filters.category ?? null, filters.slug ?? null,
     filters.query?.trim() ? `%${filters.query.trim()}%` : null])
   return presentCatalogRows(rows as CatalogRow[])
 }
 
-export async function listArchivePage(filters: { category?: string; tag?: string; query?: string; page?: number }) {
+export async function listArchivePage(filters: { category?: string; tag?: string; query?: string; page?: number; sort?: string; tagMatch?: string }) {
   const sql = database()
   // Search text is literal, including SQL wildcard characters entered by the user.
   const query = filters.query?.trim().replace(/[\\%_]/g, '\\$&')
-  const params = [filters.category || null, null, query ? `%${query}%` : null, filters.tag || null]
+  const tags = searchTags(filters.tag ?? '').join(' ')
+  const category = searchCategories(filters.category ?? '').join(',')
+  const params = [category || null, null, query ? `%${query}%` : null, tags || null, filters.tagMatch === 'any' ? 'any' : 'all']
   const [count] = await sql.query(archiveCountQuery, params)
   const total = Number(count.total)
   const pageSize = CATALOG_DISPLAY.archivePageSize
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const requested = Number.isSafeInteger(filters.page) && filters.page! > 0 ? filters.page! : 1
   const page = Math.min(requested, totalPages)
-  const rows = await sql.query(archivePageQuery, [...params, pageSize, (page - 1) * pageSize])
+  const rows = await sql.query(archivePageQuery, [...params, pageSize, (page - 1) * pageSize, searchSort(filters.sort ?? '')])
   return { items: presentCatalogRows(rows as CatalogRow[]), total, page, totalPages }
 }
 

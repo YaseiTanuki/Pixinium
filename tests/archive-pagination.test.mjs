@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { migrate } from '../scripts/migrations.ts'
-import { archiveCountQuery, archivePageQuery } from '../server/repositories/catalog.queries.ts'
+import { archiveCountQuery, archivePageQuery, archiveTagsQuery } from '../server/repositories/catalog.queries.ts'
 import { CATALOG_DISPLAY, searchHref } from '../lib/catalog.ts'
+import { searchTags, searchSort, searchCategories } from '../lib/search-filters.ts'
 
 test('archive pages respect the configured size, preserve filters and exclude unpublished content', async () => {
   const db = new PGlite()
@@ -18,9 +19,29 @@ test('archive pages respect the configured size, preserve filters and exclude un
       INSERT INTO catalog.items(category_id, slug, title, status)
       SELECT id, 'hidden-image', 'Hidden image', 'archived' FROM catalog.categories WHERE slug = 'images';`)
     const params = [null, null, null, null]
-    const count = async filters => (await db.query(archiveCountQuery, filters)).rows[0].total
-    const page = async (offset, filters = params) => (await db.query(archivePageQuery, [...filters, CATALOG_DISPLAY.archivePageSize, offset])).rows
+    const count = async (filters, match = 'all') => (await db.query(archiveCountQuery, [...filters, match])).rows[0].total
+    const page = async (offset, filters = params, match = 'all', sort = '') => (await db.query(archivePageQuery, [...filters, match, CATALOG_DISPLAY.archivePageSize, offset, sort])).rows
     assert.equal(await count(params), 45)
+    assert.deepEqual((await db.query(archiveTagsQuery)).rows.map(tag => tag.slug), ['wallpaper'])
+    assert.equal(await count(['images', null, '%Image 1%', 'wallpaper']), 11)
+    assert.equal(await count(['missing', null, null, 'wallpaper']), 0)
+    assert.equal(await count([null, null, null, 'wallpaper missing']), 0)
+    assert.equal(await count([null, null, null, 'wallpaper missing'], 'any'), 45)
+    assert.equal(await count([null, null, null, 'Wallpaper']), 45)
+    await db.exec(`INSERT INTO catalog.tags(slug, name) VALUES ('moon', 'Moon');
+      INSERT INTO catalog.item_tags(item_id, tag_id)
+      SELECT i.id, t.id FROM catalog.items i CROSS JOIN catalog.tags t
+      WHERE i.slug = 'image-1' AND t.slug = 'moon';
+      UPDATE catalog.items SET view_count = 100, download_count = 50, published_at = now() + interval '1 day' WHERE slug = 'image-2';`)
+    assert.equal(await count([null, null, null, 'wallpaper moon']), 1)
+    assert.equal(await count([null, null, null, 'wallpaper moon'], 'any'), 45)
+    assert.equal((await page(0, params, 'all', 'views'))[0].item.slug, 'image-2')
+    assert.equal((await page(0, params, 'all', 'downloads'))[0].item.slug, 'image-2')
+    assert.equal((await page(0, params, 'all', 'newest'))[0].item.slug, 'image-2')
+    assert.equal((await page(0, params, 'all', 'title'))[0].item.slug, 'image-1')
+    assert.deepEqual(searchTags(' #Cat cat, MOON   wallpaper '), ['cat', 'moon', 'wallpaper'])
+    assert.equal(searchSort('not-a-sort'), '')
+    assert.equal(searchHref({ tag: 'cat moon', sort: 'views', tagMatch: 'any', page: 2 }), '/search?tag=cat+moon&sort=views&match=any&page=2')
     const first = await page(0)
     const ids = []
     for (let offset = 0; offset < 45; offset += CATALOG_DISPLAY.archivePageSize) {
@@ -42,6 +63,11 @@ test('archive pages respect the configured size, preserve filters and exclude un
       FROM catalog.categories WHERE slug = 'soundtracks';`)
     assert.equal(await count(['images', null, null, null]), 45)
     assert.equal(await count(['soundtracks', null, null, null]), 1)
+    assert.equal(await count(['images,soundtracks', null, null, null]), 46)
+    assert.equal(await count(['images,soundtracks', null, null, 'wallpaper']), 45)
+    assert.equal((await page(36, ['images,soundtracks', null, null, null])).length, 10)
+    assert.deepEqual(searchCategories('images, music,images,, '), ['images', 'music'])
+    assert.equal(searchHref({ category: 'images,music', page: 2 }), '/search?category=images%2Cmusic&page=2')
     const tracks = await page(0, ['soundtracks', null, null, null])
     assert.equal(tracks[0].item.title, 'Untagged track')
     assert.equal(tracks[0].collect_count, 0)
@@ -49,9 +75,12 @@ test('archive pages respect the configured size, preserve filters and exclude un
     assert.equal(await count(['missing', null, null, null]), 0)
     await db.exec("UPDATE catalog.categories SET is_active = false WHERE slug = 'soundtracks'")
     assert.equal(await count(['soundtracks', null, null, null]), 0)
+    assert.equal(await count(['images,soundtracks', null, null, null]), 45)
     await db.exec("UPDATE catalog.categories SET is_active = false WHERE slug = 'images'")
     assert.equal(await count(params), 0)
     assert.equal((await page(0)).length, 0)
+    assert.deepEqual((await db.query(archiveTagsQuery)).rows, [])
+    assert.equal(searchHref({ category: 'images', tag: 'wallpaper', query: 'cat & moon', page: 2 }), '/search?tag=wallpaper&category=images&q=cat+%26+moon&page=2')
     assert.equal(searchHref({ tag: 'wallpaper', query: 'cat & moon', page: 2 }), '/search?tag=wallpaper&q=cat+%26+moon&page=2')
     assert.equal(searchHref({ page: 1 }), '/search')
   } finally { await db.close() }

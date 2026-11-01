@@ -1,12 +1,16 @@
 import CatalogSearch from './catalog-search'
 import './search.css'
-import { listArchivePage, listCategories } from '@/server/services/catalog.service'
+import { searchTags, searchSort, searchCategories } from '@/lib/search-filters'
+import { listArchivePage, listArchiveTags, listCategories } from '@/server/services/catalog.service'
 export const dynamic = 'force-dynamic'
-export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string | string[]; tag?: string | string[]; page?: string | string[] }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string | string[]; tag?: string | string[]; category?: string | string[]; page?: string | string[]; sort?: string | string[]; match?: string | string[] }> }) {
  const params = await searchParams
  const q = typeof params.q === 'string' ? params.q.trim() : ''
- const tag = typeof params.tag === 'string' ? params.tag : ''
+ const tag = searchTags(Array.isArray(params.tag) ? params.tag.join(' ') : params.tag ?? '').join(' ')
+ const sort = searchSort(typeof params.sort === 'string' ? params.sort : '')
+ const tagMatch = params.match === 'any' ? 'any' : 'all'
+ const category = searchCategories(Array.isArray(params.category) ? params.category.join(',') : params.category ?? '').join(',')
  const requestedPage = typeof params.page === 'string' && /^\d+$/.test(params.page) ? Number(params.page) : 1
- const [result, categories] = await Promise.all([listArchivePage({ query: q, tag, page: requestedPage }), listCategories()])
- return <CatalogSearch {...result} categories={categories} initialTag={tag} initialQuery={q} />
+ const [result, categories, tags] = await Promise.all([listArchivePage({ query: q, tag, category, sort, tagMatch, page: requestedPage }), listCategories(), listArchiveTags()])
+ return <CatalogSearch {...result} categories={categories} tags={tags} initialTag={tag} initialCategory={category} initialQuery={q} initialSort={sort} initialTagMatch={tagMatch} />
 }

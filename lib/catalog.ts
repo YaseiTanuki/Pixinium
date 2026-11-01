@@ -10,10 +10,13 @@ export function categoryHref(slug: string, { query, page }: { query?: string; pa
   return `/${encodeURIComponent(slug)}${search ? `?${search}` : ''}`
 }
 
-export function searchHref({ tag, query, page }: { tag?: string; query?: string; page?: number } = {}): string {
+export function searchHref({ tag, category, query, page, sort, tagMatch }: { tag?: string; category?: string; query?: string; page?: number; sort?: string; tagMatch?: string } = {}): string {
   const params = new URLSearchParams()
   if (tag) params.set('tag', tag)
+  if (category) params.set('category', category)
   if (query) params.set('q', query)
+  if (sort) params.set('sort', sort)
+  if (tag && tagMatch === 'any') params.set('match', 'any')
   if (page && page > 1) params.set('page', String(page))
   const search = params.toString()
   return search ? `/search?${search}` : '/search'

@@ -12,9 +12,12 @@ type SiteHeaderProps = {
   query?: string
   onQueryChange?: (value: string) => void
   searchTag?: string
+  searchCategory?: string
+  searchSort?: string
+  searchTagMatch?: string
 }
 
-export function SiteHeader({ query, onQueryChange, searchTag }: SiteHeaderProps = {}) {
+export function SiteHeader({ query, onQueryChange, searchTag, searchCategory, searchSort, searchTagMatch }: SiteHeaderProps = {}) {
   const { saved, error } = useSavedItems()
   const [hasAvatar, setHasAvatar] = useState(false)
 
@@ -23,6 +26,9 @@ export function SiteHeader({ query, onQueryChange, searchTag }: SiteHeaderProps 
       <BrandLogo className="md:mr-3" />
       <form action="/search" method="get" role="search" className="relative col-span-3 col-start-1 row-start-2 min-w-0 md:col-span-1 md:col-start-2 md:row-start-1 md:max-w-[360px]">
         {searchTag && <input type="hidden" name="tag" value={searchTag} />}
+        {searchCategory && <input type="hidden" name="category" value={searchCategory} />}
+        {searchSort && <input type="hidden" name="sort" value={searchSort} />}
+        {searchTag && searchTagMatch === 'any' && <input type="hidden" name="match" value="any" />}
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a29a95]" size={16} aria-hidden="true" />
         <input value={query} onChange={onQueryChange ? (event) => onQueryChange(event.target.value) : undefined} aria-label="Search the archive" name="q" type="search" placeholder="Search wallpapers, music, games?" className="h-11 min-w-0 w-full rounded-xl border border-[#e4dad4] bg-white pl-10 pr-4 text-base outline-none placeholder:text-[#b2aaa5] focus:border-[#b9a79a] md:text-sm" />
       </form>
