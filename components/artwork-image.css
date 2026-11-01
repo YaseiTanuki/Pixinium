@@ -1,0 +1,7 @@
+.artwork-media { position: absolute; inset: 0; display: block; overflow: hidden; }
+.artwork-media > img { display: block; min-width: 0; min-height: 0; transition: opacity 160ms ease; }
+.artwork-skeleton { position: absolute; inset: 0; display: block; overflow: hidden; background: #e9e1d7; }
+.artwork-skeleton::after { position: absolute; inset: 0; content: ''; background: #f8f2e9; animation: artwork-skeleton-pulse 1.8s ease-in-out infinite; }
+.artwork-unavailable { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; background: #ece4da; color: #746154; text-align: center; font-size: 12px; }
+@keyframes artwork-skeleton-pulse { 0%, 100% { opacity: .15; } 50% { opacity: .65; } }
+@media (prefers-reduced-motion: reduce) { .artwork-skeleton::after { animation: none; opacity: .3; } .artwork-media > img { transition: none; } }

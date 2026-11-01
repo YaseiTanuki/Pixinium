@@ -8,10 +8,13 @@ import { categoryHref, itemHref } from '@/lib/catalog'
 import type { CatalogCard as Card } from '@/lib/entities/catalog'
 import { categoryIcon } from '@/lib/category-icons'
 import { CollectButton } from '@/components/collect-button'
+import { ArtworkImage } from '@/components/artwork-image'
 
-export function ItemArtwork({ item }: { item: Card }) {
-  return <div className="item-artwork" style={{ backgroundColor: item.item.accentColor }}>
-    {item.cover ? <img src={item.cover.url} alt={item.cover.altText} width={item.cover.width ?? 600} height={item.cover.height ?? 400} loading="lazy" className="h-full w-full object-cover" style={{ objectPosition: `${item.cover.focalX}% ${item.cover.focalY}%` }} /> : item.category.artworkStyle === 'record' ? <div className="record-art" aria-hidden="true"><div className="record-disc"><span><Music2 size={25} /></span></div><span className="record-caption">PIXINIUM RECORDS / SIDE B</span></div> : <ImageIcon size={36} aria-label="No cover artwork" />}
+export function ItemArtwork({ item, naturalSize = false }: { item: Card; naturalSize?: boolean }) {
+  const width = item.cover?.width && item.cover.width > 0 ? item.cover.width : 600
+  const height = item.cover?.height && item.cover.height > 0 ? item.cover.height : 400
+  return <div className="item-artwork" style={{ backgroundColor: item.item.accentColor, position: 'relative', aspectRatio: item.cover && naturalSize ? `${width} / ${height}` : undefined }}>
+    {item.cover ? <ArtworkImage key={item.cover.url} cover={item.cover} title={item.item.title} /> : item.category.artworkStyle === 'record' ? <div className="record-art" aria-hidden="true"><div className="record-disc"><span><Music2 size={25} /></span></div><span className="record-caption">PIXINIUM RECORDS / SIDE B</span></div> : <ImageIcon size={36} aria-label="No cover artwork" />}
   </div>
 }
 
@@ -24,7 +27,7 @@ export function CatalogCard({ item, variant = 'compact' }: { item: Card; variant
   return <article className={`discovery-card discovery-card-${variant}`}>
     {variant === 'cartridge' && <div className="cartridge-shell-top" aria-hidden="true"><span className="cartridge-brand">pixinium<span>.</span></span><span className="cartridge-play"><Gamepad2 size={15} /> PLAY</span></div>}
     <div className={variant === 'cartridge' ? 'relative cartridge-label' : 'relative'}>
-      <Link className="artwork-button" href={itemHref(item)} aria-label={`View ${item.item.title}`}><ItemArtwork item={item} /></Link>
+      <Link className="artwork-button" href={itemHref(item)} aria-label={`View ${item.item.title}`}><ItemArtwork item={item} naturalSize={variant !== 'cartridge'} /></Link>
       <Link href={categoryHref(item.category.slug)} className="card-category-chip" aria-label={item.category.name} title={item.category.name}><Icon size={15} aria-hidden="true" /></Link>
       <div className="discovery-card-overlay" style={variant === 'cartridge' ? { flexDirection: 'row', alignItems: 'center', gap: 4, padding: '40px 6px 4px' } : undefined}>
         <h3 style={variant === 'cartridge' ? { flex: 1, minWidth: 0, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } : undefined}><Link href={itemHref(item)} title={item.item.title}>{item.item.title}</Link></h3>
