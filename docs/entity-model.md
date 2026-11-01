@@ -37,9 +37,8 @@ erDiagram
 | `item_facts` | Ordered custom key/label/value facts and creator attribution | Image resolution/format and pack quantity/format are computed on read, not stored again |
 | `assets` | Reusable external, S3, Supabase Storage, or R2 reference; dimensions, duration, byte size | Artwork, download sizes, audio track durations |
 | `item_assets` | Media role, alt text, crop focal point, display order | One cover per item, preview and download attachments |
-| `tags`, `item_tags` | Many-to-many labels across categories | Cozy, night, chaos, future mood discovery |
+| `tags`, `item_tags` | Many-to-many labels and intended uses across categories | Cozy, night, wallpaper, background and avatar without duplicate uploads |
 | `collections`, `collection_items` | Ownership, visibility, membership, and time saved | Saved items ordered by `added_at`; no unused title/description or manual ordering column |
-| `content_uses`, `item_uses` | Multiple intended uses per item | Wallpaper, background and avatar without duplicate uploads |
 | `profiles` | Supabase UUID, unique lowercase username, display name, application role | Account and collection ownership; avatar initials derive from the display name |
 
 Content IDs use `bigint GENERATED ALWAYS AS IDENTITY`; expose them as
@@ -117,7 +116,7 @@ fields requires registering a versioned Zod schema and selecting its key.
 
 Promote attributes to typed columns or a dedicated detail table when they need
 range filters, indexes, relationships, or stronger constraints. Do not build an
-untyped relationship model inside JSON. Intended uses belong in `item_uses`.
+untyped relationship model inside JSON. Intended uses belong in `tags` and `item_tags`.
 
 The frontend loads active categories from Neon and filters by category slug.
 Facts render their stored labels and values; accent colors and cover focal points

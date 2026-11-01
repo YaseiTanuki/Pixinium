@@ -1,6 +1,5 @@
 export const editableContentQuery = `
 SELECT i.id::text, i.title, i.summary, i.description, i.slug, c.slug AS category, c.metadata_schema_key,
-  coalesce((SELECT jsonb_agg(u.use_slug ORDER BY u.use_slug) FROM catalog.item_uses u WHERE u.item_id = i.id), '[]'::jsonb) AS uses,
   coalesce((SELECT jsonb_agg(t.name ORDER BY t.name) FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id WHERE it.item_id = i.id), '[]'::jsonb) AS tags,
   coalesce((SELECT jsonb_agg(jsonb_build_object('key', f.key, 'label', f.label, 'value', f.value) ORDER BY f.sort_order, f.key)
     FROM catalog.item_facts f WHERE f.item_id = i.id), '[]'::jsonb) AS facts,
@@ -9,7 +8,7 @@ SELECT i.id::text, i.title, i.summary, i.description, i.slug, c.slug AS category
 FROM catalog.items i JOIN catalog.categories c ON c.id = i.category_id
 WHERE i.id = $1::bigint`
 
-// One statement: text, uses, tags and facts change together or not at all.
+// One statement: text, tags and facts change together or not at all.
 // Relations are diffed (delete missing, upsert wanted) so no CTE depends on another's execution order.
 // $4 is false for categories whose facts are generated from the files; $5 replaces item metadata when not null.
 export const currentAssetIdsQuery = `
@@ -65,18 +64,6 @@ WITH actor AS MATERIALIZED (
     metadata = coalesce($5::jsonb, i.metadata)
   FROM input CROSS JOIN actor
   WHERE i.id = $2::bigint RETURNING i.id, i.slug, i.category_id
-), wanted_uses AS (
-  SELECT item.id AS item_id, selected.u AS use_slug FROM item CROSS JOIN input
-  CROSS JOIN LATERAL jsonb_array_elements_text(coalesce(doc->'uses', '[]'::jsonb)) AS selected(u)
-  UNION
-  SELECT item.id, u.slug FROM item JOIN catalog.categories c ON c.id = item.category_id
-  JOIN catalog.content_uses u ON u.slug = c.slug
-), removed_uses AS (
-  DELETE FROM catalog.item_uses iu USING item
-  WHERE iu.item_id = item.id AND NOT EXISTS (SELECT 1 FROM wanted_uses w WHERE w.use_slug = iu.use_slug) RETURNING 1
-), added_uses AS (
-  INSERT INTO catalog.item_uses(item_id, use_slug) SELECT item_id, use_slug FROM wanted_uses
-  ON CONFLICT DO NOTHING RETURNING 1
 ), tags AS (
   INSERT INTO catalog.tags(slug, name)
   SELECT t->>'slug', t->>'name' FROM item CROSS JOIN input CROSS JOIN LATERAL jsonb_array_elements(doc->'tags') t

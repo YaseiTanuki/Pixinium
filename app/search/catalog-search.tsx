@@ -14,10 +14,10 @@ import type { CatalogDetail, Category } from '@/lib/entities/catalog'
 type Props = {
   categories: Category[]
   items: CatalogDetail[]; total: number; page: number; totalPages: number
-  initialUse?: string; initialQuery?: string
+  initialTag?: string; initialQuery?: string
 }
 
-export default function CatalogSearch({ items, categories, total, page, totalPages, initialUse = '', initialQuery = '' }: Props) {
+export default function CatalogSearch({ items, categories, total, page, totalPages, initialTag = '', initialQuery = '' }: Props) {
   const [query, setQuery] = useState(initialQuery)
   const [pending, startTransition] = useTransition()
   const router = useRouter()
@@ -30,14 +30,14 @@ export default function CatalogSearch({ items, categories, total, page, totalPag
   useEffect(() => {
     if (query.trim() === initialQuery) return
     searchTimer.current = setTimeout(() => startTransition(() => {
-      router.replace(searchHref({ use: initialUse, query: query.trim() }), { scroll: false })
+      router.replace(searchHref({ tag: initialTag, query: query.trim() }), { scroll: false })
     }), 350)
     return () => clearTimeout(searchTimer.current)
-  }, [query, initialQuery, initialUse, router])
+  }, [query, initialQuery, initialTag, router])
 
   return (
     <main className="home-page archive-page">
-      <SiteHeader query={query} onQueryChange={setQuery} searchUse={initialUse} />
+      <SiteHeader query={query} onQueryChange={setQuery} searchTag={initialTag} />
       <div className="page-shell catalog-layout">
       <CategoryNavigation categories={categories} current="all" />
       <div className="search-content">
@@ -51,12 +51,12 @@ export default function CatalogSearch({ items, categories, total, page, totalPag
           {totalPages > 1 && <nav className="archive-pagination" aria-label="Archive pages">
             <p className="archive-pagination-summary">Page <strong>{page}</strong> of <strong>{totalPages}</strong></p>
             <div className="archive-pagination-controls">
-            {page > 1 ? <Link className="archive-page-step" prefetch={false} href={searchHref({ use: initialUse, query: initialQuery, page: page - 1 })} aria-label="Previous page"><ArrowLeft size={17} aria-hidden="true" /> <span>Previous</span></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Previous page"><ArrowLeft size={17} aria-hidden="true" /> <span>Previous</span></span>}
+            {page > 1 ? <Link className="archive-page-step" prefetch={false} href={searchHref({ tag: initialTag, query: initialQuery, page: page - 1 })} aria-label="Previous page"><ArrowLeft size={17} aria-hidden="true" /> <span>Previous</span></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Previous page"><ArrowLeft size={17} aria-hidden="true" /> <span>Previous</span></span>}
             <div className="archive-page-numbers">{pages.map((number, index) => <div key={number}>
               {index > 0 && number - pages[index - 1] > 1 && <span aria-hidden="true">…</span>}
-              <Link prefetch={false} href={searchHref({ use: initialUse, query: initialQuery, page: number })} aria-label={`Page ${number}`} aria-current={number === page ? 'page' : undefined}>{number}</Link>
+              <Link prefetch={false} href={searchHref({ tag: initialTag, query: initialQuery, page: number })} aria-label={`Page ${number}`} aria-current={number === page ? 'page' : undefined}>{number}</Link>
             </div>)}</div>
-            {page < totalPages ? <Link className="archive-page-step" prefetch={false} href={searchHref({ use: initialUse, query: initialQuery, page: page + 1 })} aria-label="Next page"><span>Next</span> <ArrowRight size={17} aria-hidden="true" /></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Next page"><span>Next</span> <ArrowRight size={17} aria-hidden="true" /></span>}
+            {page < totalPages ? <Link className="archive-page-step" prefetch={false} href={searchHref({ tag: initialTag, query: initialQuery, page: page + 1 })} aria-label="Next page"><span>Next</span> <ArrowRight size={17} aria-hidden="true" /></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Next page"><span>Next</span> <ArrowRight size={17} aria-hidden="true" /></span>}
             </div>
           </nav>}
         </div>

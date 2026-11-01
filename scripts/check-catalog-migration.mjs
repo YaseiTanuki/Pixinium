@@ -9,7 +9,7 @@ async function main() {
   const state = await sql.query('SELECT current_database() AS database, current_user AS migration_role, to_regclass($1)::text AS ledger', ['public.schema_migrations'])
   console.log(JSON.stringify(state))
   if (state[0].ledger) console.log(JSON.stringify(await sql.query('SELECT name FROM public.schema_migrations ORDER BY name')))
-  const ready = (await sql.query("SELECT to_regclass('catalog.item_uses') IS NOT NULL AS ready"))[0].ready
+  const ready = (await sql.query("SELECT to_regclass('catalog.item_tags') IS NOT NULL AS ready"))[0].ready
   for (const key of ['DATABASE_URL', 'CATALOG_ADMIN_DATABASE_URL']) {
     if (!process.env[key]) continue
     const url = new URL(process.env[key])
@@ -19,12 +19,13 @@ async function main() {
     const roles = await db.query('SELECT current_user AS role, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user')
     console.log(JSON.stringify({connection: key, sameDatabase, roles}))
     if (ready) {
-      const privileges = await db.query("SELECT has_table_privilege(current_user, 'catalog.content_uses', 'SELECT') AS read_uses, has_table_privilege(current_user, 'catalog.item_uses', 'SELECT') AS read_links, has_table_privilege(current_user, 'catalog.item_uses', 'INSERT') AS write_links")
+      const privileges = await db.query("SELECT has_table_privilege(current_user, 'catalog.tags', 'SELECT') AS read_tags, has_table_privilege(current_user, 'catalog.item_tags', 'SELECT') AS read_links, has_table_privilege(current_user, 'catalog.item_tags', 'INSERT') AS write_links")
       console.log(JSON.stringify({connection: key, privileges}))
-      console.log(JSON.stringify({connection: key, uses: await db.query('SELECT slug, name FROM catalog.content_uses ORDER BY sort_order')}))
+      console.log(JSON.stringify({connection: key, tags: await db.query('SELECT slug, name FROM catalog.tags ORDER BY name, slug')}))
     }
   }
   if (ready) console.log(JSON.stringify(await sql.query(`SELECT
+    to_regclass('catalog.content_uses') IS NULL AND to_regclass('catalog.item_uses') IS NULL AS uses_removed,
     to_regclass('public.archive_items') IS NULL AS old_archive_removed,
     to_regclass('catalog.legacy_item_keys') IS NULL AS legacy_keys_removed,
     NOT EXISTS (SELECT 1 FROM catalog.items WHERE metadata ? 'legacy') AS legacy_metadata_removed,

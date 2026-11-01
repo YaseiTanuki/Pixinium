@@ -4,8 +4,8 @@
   Detail rendering uses the schema returned by the catalog service, never the category slug.
   New rendering kinds must have an entry in the typed detail component registry.
   Unknown schemas render the generic asset preview; metadata validation still rejects unsupported schemas.
-- Category names, slugs, descriptions and available uses come from catalog data.
-  Home and search show all supplied uses, in catalog order, without a frontend allowlist.
+- Category names, slugs, descriptions and tags come from catalog data.
+  Search supports tags without a frontend allowlist; intended uses are ordinary tags.
 - `lib/admin/limits.ts` owns shared upload and form limits. UI messages and input attributes,
   Zod validation, cleanup, API discovery and original image processing consume these values.
 - `lib/admin/content.ts` owns allowed upload extensions/MIME types. File inputs derive their

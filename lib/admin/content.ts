@@ -36,8 +36,7 @@ export const contentSchema = z.object({
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#f1e5dd'), isFeatured: z.boolean().default(false),
   sortOrder: z.number().int().min(0).max(CONTENT_LIMITS.sortOrder).default(0),
   metadata: z.record(z.string(), z.unknown()),
-  uses: z.array(slug).max(20).default([]),
-  tags: z.array(z.object({ slug, name: z.string().trim().min(1).max(60) })).max(20),
+  tags: z.array(z.object({ slug, name: z.string().trim().min(1).max(60) })).max(40),
   facts: z.array(z.object({ key: z.string().regex(/^[a-z][a-z0-9_]*$/).max(CONTENT_LIMITS.factKey),
     label: z.string().trim().min(1).max(CONTENT_LIMITS.factLabel), value: z.string().trim().min(1).max(CONTENT_LIMITS.factValue) })).max(CONTENT_LIMITS.facts),
   attachments: z.array(attachmentSchema).max(MAX_ATTACHMENT_COUNT),
@@ -45,7 +44,6 @@ export const contentSchema = z.object({
   const issue = (message: string) => ctx.addIssue({ code: 'custom', message })
   if (new Set(value.facts.map(x => x.key)).size !== value.facts.length) issue('Fact keys must be unique.')
   if (new Set(value.tags.map(x => x.slug)).size !== value.tags.length) issue('Tags must be unique.')
-  if (new Set(value.uses).size !== value.uses.length) issue('Choose each use only once.')
   if (new Set(value.attachments.map(x => x.path)).size !== value.attachments.length) issue('Each file can be attached once.')
   if (value.status === 'published' && !value.attachments.some(x => fileType(x.path)?.mediaType === 'image')) issue('Upload an image to generate a thumbnail before publishing.')
   for (const asset of value.attachments) {
@@ -58,14 +56,13 @@ export const contentSchema = z.object({
 export const contentUpdateSchema = z.object({
   id: z.string().regex(/^[1-9][0-9]{0,18}$/),
   title: contentSchema.shape.title, summary: contentSchema.shape.summary, description: contentSchema.shape.description,
-  uses: contentSchema.shape.uses, tags: contentSchema.shape.tags, facts: contentSchema.shape.facts,
+  tags: contentSchema.shape.tags, facts: contentSchema.shape.facts,
   // When present, this set replaces every existing file of the item.
   attachments: z.array(attachmentSchema).max(MAX_ATTACHMENT_COUNT).optional(),
 }).superRefine((value, ctx) => {
   const issue = (message: string) => ctx.addIssue({ code: 'custom', message })
   if (new Set(value.facts.map(x => x.key)).size !== value.facts.length) issue('Fact keys must be unique.')
   if (new Set(value.tags.map(x => x.slug)).size !== value.tags.length) issue('Tags must be unique.')
-  if (new Set(value.uses).size !== value.uses.length) issue('Choose each use only once.')
   if (value.attachments) {
     if (new Set(value.attachments.map(x => x.path)).size !== value.attachments.length) issue('Each file can be attached once.')
     if (!value.attachments.some(x => fileType(x.path)?.mediaType === 'image')) issue('Upload an image to generate a thumbnail before publishing.')

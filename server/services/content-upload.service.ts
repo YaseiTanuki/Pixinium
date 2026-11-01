@@ -59,8 +59,6 @@ export async function createContentForActor(account: ContentActor | null, input:
     const sql = neon(connection)
     const categories = await sql`SELECT slug, metadata_schema_key FROM catalog.categories WHERE id = ${value.categoryId}::bigint AND is_active`
     if (!categories[0]) return { error: 'Choose an active category.' }
-    const validUses = await sql.query('SELECT slug FROM catalog.content_uses WHERE slug = ANY($1::text[])', [value.uses])
-    if (validUses.length !== value.uses.length) return { error: 'A selected use is no longer available. Reload the studio.' }
     const schemaKey = String(categories[0].metadata_schema_key)
     const isMusic = schemaKey === CONTENT_SCHEMAS.music
     const isGame = schemaKey === CONTENT_SCHEMAS.game

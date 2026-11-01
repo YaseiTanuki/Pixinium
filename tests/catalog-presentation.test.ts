@@ -17,10 +17,10 @@ test('category behavior follows the schema rather than a renamed slug', () => {
 
 test('catalog URLs encode values without allowing extra query parameters or path segments', () => {
   const query = 'cozy & night/#?'
-  const use = 'custom&use=music'
-  const url = new URL(searchHref({ use, query }), 'https://example.test')
+  const tag = 'custom&tag=music'
+  const url = new URL(searchHref({ tag, query }), 'https://example.test')
   assert.equal(url.searchParams.get('q'), query)
-  assert.deepEqual(url.searchParams.getAll('use'), [use])
+  assert.deepEqual(url.searchParams.getAll('tag'), [tag])
   assert.equal(searchHref(), '/search')
   const categoryUrl = new URL(categoryHref('custom/type', { query, page: 3 }), 'https://example.test')
   assert.equal(categoryUrl.pathname, '/custom%2Ftype')

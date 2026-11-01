@@ -30,17 +30,17 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
   const db = new PGlite()
   try {
     await seedLegacy(db)
-    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql', '0012_trim_unused_catalog_fields.sql', '0013_profile_avatar_path.sql'])
+    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql', '0012_trim_unused_catalog_fields.sql', '0013_profile_avatar_path.sql', '0014_item_view_download_counts.sql', '0016_merge_uses_into_tags.sql'])
 
-    await t.test('uses backfill and multi-use discovery preserve one item and hide archived items', async () => {
+    await t.test('tag backfill and discovery preserve one item and hide archived items', async () => {
       const first = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items ORDER BY id LIMIT 1")).rows[0]
-      assert.equal((await db.query('SELECT * FROM catalog.item_uses WHERE item_id = $1 AND use_slug = $2', [first.id, 'wallpaper'])).rows.length, 1)
+      assert.equal((await db.query('SELECT * FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id WHERE it.item_id = $1 AND t.slug = $2', [first.id, 'wallpaper'])).rows.length, 1)
       await db.exec('BEGIN')
       try {
-        await db.query("INSERT INTO catalog.item_uses VALUES ($1, 'background'), ($1, 'avatar')", [first.id])
-        const found = (await db.query<{ uses: unknown[] }>(cardsQuery, [null, null, '%avatar%'])).rows
+        await db.query("INSERT INTO catalog.item_tags SELECT $1, id FROM catalog.tags WHERE slug IN ('background', 'avatar')", [first.id])
+        const found = (await db.query<{ tags: unknown[] }>(cardsQuery, [null, null, '%avatar%'])).rows
         assert.equal(found.length, 1)
-        assert.equal(found[0].uses.length, 4)
+        assert.equal(found[0].tags.length, 4)
         await db.query("UPDATE catalog.items SET status = 'archived' WHERE id = $1", [first.id])
         assert.equal((await db.query(cardsQuery, [null, null, '%avatar%'])).rows.length, 0)
       } finally { await db.exec('ROLLBACK') }
@@ -105,7 +105,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
         INSERT INTO catalog.item_facts(item_id, key, label, value)
         SELECT id, 'weights', 'Weights', '6 weights' FROM catalog.items WHERE slug = 'soft-serif';
         UPDATE catalog.items SET title = 'Werewolf, renamed' WHERE id = 1;`)
-      assert.equal((await db.query(`SELECT * FROM catalog.item_uses WHERE item_id = 1 AND use_slug = 'wallpaper'`)).rows.length, 1)
+      assert.equal((await db.query(`SELECT * FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id WHERE it.item_id = 1 AND t.slug = 'wallpaper'`)).rows.length, 1)
       assert.equal((await db.query(`SELECT * FROM catalog.item_facts WHERE key = 'weights'`)).rows.length, 1)
       await assert.rejects(db.exec(`DELETE FROM catalog.categories WHERE slug = 'fonts'`), /foreign key/)
     })
@@ -130,8 +130,8 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
     })
 
     await t.test('join constraints reject orphans, duplicates, and negative ordering', async () => {
-      await db.exec(`INSERT INTO catalog.tags(slug, name) VALUES ('cozy', 'Cozy'); INSERT INTO catalog.item_tags(item_id, tag_id) VALUES (1, 1)`)
-      await assert.rejects(db.exec(`INSERT INTO catalog.item_tags(item_id, tag_id) VALUES (1, 1)`), /unique constraint/)
+      await db.exec(`INSERT INTO catalog.tags(id, slug, name) OVERRIDING SYSTEM VALUE VALUES (1000, 'cozy', 'Cozy'); INSERT INTO catalog.item_tags(item_id, tag_id) VALUES (1, 1000)`)
+      await assert.rejects(db.exec(`INSERT INTO catalog.item_tags(item_id, tag_id) VALUES (1, 1000)`), /unique constraint/)
       await assert.rejects(db.exec(`INSERT INTO catalog.item_tags(item_id, tag_id) VALUES (99999, 1)`), /foreign key/)
       await assert.rejects(db.exec(`INSERT INTO catalog.item_assets(item_id, asset_id, role) VALUES (1, 99999, 'download')`), /foreign key/)
       await assert.rejects(db.exec(`UPDATE catalog.item_assets SET sort_order = -1 WHERE item_id = 1`), /check constraint/)
@@ -160,7 +160,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       GRANT UPDATE(username, display_name) ON catalog.profiles TO catalog_test_runtime;
       GRANT USAGE ON SEQUENCE catalog.collections_id_seq TO catalog_test_runtime;
       INSERT INTO catalog.items(category_id, slug, title, status) VALUES (1, 'draft-item', 'Archived item', 'archived');
-      INSERT INTO catalog.item_uses(item_id, use_slug) SELECT id, 'avatar' FROM catalog.items WHERE slug = 'draft-item';
+      INSERT INTO catalog.item_tags(item_id, tag_id) SELECT i.id, t.id FROM catalog.items i CROSS JOIN catalog.tags t WHERE i.slug = 'draft-item' AND t.slug = 'avatar';
       INSERT INTO catalog.assets(provider, external_url) VALUES ('external', 'https://example.com/private.png');
       INSERT INTO catalog.item_assets(item_id, asset_id, role)
         SELECT i.id, a.id, 'cover' FROM catalog.items i, catalog.assets a
@@ -171,8 +171,8 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.equal((await db.query('SELECT * FROM catalog.items')).rows.length, 9)
       assert.equal((await db.query('SELECT * FROM catalog.assets')).rows.length, 1)
       assert.equal((await db.query('SELECT * FROM catalog.collections')).rows.length, 0)
-      assert.equal((await db.query("SELECT * FROM catalog.item_uses WHERE use_slug = 'avatar'")).rows.length, 0)
-      await assert.rejects(db.exec("INSERT INTO catalog.item_uses VALUES (1, 'avatar')"), /permission denied/)
+      assert.equal((await db.query("SELECT * FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id WHERE t.slug = 'avatar'")).rows.length, 0)
+      await assert.rejects(db.exec("INSERT INTO catalog.item_tags SELECT 1, id FROM catalog.tags WHERE slug = 'avatar'"), /permission denied/)
       await assert.rejects(db.exec(`INSERT INTO catalog.collections(owner_user_id, kind, slug) VALUES ('${alice}', 'saved', 'saved')`), /row-level security/)
       await assert.rejects(db.exec(`UPDATE catalog.items SET title = 'Not allowed' WHERE id = 1`), /permission denied/)
     })

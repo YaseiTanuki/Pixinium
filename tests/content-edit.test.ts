@@ -8,7 +8,7 @@ import { currentAssetIdsQuery, editableContentQuery, updateContentQuery, updateC
 
 const admin = '00000000-0000-4000-8000-000000000001'
 const member = '00000000-0000-4000-8000-000000000002'
-const base = { title: 'Original', summary: 'Short', description: 'Long text', uses: ['wallpaper'], tags: [{ slug: 'cozy', name: 'Cozy' }, { slug: 'night', name: 'Night' }],
+const base = { title: 'Original', summary: 'Short', description: 'Long text', tags: [{ slug: 'cozy', name: 'Cozy' }, { slug: 'night', name: 'Night' }],
   facts: [{ key: 'license', label: 'License', value: 'Personal' }, { key: 'size', label: 'Size', value: 'Large' }] }
 
 test('content update validation accepts text edits only', () => {
@@ -16,7 +16,6 @@ test('content update validation accepts text edits only', () => {
   assert.equal(contentUpdateSchema.safeParse({ id: '0', ...base }).success, false)
   assert.equal(contentUpdateSchema.safeParse({ id: '12', ...base, title: ' ' }).success, false)
   assert.equal(contentUpdateSchema.safeParse({ id: '12', ...base, tags: [...base.tags, base.tags[0]] }).success, false)
-  assert.equal(contentUpdateSchema.safeParse({ id: '12', ...base, uses: ['a', 'a'] }).success, false)
   const parsed = contentUpdateSchema.parse({ id: '12', ...base, slug: 'changed', categoryId: '3' })
   assert.equal(Object.hasOwn(parsed, 'slug'), false)
   assert.equal(Object.hasOwn(parsed, 'categoryId'), false)
@@ -32,7 +31,7 @@ test('content update diffs relations atomically and rechecks the admin role', { 
   const db = new PGlite()
   try {
     await db.exec('BEGIN')
-    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql']) {
+    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0016_merge_uses_into_tags.sql']) {
       await db.exec(await readFile(`db/migrations/${file}`, 'utf8'))
     }
     await db.exec('COMMIT')
@@ -42,7 +41,7 @@ test('content update diffs relations atomically and rechecks the admin role', { 
       JSON.stringify({ ...base, slug, status: 'published', accentColor: '#f1e5dd', isFeatured: false, sortOrder: 0, metadata: {}, attachments: [] }), 'private-uploads'])).rows[0]
     const target = await create('target')
     const other = await create('other')
-    const edit = { title: 'Renamed', summary: 'New short', description: 'New long', uses: ['background'],
+    const edit = { title: 'Renamed', summary: 'New short', description: 'New long',
       tags: [{ slug: 'night', name: 'Night' }, { slug: 'dawn', name: 'Dawn' }], facts: [{ key: 'size', label: 'Dimensions', value: 'Huge' }, { key: 'format', label: 'Format', value: 'PNG' }] }
     const update = (actor: string, id: string, doc: unknown = edit, facts = true) => db.query<{ id: string; slug: string; category: string }>(updateContentQuery, [actor, id, JSON.stringify(doc), facts, null])
 
@@ -52,9 +51,8 @@ test('content update diffs relations atomically and rechecks the admin role', { 
 
     const saved = (await update(admin, target.id)).rows[0]
     assert.deepEqual([saved.id, saved.slug, saved.category], [target.id, 'target', category.slug])
-    const row = (await db.query<{ title: string; summary: string; description: string; slug: string; uses: string[]; tags: string[]; facts: Array<{ key: string; label: string; value: string }> }>(editableContentQuery, [target.id])).rows[0]
+    const row = (await db.query<{ title: string; summary: string; description: string; slug: string; tags: string[]; facts: Array<{ key: string; label: string; value: string }> }>(editableContentQuery, [target.id])).rows[0]
     assert.deepEqual([row.title, row.summary, row.description, row.slug], ['Renamed', 'New short', 'New long', 'target'])
-    assert.deepEqual(row.uses, [category.slug, 'background'].sort())
     assert.deepEqual(row.tags, ['Dawn', 'Night'])
     assert.deepEqual(row.facts, edit.facts)
     const untouched = (await db.query<{ title: string; tags: string[]; facts: unknown[] }>(editableContentQuery, [other.id])).rows[0]
@@ -64,7 +62,7 @@ test('content update diffs relations atomically and rechecks the admin role', { 
     const kept = (await db.query<{ description: string; tags: string[]; facts: unknown[] }>(editableContentQuery, [target.id])).rows[0]
     assert.deepEqual([kept.description, kept.tags, kept.facts.length], ['', [], 2])
 
-    await assert.rejects(update(admin, target.id, { ...edit, title: 'Rolled back', uses: ['missing'] }))
+    await assert.rejects(update(admin, target.id, { ...edit, title: 'Rolled back', tags: [{ slug: 'bad slug', name: 'Invalid' }] }))
     assert.equal((await db.query<{ title: string }>(editableContentQuery, [target.id])).rows[0].title, 'Renamed')
 
     // Replacing files swaps the cover link, removes only this item's orphaned assets and keeps shared ones.

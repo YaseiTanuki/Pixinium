@@ -12,8 +12,9 @@ test('archive pages respect the configured size, preserve filters and exclude un
     await db.exec(`INSERT INTO catalog.items(category_id, slug, title, status, published_at)
       SELECT c.id, 'image-' || n, 'Image ' || n, 'published', now()
       FROM catalog.categories c CROSS JOIN generate_series(1, 45) n WHERE c.slug = 'images';
-      INSERT INTO catalog.item_uses(item_id, use_slug)
-      SELECT id, 'wallpaper' FROM catalog.items WHERE slug LIKE 'image-%';
+      INSERT INTO catalog.item_tags(item_id, tag_id)
+      SELECT i.id, t.id FROM catalog.items i CROSS JOIN catalog.tags t
+      WHERE i.slug LIKE 'image-%' AND t.slug = 'wallpaper';
       INSERT INTO catalog.items(category_id, slug, title, status)
       SELECT id, 'hidden-image', 'Hidden image', 'archived' FROM catalog.categories WHERE slug = 'images';`)
     const params = [null, null, null, null]
@@ -33,7 +34,7 @@ test('archive pages respect the configured size, preserve filters and exclude un
     assert.equal((await page(0, [null, null, '%Image 1%', 'wallpaper'])).length, Math.min(11, CATALOG_DISPLAY.archivePageSize))
     assert.equal(await count([null, null, null, 'music']), 0)
     assert.equal((await page(0, [null, null, null, 'unknown'])).length, 0)
-    // Categories are independent of content-use tags, including future categories.
+    // Categories are independent of tags, including future categories.
     await db.exec(`INSERT INTO catalog.categories(slug, name, metadata_schema_key)
       VALUES ('soundtracks', 'Soundtracks', 'music.v1');
       INSERT INTO catalog.items(category_id, slug, title, status, published_at)
@@ -51,7 +52,7 @@ test('archive pages respect the configured size, preserve filters and exclude un
     await db.exec("UPDATE catalog.categories SET is_active = false WHERE slug = 'images'")
     assert.equal(await count(params), 0)
     assert.equal((await page(0)).length, 0)
-    assert.equal(searchHref({ use: 'wallpaper', query: 'cat & moon', page: 2 }), '/search?use=wallpaper&q=cat+%26+moon&page=2')
+    assert.equal(searchHref({ tag: 'wallpaper', query: 'cat & moon', page: 2 }), '/search?tag=wallpaper&q=cat+%26+moon&page=2')
     assert.equal(searchHref({ page: 1 }), '/search')
   } finally { await db.close() }
 })

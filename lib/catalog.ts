@@ -10,9 +10,9 @@ export function categoryHref(slug: string, { query, page }: { query?: string; pa
   return `/${encodeURIComponent(slug)}${search ? `?${search}` : ''}`
 }
 
-export function searchHref({ use, query, page }: { use?: string; query?: string; page?: number } = {}): string {
+export function searchHref({ tag, query, page }: { tag?: string; query?: string; page?: number } = {}): string {
   const params = new URLSearchParams()
-  if (use) params.set('use', use)
+  if (tag) params.set('tag', tag)
   if (query) params.set('q', query)
   if (page && page > 1) params.set('page', String(page))
   const search = params.toString()

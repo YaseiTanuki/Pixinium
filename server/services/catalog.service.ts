@@ -2,7 +2,7 @@ import 'server-only'
 import { cache } from 'react'
 import { catalogFacts } from '../../lib/catalog-facts'
 import { neon } from '@neondatabase/serverless'
-import type { CatalogDetail, Category, Asset, ContentUse } from '../../lib/entities/catalog'
+import type { CatalogDetail, Category, Asset } from '../../lib/entities/catalog'
 import { archiveCountQuery, archivePageQuery, cardsQuery, categoriesQuery } from '../repositories/catalog.queries'
 import { CATALOG_DISPLAY } from '../../lib/catalog'
 
@@ -41,20 +41,17 @@ export const listCategories = cache(async (): Promise<Category[]> => {
   return await database().query(categoriesQuery) as Category[]
 })
 
-export const listContentUses = cache(async (): Promise<ContentUse[]> =>
-  await database().query('SELECT slug, name FROM catalog.content_uses ORDER BY sort_order, slug') as ContentUse[])
-
 export async function listCatalogItems(filters: { category?: string; slug?: string; query?: string } = {}): Promise<CatalogDetail[]> {
   const rows = await database().query(cardsQuery, [filters.category ?? null, filters.slug ?? null,
     filters.query?.trim() ? `%${filters.query.trim()}%` : null])
   return presentCatalogRows(rows as CatalogRow[])
 }
 
-export async function listArchivePage(filters: { category?: string; use?: string; query?: string; page?: number }) {
+export async function listArchivePage(filters: { category?: string; tag?: string; query?: string; page?: number }) {
   const sql = database()
   // Search text is literal, including SQL wildcard characters entered by the user.
   const query = filters.query?.trim().replace(/[\\%_]/g, '\\$&')
-  const params = [filters.category || null, null, query ? `%${query}%` : null, filters.use || null]
+  const params = [filters.category || null, null, query ? `%${query}%` : null, filters.tag || null]
   const [count] = await sql.query(archiveCountQuery, params)
   const total = Number(count.total)
   const pageSize = CATALOG_DISPLAY.archivePageSize
@@ -70,7 +67,7 @@ type CatalogRow = {
   item: CatalogDetail['item']; category: CatalogDetail['category']; assets: Media[]
   facts: CatalogDetail['facts']; metadata_schema_key: string; image_count: number
   music_metadata: Record<string, unknown>
-  description: string; tags: CatalogDetail['tags']; uses: CatalogDetail['uses']
+  description: string; tags: CatalogDetail['tags']
 }
 
 function presentCatalogRows(rows: CatalogRow[]): CatalogDetail[] {
@@ -83,7 +80,7 @@ function presentCatalogRows(rows: CatalogRow[]): CatalogDetail[] {
     const storedFacts = row.facts as CatalogDetail['facts']
     const facts = catalogFacts(row.metadata_schema_key, row.item.id, media, storedFacts)
     return { item: row.item, collectCount: row.collect_count, viewCount: row.view_count, downloadCount: row.download_count, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
-      tags: row.tags, uses: row.uses, media, cover: cover ? { url: cover.url, altText: cover.altText,
+      tags: row.tags, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY, width: cover.width, height: cover.height } : null } as CatalogDetail
   })
 }

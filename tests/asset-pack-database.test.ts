@@ -18,7 +18,7 @@ test('asset-pack migration supports atomic cover/preview/ZIP persistence, visibi
     const image = { mediaType: 'image', mime: 'image/webp', byteSize: 100, width: 100, height: 80,
       altText: 'Pack artwork', focalX: 50, focalY: 50 }
     const doc = { slug: 'test-pack', title: 'Test pack', summary: '', description: '', status: 'published',
-      accentColor: '#ffffff', isFeatured: false, sortOrder: 0, metadata: { image_count: 7 }, tags: [], facts: [], uses: [],
+      accentColor: '#ffffff', isFeatured: false, sortOrder: 0, metadata: { image_count: 7 }, tags: [], facts: [],
       attachments: [
         { ...image, role: 'cover', path: 'assets/1/thumbnail.webp' },
         ...Array.from({ length: 5 }, (_, index) => ({ ...image, role: 'preview', path: `assets/1/previews/${index + 1}.webp` })),
@@ -26,10 +26,10 @@ test('asset-pack migration supports atomic cover/preview/ZIP persistence, visibi
       ] }
     const { rows: [created] } = await db.query<{ id: string }>(createContentQuery,
       [owner, category.id, category.metadata_schema_key, JSON.stringify(doc), 'private-uploads'])
-    const { rows: [loaded] } = await db.query<{ assets: Array<{ role: string; mediaType: string }>; uses: Array<{ slug: string }> }>(cardsQuery, ['assets', doc.slug, null])
+    const { rows: [loaded] } = await db.query<{ assets: Array<{ role: string; mediaType: string }>; tags: Array<{ slug: string }> }>(cardsQuery, ['assets', doc.slug, null])
     assert.equal(loaded.assets.filter(asset => asset.role === 'preview').length, 5)
     assert.deepEqual(loaded.assets.filter(asset => asset.role === 'download').map(asset => asset.mediaType), ['file'])
-    assert.deepEqual(loaded.uses.map(use => use.slug), ['assets'])
+    assert.deepEqual(loaded.tags, [])
     await db.query("UPDATE catalog.items SET status='archived' WHERE id=$1", [created.id])
     assert.equal((await db.query(cardsQuery, ['assets', doc.slug, null])).rows.length, 0)
     const { rows: [deleted] } = await db.query<{ assets: unknown[] }>(deleteContentQuery, [owner, created.id])

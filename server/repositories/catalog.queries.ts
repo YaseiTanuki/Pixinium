@@ -10,9 +10,6 @@ const cardsSelect = `SELECT
     'iconKey', c.icon_key, 'artworkStyle', c.artwork_style) AS category,
   i.description, c.metadata_schema_key, i.metadata->'image_count' AS image_count,
   CASE WHEN c.metadata_schema_key = 'music.v1' THEN i.metadata ELSE '{}'::jsonb END AS music_metadata,
-  coalesce((SELECT jsonb_agg(jsonb_build_object('slug', u.slug, 'name', u.name)
-    ORDER BY u.sort_order, u.slug) FROM catalog.item_uses iu
-    JOIN catalog.content_uses u ON u.slug = iu.use_slug WHERE iu.item_id = i.id), '[]') AS uses,
   coalesce((SELECT jsonb_agg(jsonb_build_object('itemId', f.item_id::text,
     'key', f.key, 'label', f.label, 'value', f.value, 'sortOrder', f.sort_order)
     ORDER BY f.sort_order, f.key) FROM catalog.item_facts f WHERE f.item_id = i.id), '[]') AS facts,
@@ -41,15 +38,14 @@ const catalogConditions = `WHERE i.status = 'published' AND c.is_active
   AND ($2::text IS NULL OR i.slug = $2)
   AND ($3::text IS NULL OR i.title ILIKE $3 OR i.summary ILIKE $3 OR c.name ILIKE $3
     OR EXISTS (SELECT 1 FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id
-      WHERE it.item_id = i.id AND t.name ILIKE $3)
-    OR EXISTS (SELECT 1 FROM catalog.item_uses iu JOIN catalog.content_uses u ON u.slug = iu.use_slug
-      WHERE iu.item_id = i.id AND u.name ILIKE $3))`
+      WHERE it.item_id = i.id AND t.name ILIKE $3))`
 
 export const cardsQuery = `${cardsSelect} ${catalogConditions} ORDER BY i.sort_order, i.id`
 
 const archiveConditions = `${catalogConditions}
-  AND ($4::text IS NULL OR EXISTS (SELECT 1 FROM catalog.item_uses selected_use
-    WHERE selected_use.item_id = i.id AND selected_use.use_slug = $4))`
+  AND ($4::text IS NULL OR EXISTS (SELECT 1 FROM catalog.item_tags selected_tag
+    JOIN catalog.tags t ON t.id = selected_tag.tag_id
+    WHERE selected_tag.item_id = i.id AND t.slug = $4))`
 
 export const archiveCountQuery = `SELECT count(*)::int AS total
   FROM catalog.items i JOIN catalog.categories c ON c.id = i.category_id ${archiveConditions}`

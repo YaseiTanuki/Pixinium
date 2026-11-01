@@ -14,13 +14,6 @@ WITH actor AS MATERIALIZED (
     CASE WHEN doc->>'status' = 'published' THEN now() ELSE NULL END,
     doc->>'accentColor', (doc->>'isFeatured')::boolean, (doc->>'sortOrder')::integer, doc->'metadata'
   FROM input CROSS JOIN category c CROSS JOIN actor RETURNING id, slug
-), uses AS (
-  INSERT INTO catalog.item_uses(item_id, use_slug)
-  SELECT item.id, u FROM item CROSS JOIN input
-  CROSS JOIN LATERAL jsonb_array_elements_text(coalesce(doc->'uses', '[]'::jsonb)) AS selected(u)
-  UNION
-  SELECT item.id, u.slug FROM item CROSS JOIN category c
-  JOIN catalog.content_uses u ON u.slug = c.slug
 ), facts AS (
   INSERT INTO catalog.item_facts(item_id, key, label, value, sort_order)
   SELECT item.id, f->>'key', f->>'label', f->>'value', (ord-1)::integer

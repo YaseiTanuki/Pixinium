@@ -5,7 +5,6 @@ import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2 } from 'lucide-react'
 import { CONTENT_LIMITS } from '@/lib/admin/limits'
-import type { ContentUse } from '@/lib/entities/catalog'
 import type { ContentResult } from '@/lib/admin/content'
 import type { EditableContent } from '@/server/services/content-edit.service'
 import { updateContent } from '@/app/actions/content'
@@ -13,7 +12,7 @@ import { CONTENT_SCHEMAS, contentKind } from '@/lib/content-types'
 import { ContentFileFields } from '@/components/content-file-fields'
 import { useContentUploads } from '@/components/use-content-uploads'
 
-type Props = { content: EditableContent; uses: ContentUse[]; factsEditable: boolean }
+type Props = { content: EditableContent; factsEditable: boolean }
 
 export function AdminEditForm({ content, factsEditable }: Props) {
   const router = useRouter()
@@ -39,7 +38,7 @@ export function AdminEditForm({ content, factsEditable }: Props) {
     saveInProgress.current = true
     setResult({})
     try {
-      const response = await updateContent({ id: content.id, uses: content.uses, title: form.get('title'),
+      const response = await updateContent({ id: content.id, title: form.get('title'),
         summary: form.get('summary'), description: form.get('description'),         tags, facts: factsEditable ? facts : content.facts,
                 ...(replacing ? { attachments } : {}) })
               setResult(response)

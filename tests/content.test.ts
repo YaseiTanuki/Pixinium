@@ -19,7 +19,7 @@ const item = { categoryId: '1', title: 'New find', slug: 'new-find', summary: 'S
 test('automatic item slugs handle repeated titles, Unicode and URL-unsafe characters', () => {
   assert.equal(createItemSlug('Sunset'), 'sunset')
   assert.equal(createItemSlug('Đêm yên bình'), 'dem-yen-binh')
-  for (const title of ['../Sunset?use=avatar', '🌄', '夜景', 'A'.repeat(200)]) {
+  for (const title of ['../Sunset?tag=avatar', '🌄', '夜景', 'A'.repeat(200)]) {
     const generated = createItemSlug(title)
     assert.match(generated, /^[a-z0-9]+(-[a-z0-9]+)*$/)
     assert.ok(generated.length <= 120)
@@ -30,8 +30,8 @@ test('content validation rejects invalid publication, facts, roles and category 
   const valid = { ...item, attachments: [{ path: `${admin}/${member}.png`, altText: 'Original image' }] }
   assert.equal(contentSchema.safeParse(valid).success, true)
   assert.equal(contentSchema.safeParse({ ...valid, status: 'draft' }).success, false)
-  assert.equal(contentSchema.safeParse({ ...valid, uses: ['wallpaper', 'background', 'avatar'] }).success, true)
-  assert.equal(contentSchema.safeParse({ ...valid, uses: ['avatar', 'avatar'] }).success, false)
+  assert.equal(contentSchema.safeParse({ ...valid, tags: [...item.tags, { slug: 'avatar', name: 'Avatar' }] }).success, true)
+  assert.equal(contentSchema.safeParse({ ...valid, tags: [...item.tags, ...item.tags] }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, attachments: [] }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, status: 'published', attachments: [{ path: `${admin}/${member}.png`, role: 'download', altText: 'Original sunset' }] }).success, true)
   for (const role of ['gallery', 'preview']) {
@@ -55,7 +55,7 @@ test('content write is atomic, rechecks admin role and rejects category schema r
   const db = new PGlite()
   try {
     await db.exec('BEGIN')
-    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0014_item_view_download_counts.sql']) {
+    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0014_item_view_download_counts.sql', '0016_merge_uses_into_tags.sql']) {
       await db.exec(await readFile(`db/migrations/${file}`, 'utf8'))
     }
     await db.exec('COMMIT')
@@ -68,18 +68,11 @@ test('content write is atomic, rechecks admin role and rejects category schema r
     assert.equal((await write(admin, 'valid')).rows.length, 1)
     assert.equal((await db.query('SELECT * FROM catalog.item_facts')).rows.length, 1)
     assert.equal((await db.query('SELECT * FROM catalog.item_tags')).rows.length, 1)
-    assert.deepEqual((await db.query<{ use_slug: string }>('SELECT use_slug FROM catalog.item_uses')).rows.map(row => row.use_slug), ['images'])
-    const withUses = { ...item, slug: 'multi-use', uses: ['images', 'wallpaper', 'background', 'avatar'] }
-    await db.query(createContentQuery, [admin, category.id, category.metadata_schema_key, JSON.stringify(withUses), 'private-uploads'])
-    assert.equal((await db.query('SELECT * FROM catalog.item_uses')).rows.length, 5)
-    await assert.rejects(db.query(createContentQuery, [admin, category.id, category.metadata_schema_key,
-      JSON.stringify({ ...item, slug: 'unknown-use', uses: ['avatar', 'missing'] }), 'private-uploads']))
-    assert.equal((await db.query("SELECT * FROM catalog.items WHERE slug = 'unknown-use'")).rows.length, 0)
     const asset = { path: `${admin}/${member}.png`, role: 'cover', altText: 'A scene',
       focalX: 50, focalY: 50, mediaType: 'image', mime: 'image/png', byteSize: 20 }
     assert.equal((await write(admin, 'with-cover', category.metadata_schema_key, [asset])).rows.length, 1)
     assert.equal((await db.query('SELECT * FROM catalog.item_assets')).rows.length, 1)
-    assert.equal((await db.query('SELECT * FROM catalog.tags')).rows.length, 1)
+    assert.equal((await db.query("SELECT * FROM catalog.tags WHERE slug = 'cozy'")).rows.length, 1)
     await assert.rejects(write(admin, 'rollback', category.metadata_schema_key, [{ path: 'broken', mediaType: 'invalid', mime: 'image/png', byteSize: 10 }]))
     assert.equal((await db.query(`SELECT * FROM catalog.items WHERE slug = 'rollback'`)).rows.length, 0)
     const original = { ...asset, path: `content/${admin}/original.png`, role: 'download', width: 2400, height: 1600 }
@@ -100,7 +93,7 @@ test('content write is atomic, rechecks admin role and rejects category schema r
     assert.equal(Object.hasOwn(contentSchema.parse({ ...item, reservedItemId: '999', attachments: [{ path: `${admin}/${member}.png`, altText: 'Image' }] }), 'reservedItemId'), false)
     for (const expected of ['sunset', 'sunset-1', 'sunset-2', 'sunset-3', 'sunset-4', 'sunset-5']) {
       const rows = await createContentWithTitleSlug(query, admin, category.id, category.metadata_schema_key,
-        { ...item, title: 'Sunset', uses: ['avatar'] }, 'private-uploads')
+        { ...item, title: 'Sunset' }, 'private-uploads')
       assert.equal(rows[0].slug, expected)
     }
     const music = (await db.query<{ id: string; metadata_schema_key: string }>("SELECT id::text, metadata_schema_key FROM catalog.categories WHERE slug = 'music'")).rows[0]
@@ -146,7 +139,7 @@ test('content write is atomic, rechecks admin role and rejects category schema r
     assert.equal((await db.query(deleteContentQuery, ['00000000-0000-4000-8000-000000000099', doomed.id])).rows.length, 0)
     const deleted = (await db.query<{ assets: Array<{ object_path: string }> }>(deleteContentQuery, [admin, doomed.id])).rows[0]
     assert.deepEqual(deleted.assets.map(asset => asset.object_path), [thumbnail.path])
-    for (const table of ['items', 'item_assets', 'item_facts', 'item_tags', 'item_uses']) {
+    for (const table of ['items', 'item_assets', 'item_facts', 'item_tags']) {
       assert.equal((await db.query(`SELECT 1 FROM catalog.${table} WHERE ${table === 'items' ? 'id' : 'item_id'} = $1::bigint`, [doomed.id])).rows.length, 0)
     }
     assert.equal((await db.query('SELECT 1 FROM catalog.assets WHERE object_path = $1', [original.path])).rows.length, 1)

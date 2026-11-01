@@ -8,11 +8,11 @@ import { useContentUploads } from '@/components/use-content-uploads'
 import { useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2 } from 'lucide-react'
-import type { Category, ContentUse } from '@/lib/entities/catalog'
+import type { Category } from '@/lib/entities/catalog'
 import type { ContentResult } from '@/lib/admin/content'
 import { createContent } from '@/app/actions/content'
 
-type Props = { categories: Pick<Category, 'id' | 'name' | 'metadataSchemaKey'>[]; uses: ContentUse[]; ready: boolean }
+type Props = { categories: Pick<Category, 'id' | 'name' | 'metadataSchemaKey'>[]; ready: boolean }
 
 export function AdminUploadForm({ categories, ready }: Props) {
   const router = useRouter()
@@ -40,7 +40,7 @@ export function AdminUploadForm({ categories, ready }: Props) {
     saveInProgress.current = true
     setResult({})
     try {
-      const response = await createContent({ categoryId, uses: [], title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', metadata, tags, facts: isImage ? [] : facts, attachments })
+      const response = await createContent({ categoryId, title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', metadata, tags, facts: isImage ? [] : facts, attachments })
       setResult(response)
       if (response.message) { pendingUploads.current.clear(); router.refresh() }
     } catch { setResult({ error: 'Could not save content. Your entries are preserved; please retry.' }) }

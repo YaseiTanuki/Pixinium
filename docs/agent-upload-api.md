@@ -33,7 +33,7 @@ Send `Authorization: Bearer <token>` on every API request. Send
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/agent/catalog` | Active category IDs, uses, file types and limits |
+| GET | `/api/agent/catalog` | Active category IDs, tags, file types and limits |
 | POST | `/api/agent/uploads` | Request a temporary upload URL |
 | DELETE | `/api/agent/uploads` | Delete an array of owned staging paths |
 | POST | `/api/agent/content` | Publish content |
@@ -61,7 +61,7 @@ Get the actual `categoryId` from `/api/agent/catalog`. POST `/api/agent/content`
   "title": "Quiet sunset",
   "status": "published",
   "summary": "A warm sunset for your collection.",
-  "uses": ["wallpaper", "background"],
+  "tags": [{ "slug": "wallpaper", "name": "Wallpaper" }, { "slug": "background", "name": "Background" }],
   "attachments": [
     { "path": "<returned-staging-path>", "altText": "An orange sunset over the mountains" }
   ]

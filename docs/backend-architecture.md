@@ -9,7 +9,7 @@ The extensible catalog schema, entity relationships, migration workflow, and
 runtime ownership rules are documented in [entity-model.md](./entity-model.md).
 The application uses canonical catalog entities for all content reads.
 Migration 0005 removes the obsolete archive tables and imported metadata snapshots.
-Images is the content category; wallpaper, background and avatar are multiple uses.
+Images is the content category; wallpaper, background and avatar are tags.
 
 ## Supabase clients
 

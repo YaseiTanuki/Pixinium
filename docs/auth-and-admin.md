@@ -115,7 +115,7 @@ the same operator path with `member`; each subsequent upload rereads the role.
   no-store signed redirect valid for 60 seconds. Existing signed links remain
   usable until expiry. Download assets use attachment disposition.
 - The studio creates new content and lists the 20 most recent items. Admins can
-  edit an item at `/admin/[id]/edit`: title, summary, description, uses, tags and
+  edit an item at `/admin/[id]/edit`: title, summary, description, tags and
   (for categories whose facts are not generated from files) display facts. The
   update is one transaction that rechecks the admin role. Admins may also replace
   the files: the new files are validated like a new upload and stored under a fresh

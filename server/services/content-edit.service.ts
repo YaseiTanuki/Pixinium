@@ -17,7 +17,7 @@ import type { ContentActor } from './content-upload.service'
 
 export type EditableContent = {
   id: string; title: string; summary: string; description: string; slug: string; category: string
-  schemaKey: string; uses: string[]; tags: string[]; facts: Array<{ key: string; label: string; value: string }>
+  schemaKey: string; tags: string[]; facts: Array<{ key: string; label: string; value: string }>
   files: Array<{ label: string; role: string; mediaType: string }>
 }
 
@@ -29,7 +29,7 @@ export async function getEditableContentForActor(account: ContentActor | null, i
   if (!row) return null
   return { id: String(row.id), title: String(row.title), summary: String(row.summary), description: String(row.description),
     slug: String(row.slug), category: String(row.category), schemaKey: String(row.metadata_schema_key),
-    uses: row.uses as string[], tags: row.tags as string[], facts: row.facts as EditableContent['facts'], files: row.files as EditableContent['files'] }
+    tags: row.tags as string[], facts: row.facts as EditableContent['facts'], files: row.files as EditableContent['files'] }
 }
 
 export async function updateContentForActor(account: ContentActor | null, input: unknown): Promise<ContentResult> {
@@ -46,8 +46,6 @@ export async function updateContentForActor(account: ContentActor | null, input:
   try {
     const [current] = await sql.query(editableContentQuery, [value.id])
     if (!current) return { error: 'Content no longer exists. Refresh the studio.' }
-    const validUses = await sql.query('SELECT slug FROM catalog.content_uses WHERE slug = ANY($1::text[])', [value.uses])
-    if (validUses.length !== value.uses.length) return { error: 'A selected use is no longer available. Reload the page.' }
     const schemaKey = String(current.metadata_schema_key)
     let files: Parameters<typeof updateContentStatements>[0]['files']
     if (value.attachments) {
@@ -69,7 +67,7 @@ export async function updateContentForActor(account: ContentActor | null, input:
     }
     const results = await sql.transaction(txn => updateContentStatements({
       actor: account.id, id: value.id, editFacts: !usesAutomaticFacts(schemaKey), files,
-      text: { title: value.title, summary: value.summary, description: value.description, uses: value.uses, tags: value.tags, facts: value.facts },
+      text: { title: value.title, summary: value.summary, description: value.description, tags: value.tags, facts: value.facts },
     }).map(([text, values]) => txn.query(text, values)))
     const [row] = results[results.length - 1] as Array<Record<string, unknown>>
     if (!row) return { error: 'Content was deleted or your admin access changed. Refresh the studio.' }
