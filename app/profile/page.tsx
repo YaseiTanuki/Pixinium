@@ -3,7 +3,7 @@ import { ArrowUpRight, BadgeCheck, CalendarDays, LogOut, Mail, Upload, UserRound
 import { requireAccount } from '@/server/services/auth.service'
 import { hasPermission } from '@/lib/auth/permissions'
 import { logout } from '@/app/actions/auth'
-import { listCatalogItems } from '@/server/services/catalog.service'
+import { listCatalogItems, listCategories } from '@/server/services/catalog.service'
 import { ProfileAvatar } from '@/components/profile-avatar'
 import { ProfileAvatarUpload } from '@/components/profile-avatar-upload'
 import { ProfileCollection } from '@/components/profile-collection'
@@ -13,7 +13,9 @@ export const dynamic = 'force-dynamic'
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ access?: string }> }) {
   const account = await requireAccount()
   const { access } = await searchParams
-  const catalog = await listCatalogItems().then(items => ({ items, unavailable: false })).catch(() => ({ items: [], unavailable: true }))
+  const catalog = await Promise.all([listCatalogItems(), listCategories()])
+    .then(([items, categories]) => ({ items, categories, unavailable: false }))
+    .catch(() => ({ items: [], categories: [], unavailable: true }))
   const name = account.username || account.displayName || 'Pixinium member'
   const joined = new Date(account.joinedAt)
   const joinedLabel = Number.isNaN(joined.getTime()) ? null : new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(joined)
@@ -26,7 +28,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       <Link className="profile-browse" href="/search">Explore the archive <ArrowUpRight size={16} aria-hidden="true" /></Link>
     </header>
     <div className="profile-content-grid">
-      <ProfileCollection items={catalog.items.map(({ item, category, cover, facts }) => ({ item, category, cover, facts }))} unavailable={catalog.unavailable} />
+      <ProfileCollection items={catalog.items.map(({ item, category, cover, facts, viewCount, collectCount, downloadCount }) => ({ item, category, cover, facts, viewCount, collectCount, downloadCount }))} categories={catalog.categories.map(({ id, name, iconKey, metadataSchemaKey, slug }) => ({ id, name, iconKey, metadataSchemaKey, slug }))} unavailable={catalog.unavailable} />
       <aside className="profile-sidebar" aria-label="Account details and actions">
         <section className="profile-info-card"><h2>Account details</h2><dl>
           <div><dt><UserRound size={14} aria-hidden="true" /> Username</dt><dd>{account.username ?? 'Not chosen yet'}</dd></div>

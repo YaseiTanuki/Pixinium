@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { ViewTransition } from 'react'
 import { ArrowDown, ArrowRight, ArrowUpRight, Heart, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
+import { ArtworkImage } from '@/components/artwork-image'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { CATALOG_DISPLAY, categoryHref, itemHref } from '@/lib/catalog'
 import { contentKind } from '@/lib/content-types'
@@ -39,7 +40,7 @@ export default function Home({ items, categories, spotlightId, musicId, initialQ
       <section className="feature-grid" aria-label="Discoveries">
         <Link className="feature-main" href={spotlight ? itemHref(spotlight) : imageCategoryHref}>
           <div className="feature-topline"><span className="feature-label"><Sparkles size={13} aria-hidden="true" /> THE SPOTLIGHT</span><span className="edition">{spotlight?.category.name.toUpperCase() ?? 'PIXINIUM'}</span></div>
-          <div className="feature-art"><div className="feature-orbit" /><img src={spotlight?.cover?.url ?? '/images/character-fallback.svg'} width={650} height={400} fetchPriority="high" alt={spotlight?.cover?.altText ?? 'Playful illustrated werewolf characters'} style={spotlight?.cover ? { objectPosition: `${spotlight.cover.focalX}% ${spotlight.cover.focalY}%` } : undefined} /><span className="art-stamp">A LITTLE<br />GOOD THING.<Sparkles size={17} aria-hidden="true" /></span></div>
+          <div className="feature-art"><div className="feature-orbit" /><span className="feature-photo"><ArtworkImage key={spotlight?.cover?.url ?? 'fallback'} cover={spotlight?.cover ?? { url: '/images/character-fallback.svg', altText: 'Playful illustrated werewolf characters', width: 650, height: 400, focalX: 50, focalY: 35 }} title={spotlight?.item.title ?? 'A little space for happy finds.'} priority /></span><span className="art-stamp">A LITTLE<br />GOOD THING.<Sparkles size={17} aria-hidden="true" /></span></div>
           <div className="feature-main-bottom"><div><p>{spotlight?.category.name.toUpperCase() ?? 'PIXINIUM'}</p><h2>{spotlight?.item.title ?? 'A little space for happy finds.'}</h2><span>{spotlight?.item.summary ?? 'Fresh inspiration is on its way.'}</span></div><span className="round-arrow"><ArrowUpRight size={25} aria-hidden="true" /></span></div>
         </Link>
         <div className="feature-side">

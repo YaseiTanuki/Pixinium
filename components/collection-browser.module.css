@@ -1,0 +1,54 @@
+.browser { min-width: 0; }
+.categories { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.category { --tint: #ece4d8; --tone: #775139; display: grid; grid-template-columns: 1fr auto; gap: 12px 6px; align-items: center; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: #fffdfb; text-align: left; }
+.category[data-kind='music'] { --tint: #eae0e8; --tone: #70516a; }
+.category[data-kind='game'] { --tint: #e6e8d9; --tone: #55633d; }
+.category[data-kind='asset'] { --tint: #e0e9e7; --tone: #37675e; }
+.category > svg { grid-column: 1 / -1; color: var(--tone); }
+.categoryName { font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
+.count { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.countLabel { display: none; }
+.category:hover { background: var(--tint); }
+.category[aria-pressed='true'] { border-color: var(--tone); background: var(--tint); }
+.results { margin-top: 24px; }
+.prompt { padding: 18px 0; color: var(--muted); font-size: 13px; }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.heading h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; font-size: 18px; font-weight: 800; }
+.heading h3 > span { color: var(--muted); font-size: 12px; font-weight: 400; }
+.heading > a, .empty a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 12px; font-weight: 700; }
+.masonry { --masonry-column-width: 220px; --masonry-gap: 16px; --masonry-max-columns: 4; column-gap: 16px; }
+.entry { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #fffdfb; }
+.artwork { display: block; overflow: hidden; }
+.artwork :global(.item-artwork) { width: 100%; height: 160px; min-height: 0; }
+.artwork img { width: 100%; height: 100%; object-fit: cover; }
+.entry[data-kind='image'] .artwork :global(.item-artwork) { height: auto; aspect-ratio: 4 / 3; }
+.entryBody { position: relative; min-width: 0; padding: 12px 54px 12px 12px; min-height: 56px; }
+.entryBody h4 { font-size: 13px; font-weight: 750; line-height: 1.5; overflow-wrap: anywhere; }
+.entryBody h4 a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.entryBody p { margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.entryBody .save { position: absolute; top: 6px; right: 5px; display: grid; place-items: center; width: 44px; height: 44px; color: #a22f3d; border-radius: 9px; }
+.save:hover { background: #f7e6e6; }
+.items { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); gap: 16px; }
+.items[data-kind='game'] .artwork :global(.item-artwork) { height: auto; aspect-ratio: 3 / 4; }
+.items[data-kind='asset'] .artwork :global(.item-artwork) { background: #e0e9e7; }
+.items[data-kind='asset'] .artwork img { object-fit: contain; }
+.items[data-kind='music'] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.entry[data-kind='music'] { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; padding: 8px; }
+.entry[data-kind='music'] .artwork { border-radius: 7px; }
+.entry[data-kind='music'] .artwork :global(.item-artwork) { height: 72px; }
+.entry[data-kind='music'] .entryBody { min-height: 60px; }
+.empty { padding: 30px 20px; border: 1px dashed var(--line); border-radius: 12px; text-align: center; }
+.empty > svg { margin: 0 auto 12px; color: var(--muted); }
+.empty h4 { font-size: 16px; font-weight: 800; }
+.empty p { margin: 8px 0; color: var(--muted); font-size: 13px; }
+.browser button:focus-visible, .browser a:focus-visible { outline: 2px solid #a22f3d; outline-offset: 3px; }
+@media (max-width: 1023px) {
+  .items[data-kind='music'] { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  .categories { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .category { grid-template-columns: 30px minmax(0, 1fr) auto; padding: 14px 12px; gap: 8px; }
+  .category > svg { grid-column: auto; }
+  .categoryName { font-size: 13px; }
+  .masonry { --masonry-column-width: 160px; --masonry-gap: 12px; column-gap: 12px; }
+}

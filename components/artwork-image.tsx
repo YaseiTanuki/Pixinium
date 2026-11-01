@@ -5,7 +5,7 @@ import { ImageOff } from 'lucide-react'
 import type { CatalogCard } from '@/lib/entities/catalog'
 import './artwork-image.css'
 
-export function ArtworkImage({ cover, title }: { cover: NonNullable<CatalogCard['cover']>; title: string }) {
+export function ArtworkImage({ cover, title, priority = false }: { cover: NonNullable<CatalogCard['cover']>; title: string; priority?: boolean }) {
   const [state, setState] = useState<'loading' | 'loaded' | 'error'>('loading')
   // Cached images (or failures) can finish before React attaches load handlers.
   const imageRef = useCallback((image: HTMLImageElement | null) => {
@@ -16,7 +16,7 @@ export function ArtworkImage({ cover, title }: { cover: NonNullable<CatalogCard[
     <img ref={imageRef} src={cover.url} alt={cover.altText || title} aria-hidden={state === 'error' ? true : undefined}
       width={cover.width && cover.width > 0 ? cover.width : 600}
       height={cover.height && cover.height > 0 ? cover.height : 400}
-      loading="lazy" decoding="async"
+      loading={priority ? 'eager' : 'lazy'} fetchPriority={priority ? 'high' : 'auto'} decoding="async"
       onLoad={() => setState('loaded')} onError={() => setState('error')}
       style={{ width: '100%', height: '100%', opacity: state === 'loaded' ? 1 : 0, objectPosition: `${cover.focalX}% ${cover.focalY}%` }} />
     {state === 'loading' && <span className="artwork-skeleton" aria-hidden="true" />}
