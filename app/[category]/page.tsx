@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { cache } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Search, SearchX } from 'lucide-react'
@@ -15,28 +16,43 @@ import { listArchivePage, listCategories, listArchiveTags } from '@/server/servi
 import '../search/search.css'
 import '../categories/category.css'
 import '@/components/category/asset-folder-card.css'
+import { breadcrumbData, pageMetadata } from '@/lib/seo'
+import { JsonLd } from '@/components/json-ld'
 
 export const dynamic = 'force-dynamic'
 type Props = { params: Promise<{ category: string }>; searchParams: Promise<{ q?: string | string[]; page?: string | string[]; tag?: string | string[]; sort?: string | string[]; match?: string | string[] }> }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+const loadCategoryArchive = cache((slug: string, query: string, tag: string, sort: string, tagMatch: string, page: number) => listArchivePage({ category: slug, query, tag, sort, tagMatch, page }))
+
+function categoryFilters(search: Awaited<Props['searchParams']>) {
+  return {
+    query: typeof search.q === 'string' ? search.q.trim() : '',
+    tag: searchTags(Array.isArray(search.tag) ? search.tag.join(' ') : search.tag ?? '').join(' '),
+    sort: searchSort(typeof search.sort === 'string' ? search.sort : ''),
+    tagMatch: search.match === 'any' ? 'any' : 'all',
+    requestedPage: typeof search.page === 'string' && /^\d+$/.test(search.page) ? Number(search.page) : 1,
+  }
+}
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { category: slug } = await params
   const category = (await listCategories()).find(entry => entry.slug === slug)
-  return { title: category ? `${category.name} — Pixinium` : 'Category not found — Pixinium', description: category?.description }
+  if (!category) notFound()
+  const search = await searchParams
+  const { query, tag, sort, tagMatch, requestedPage } = categoryFilters(search)
+  const { page } = await loadCategoryArchive(slug, query, tag, sort, tagMatch, requestedPage)
+  const filtered = [search.q, search.tag, search.sort].some(value => Array.isArray(value) ? value.some(entry => entry.trim()) : value?.trim())
+  return pageMetadata({ title: `${category.name}${page > 1 ? ` — Page ${page}` : ''}`, description: category.description || `Explore curated ${category.name.toLowerCase()} in the Pixinium archive.`, path: categoryHref(slug, { page }), index: !filtered })
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
   const [{ category: slug }, search, categories] = await Promise.all([params, searchParams, listCategories()])
   const category = categories.find(entry => entry.slug === slug)
   if (!category) notFound()
-  const query = typeof search.q === 'string' ? search.q.trim() : ''
-  const tag = searchTags(Array.isArray(search.tag) ? search.tag.join(' ') : search.tag ?? '').join(' ')
-  const sort = searchSort(typeof search.sort === 'string' ? search.sort : '')
-  const tagMatch = search.match === 'any' ? 'any' : 'all'
+  const { query, tag, sort, tagMatch, requestedPage } = categoryFilters(search)
   const filtered = Boolean(query || tag || sort)
-  const requestedPage = typeof search.page === 'string' && /^\d+$/.test(search.page) ? Number(search.page) : 1
   const [{ items, total, page, totalPages }, tags] = await Promise.all([
-    listArchivePage({ category: slug, query, tag, sort, tagMatch, page: requestedPage }), listArchiveTags(),
+    loadCategoryArchive(slug, query, tag, sort, tagMatch, requestedPage), listArchiveTags(),
   ])
   const Icon = categoryIcon(category.iconKey)
   const kind = contentKind(category.metadataSchemaKey)
@@ -49,6 +65,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     <div className="page-shell catalog-layout">
     <CategoryNavigation categories={categories} current={slug} />
     <main id="category-content">
+      <JsonLd value={breadcrumbData([{ name: 'Home', path: '/' }, { name: category.name, path: categoryHref(slug) }])} />
       <header className="category-banner">
         <div><p className="eyebrow">THE PIXINIUM COLLECTION</p><h1><Icon size={36} aria-hidden="true" />{category.name}<span>.</span></h1><p className="category-description">{category.description}</p></div>
         <div className="category-banner-mark" aria-hidden="true">{kind === 'music' ? <div className="record-disc"><span /></div> : <Icon strokeWidth={1} />}</div>

@@ -3,6 +3,7 @@ import test from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { migrate } from '../scripts/migrations.ts'
 import { archiveCountQuery, archivePageQuery, archiveTagsQuery } from '../server/repositories/catalog.queries.ts'
+import { sitemapItemsQuery } from '../server/repositories/catalog-seo.queries.ts'
 import { CATALOG_DISPLAY, searchHref, categoryHref } from '../lib/catalog.ts'
 import { searchTags, searchSort, searchCategories } from '../lib/search-filters.ts'
 
@@ -22,6 +23,7 @@ test('archive pages respect the configured size, preserve filters and exclude un
     const count = async (filters, match = 'all') => (await db.query(archiveCountQuery, [...filters, match])).rows[0].total
     const page = async (offset, filters = params, match = 'all', sort = '') => (await db.query(archivePageQuery, [...filters, match, CATALOG_DISPLAY.archivePageSize, offset, sort])).rows
     assert.equal(await count(params), 45)
+    assert.equal((await db.query(sitemapItemsQuery)).rows.length, 45)
     assert.deepEqual((await db.query(archiveTagsQuery)).rows.map(tag => tag.slug), ['wallpaper'])
     assert.equal(await count(['images', null, '%Image 1%', 'wallpaper']), 11)
     assert.equal(await count(['missing', null, null, 'wallpaper']), 0)
@@ -80,6 +82,7 @@ test('archive pages respect the configured size, preserve filters and exclude un
     assert.equal(await count(params), 0)
     assert.equal((await page(0)).length, 0)
     assert.deepEqual((await db.query(archiveTagsQuery)).rows, [])
+    assert.deepEqual((await db.query(sitemapItemsQuery)).rows, [])
     assert.equal(searchHref({ category: 'images', tag: 'wallpaper', query: 'cat & moon', page: 2 }), '/search?tag=wallpaper&category=images&q=cat+%26+moon&page=2')
     assert.equal(searchHref({ tag: 'wallpaper', query: 'cat & moon', page: 2 }), '/search?tag=wallpaper&q=cat+%26+moon&page=2')
     assert.equal(searchHref({ page: 1 }), '/search')

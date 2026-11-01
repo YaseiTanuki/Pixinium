@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Nunito } from 'next/font/google'
 import { MotionProvider } from '@/components/motion'
 import './globals.css'
+import { SITE_DESCRIPTION, SITE_TITLE, pageMetadata, siteOrigin } from '@/lib/seo'
 
 // Change these two font loaders to try a different pairing site-wide.
 const contentFont = DM_Sans({
@@ -18,9 +19,11 @@ const headingFont = Nunito({
 })
 
 export const metadata: Metadata = {
-  title: 'pixinium. — your little archive',
-  description: 'A cozy archive for wallpapers, music, games, and tiny treasures.',
-  generator: 'v0.app',
+  ...pageMetadata({ title: SITE_TITLE, description: SITE_DESCRIPTION, path: '/' }),
+  metadataBase: siteOrigin(),
+  title: { default: SITE_TITLE, template: '%s | Pixinium' },
+  alternates: undefined,
+  verification: { google: process.env.GOOGLE_SITE_VERIFICATION || undefined },
   icons: {
     icon: { url: '/brand/pixinium-crystal.svg', type: 'image/svg+xml' },
     apple: '/brand/pixinium-apple-icon.png',

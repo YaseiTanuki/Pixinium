@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft, Gamepad2, Heart, ImageIcon, Music2, Sparkles } from 'lucide-react'
 import './account.css'
 import { BrandLogo } from '@/components/brand-logo'
+export const metadata = { robots: { index: false, follow: false } }
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   return <div className="home-page account-page">

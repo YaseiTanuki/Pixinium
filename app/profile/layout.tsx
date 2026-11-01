@@ -1,6 +1,7 @@
 import { SiteHeader } from '@/components/site-header'
 import { BrandLogo } from '@/components/brand-logo'
 import '../(account)/account.css'
+export const metadata = { title: 'Your profile', robots: { index: false, follow: false } }
 
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {
   return <div className="home-page account-page">
