@@ -2,13 +2,16 @@
 
 import Link from 'next/link'
 import { useRef, useState } from 'react'
-import { ArrowUpRight, Pause, Play } from 'lucide-react'
+import { ArrowUpRight, Download, Eye, Pause, Play } from 'lucide-react'
 import { ItemArtwork } from '@/components/catalog-card'
 import { CollectButton } from '@/components/collect-button'
 import { itemHref } from '@/lib/catalog'
 import { formatDuration } from '@/lib/media-details'
 import { playbackUrl } from '@/lib/media'
 import type { CatalogDetail } from '@/lib/entities/catalog'
+import styles from './music-list.module.css'
+
+const countFormat = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
 
 function MusicRow({ item, index }: { item: CatalogDetail; index: number }) {
   const track = item.media.find(asset => asset.role === 'preview' && asset.mediaType === 'audio')
@@ -28,26 +31,40 @@ function MusicRow({ item, index }: { item: CatalogDetail; index: number }) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) setFailed(true)
     }
   }
-  return <li className="category-music-row" data-playing={playing}>
-    <span className="music-row-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-    <button type="button" className="music-row-play" disabled={!track} onClick={() => void togglePlayback()}
+  return <li className={styles.track} data-playing={playing}>
+    <div className={styles.artwork}>
+      <div className={styles.vinyl} aria-hidden="true"><span /></div>
+      <Link className={styles.cover} href={itemHref(item)} aria-label={`View ${item.item.title}`}><ItemArtwork item={item} /></Link>
+    </div>
+    <div className={styles.body}>
+      <div className={styles.heading}>
+        <div className={styles.info}><h2><Link href={itemHref(item)}>{item.item.title}</Link></h2>
+          <div className={styles.tags}>{item.tags.slice(0, 3).map(tag => <span key={tag.id}>{tag.name}</span>)}</div>
+        </div>
+        <Link className={styles.open} href={itemHref(item)} aria-label={`Open ${item.item.title}`}><ArrowUpRight size={19} aria-hidden="true" /></Link>
+      </div>
+      <div className={styles.player}>
+    <button type="button" className={styles.play} disabled={!track} onClick={() => void togglePlayback()}
+      aria-pressed={playing}
       aria-label={`${playing ? 'Pause' : 'Play preview of'} ${item.item.title}`}>
       {playing ? <Pause size={18} fill="currentColor" aria-hidden="true" /> : <Play size={18} fill="currentColor" aria-hidden="true" />}
     </button>
-    <Link className="music-row-cover" href={itemHref(item)} aria-label={`View ${item.item.title}`}><ItemArtwork item={item} /></Link>
-    <div className="music-row-info"><h2><Link href={itemHref(item)}>{item.item.title}</Link></h2>
-      <div className="category-tags">{item.tags.slice(0, 3).map(tag => <span key={tag.id}>{tag.name}</span>)}</div>
-      {failed && <p role="status">Preview unavailable. Open the track to try again.</p>}
-      {!track && <p>No preview available</p>}
-    </div>
-    <div className="music-row-progress">
       <input type="range" min={0} max={duration || 1} step={0.1} value={Math.min(position, duration || 1)} disabled={!duration || !seekable}
         aria-label={`Seek in ${item.item.title}`} aria-valuetext={`${formatDuration(position) ?? '0:00'} of ${formatDuration(duration) ?? 'unknown duration'}`}
         onChange={event => { if (audio.current) { const time = Number(event.target.value); audio.current.currentTime = time; setPosition(time) } }} />
-      <span>{formatDuration(playing || position ? position : duration) ?? '—'}</span>
+      <span className={styles.time}>{formatDuration(position) ?? '0:00'} / {formatDuration(duration) ?? '—'}</span>
+      </div>
+      {failed && <p className={styles.error} role="status">Preview unavailable. Open the track to try again.</p>}
+      {!track && <p className={styles.error}>No preview available</p>}
+      <div className={styles.footer}>
+        <span className={styles.status}>{playing ? 'Now playing' : `Track ${String(index + 1).padStart(2, '0')}`}</span>
+        <div className={styles.stats}>
+          <span title="Views" aria-label={`${item.viewCount ?? 0} views`}><Eye size={14} aria-hidden="true" />{countFormat.format(item.viewCount ?? 0)}<span className={styles.statLabel}> views</span></span>
+          <CollectButton item={item} showCount />
+          <span title="Downloads" aria-label={`${item.downloadCount ?? 0} downloads`}><Download size={14} aria-hidden="true" />{countFormat.format(item.downloadCount ?? 0)}<span className={styles.statLabel}> downloads</span></span>
+        </div>
+      </div>
     </div>
-    <CollectButton item={item} showCount />
-    <Link className="music-row-open" href={itemHref(item)} aria-label={`Open ${item.item.title}`}><ArrowUpRight size={19} aria-hidden="true" /></Link>
     {track && <audio ref={audio} src={playbackUrl(track.url)} preload="none"
       onLoadedMetadata={event => { const seconds = event.currentTarget.duration; if (Number.isFinite(seconds)) { setDuration(seconds); setSeekable(true) } }}
       onTimeUpdate={event => setPosition(event.currentTarget.currentTime)}
@@ -57,5 +74,5 @@ function MusicRow({ item, index }: { item: CatalogDetail; index: number }) {
 }
 
 export function MusicList({ items }: { items: CatalogDetail[] }) {
-  return <ol className="category-music-list" aria-label="Music previews">{items.map((item, index) => <MusicRow key={item.item.id} item={item} index={index} />)}</ol>
+  return <ol className={styles.shelf} aria-label="Music previews">{items.map((item, index) => <MusicRow key={item.item.id} item={item} index={index} />)}</ol>
 }

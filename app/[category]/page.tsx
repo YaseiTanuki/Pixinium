@@ -12,6 +12,7 @@ import { contentKind } from '@/lib/content-types'
 import { listArchivePage, listCategories } from '@/server/services/catalog.service'
 import '../search/search.css'
 import '../categories/category.css'
+import '@/components/category/asset-folder-card.css'
 
 export const dynamic = 'force-dynamic'
 type Props = { params: Promise<{ category: string }>; searchParams: Promise<{ q?: string | string[]; page?: string | string[] }> }
