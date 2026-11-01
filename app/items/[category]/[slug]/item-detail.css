@@ -1,4 +1,5 @@
 .detail-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-block: 18px; color: var(--muted); font-size: 11px; }
+.item-detail-page > main { max-width: 1360px; }
 .asset-detail-media { min-width: 0; }
 .asset-pack-preview { min-width: 0; }
 .asset-pack-preview + .detail-about { margin-top: 0; border-top: 0; }
@@ -114,5 +115,9 @@ html:has(.artwork-dialog[open]) { overflow: hidden; }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) { .artwork-open:hover .artwork-image { transform: scale(1.025); } }
 @media (prefers-reduced-motion: reduce) { .artwork-image { transition: none; } }
 @media (max-width: 1000px) and (min-width: 761px) { .detail-hero { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; } .artwork-stage { aspect-ratio: 1; } }
+/* A desktop preview should fit the viewport rather than grow with its column. */
+@media (min-width: 761px) {
+  .artwork-stage { aspect-ratio: auto; height: clamp(320px, 56dvh, 560px); grid-template-rows: minmax(0, 1fr); }
+}
 @media (max-width: 760px) { .detail-hero { gap: 24px; } .detail-copy { padding: 24px; } .artwork-stage { aspect-ratio: 1.25; } .detail-purchase { margin-top: 22px; } }
 @media (max-width: 420px) { .artwork-open { padding: 52px 16px 62px; } .artwork-gallery-label { inset: 18px 18px auto; font-size: 7px; letter-spacing: 1px; } .artwork-expand { bottom: 15px; right: 16px; font-size: 10px; } .artwork-caption > span:last-child { display: none; } .detail-copy { padding: 22px 18px; } }
