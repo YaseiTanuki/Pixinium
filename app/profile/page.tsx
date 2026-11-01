@@ -22,7 +22,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     {access === 'denied' && <p role="alert" className="account-notice">You don’t have access to that area.</p>}
     <header className="profile-identity">
       <div className="profile-avatar-control"><ProfileAvatar name={name} avatarPath={account.avatarPath} /><ProfileAvatarUpload /></div>
-      <div className="profile-identity-copy"><p className="profile-kicker">YOUR PROFILE</p><h1>{name}</h1><p className="profile-email"><Mail size={15} aria-hidden="true" /><span>{account.email}</span></p><span className="profile-verified"><BadgeCheck size={14} aria-hidden="true" /> Email verified</span></div>
+      <div className="profile-identity-copy"><h1>{name}</h1><p className="profile-email"><Mail size={15} aria-hidden="true" /><span>{account.email}</span></p><span className="profile-verified"><BadgeCheck size={14} aria-hidden="true" /> Email verified</span></div>
+      <Link className="profile-browse" href="/search">Explore the archive <ArrowUpRight size={16} aria-hidden="true" /></Link>
     </header>
     <div className="profile-content-grid">
       <ProfileCollection items={catalog.items.map(({ item, category, cover, facts }) => ({ item, category, cover, facts }))} unavailable={catalog.unavailable} />
