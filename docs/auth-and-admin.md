@@ -1,6 +1,6 @@
 # Authentication and admin v1
 
-Routes: `/login`, `/register`, `/auth/confirm`, `/choose-username`, `/profile`, `/admin`.
+Routes: `/login`, `/register`, `/forgot-password`, `/auth/recovery`, `/reset-password`, `/auth/confirm`, `/choose-username`, `/profile`, `/admin`.
 The header's Account link opens the profile (or redirects guests to login).
 Supabase owns passwords and sessions; Neon `catalog.profiles` owns application
 roles. The two active roles are `member` (displayed as User) and `admin`.
@@ -8,6 +8,35 @@ The existing `editor` value is reserved and receives no admin/upload permission.
 Extend `lib/auth/permissions.ts` deliberately when adding roles or permissions.
 
 ## Required environment setup
+
+Password recovery uses Supabase `resetPasswordForEmail` and a dedicated
+`/auth/recovery` callback. Add `https://<your-app-origin>/auth/recovery` and
+`http://localhost:3000/auth/recovery` (for local development) to Auth Redirect
+URLs. In **Authentication → Email Templates → Reset password**, paste the
+contents of `emails/reset-password.html`. Its direct token-hash link works
+across browsers/devices and uses the request's allow-listed callback origin:
+
+```html
+<a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=recovery">Reset your password</a>
+```
+
+Set Site URL to the trusted app origin. Do not reuse the signup confirmation
+template for recovery. The reset page and update action both verify the user
+with Supabase; passwords must match and contain 12–128 characters. Invalid or
+expired callbacks return to the request form. Verify delivery and the full reset
+flow with an account you control after configuring SMTP and the template.
+
+After saving the template, request a **new** email. Previously sent emails keep
+their original links; tokens and authorization codes cannot be reused. The new
+email should link directly to `/auth/recovery?token_hash=...&type=recovery`,
+not Supabase's `/auth/v1/verify`. The default `ConfirmationURL` template instead
+uses PKCE, which requires the same browser, device and host (`localhost` and
+`127.0.0.1` do not share cookies). A missing or mismatched verifier can fail
+immediately with HTTP 400 from `/auth/v1/token?grant_type=pkce`.
+The callback logs sanitized provider error codes under
+`[auth.password.recovery.pkce]` or `[auth.password.recovery.otp]` in the Next.js
+server terminal; these distinguish exchange failures from expired tokens
+without logging email addresses, reset links or credentials.
 
 1. Apply the existing catalog migrations through 0003. No new migration is
    required for this change. Configure a restricted Neon runtime credential with

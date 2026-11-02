@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { hasPermission } from '../lib/auth/permissions'
-import { loginSchema, signupSchema, usernameSchema } from '../lib/auth/validation'
+import { forgotPasswordSchema, resetPasswordSchema, loginSchema, signupSchema, usernameSchema } from '../lib/auth/validation'
 import { imageFormat } from '../lib/auth/upload-validation'
 import { authDiagnostic, loginErrorMessage, signupErrorMessage } from '../lib/auth/errors'
 
@@ -65,4 +65,15 @@ test('usernames normalize case and enforce the permanent username format', () =>
   for (const name of ['ab', 'a'.repeat(13), 'has spaces', 'name!', '']) {
     assert.equal(usernameSchema.safeParse(name).success, false)
   }
+})
+
+test('password recovery validates email and enforces confirmed password limits without trimming secrets', () => {
+  assert.equal(forgotPasswordSchema.safeParse({ email: 'invalid' }).success, false)
+  assert.equal(forgotPasswordSchema.safeParse({ email: 'member@example.test' }).success, true)
+  for (const password of ['short', 'x'.repeat(129)]) {
+    assert.equal(resetPasswordSchema.safeParse({ password, confirmPassword: password }).success, false)
+  }
+  assert.equal(resetPasswordSchema.safeParse({ password: 'a long password', confirmPassword: 'another password' }).success, false)
+  const password = ' a long password '
+  assert.deepEqual(resetPasswordSchema.parse({ password, confirmPassword: password, role: 'admin' }), { password, confirmPassword: password })
 })

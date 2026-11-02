@@ -14,3 +14,11 @@ export const signupSchema = loginSchema.extend({
 })
 
 export type AuthState = { error?: string; message?: string }
+
+export const forgotPasswordSchema = loginSchema.pick({ email: true })
+export const resetPasswordSchema = z.object({
+  password: z.string().min(12).max(128),
+  confirmPassword: z.string().max(128),
+}).refine((value) => value.password === value.confirmPassword, {
+  message: 'Passwords must match.', path: ['confirmPassword'],
+})

@@ -1,5 +1,18 @@
 # Pixinium authentication email
 
+## Password recovery
+
+In **Authentication → Email Templates → Reset password**, paste the complete
+contents of `reset-password.html` and save. Set the subject to
+`Reset your Pixinium password`. This template uses `RedirectTo` (the allow-listed
+`/auth/recovery` callback supplied by the app) and `TokenHash` for server-side
+verification, so it does not require the requesting browser's PKCE cookie.
+Add the app's `/auth/recovery` URL to Auth Redirect URLs before testing.
+Request a new email after saving; old emails do not change. Open the newest
+link once. The template has not been uploaded to the hosted project.
+
+## Signup confirmation
+
 In Supabase Authentication's Email Templates, open **Confirm signup**:
 
 - Subject: `Confirm your Pixinium email`
