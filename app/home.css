@@ -220,6 +220,31 @@
 .mood-links small { display: block; margin-top: 5px; font-size: 9px; font-weight: 400; color: #7d6d60; }
 .mood-links a:hover { border-color: #bc8970; background: #fff; }
 .home-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 25px 0 30px; border-top: 1px solid #e5dcd4; }
+.home-footer.site-footer { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 24px; padding-block: 16px; }
+.site-footer-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+.site-footer .site-footer-brand p { font-size: 11px; line-height: 1.6; color: #655851; }
+.site-footer .policy-links { justify-self: end; grid-template-columns: repeat(3, max-content); column-gap: 24px; width: auto; }
+.policy-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 32px; width: 100%; }
+.policy-link-group h2 { margin-bottom: 8px; font-size: 13px; font-weight: 800; line-height: 20px; color: var(--ink); }
+.policy-link-group ul { display: flex; flex-wrap: wrap; column-gap: 16px; list-style: none; margin: 0; padding: 0; }
+.policy-links a { display: flex; align-items: center; min-height: 44px; width: fit-content; max-width: 100%; padding-right: 8px; color: #655851; font-size: 13px; line-height: 1.6; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; }
+.policy-links a:hover { color: #96352d; text-decoration-color: currentColor; }
+.detail-policy-note { font-size: 12px; line-height: 1.8; color: #655851; }
+.detail-policy-note a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 1100px) {
+  .site-footer .policy-links { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 16px; width: 100%; }
+}
+@media (max-width: 760px) {
+  .site-footer .site-footer-brand p { font-size: 11px; }
+  .policy-links { column-gap: 12px; }
+  .policy-link-group h2 { font-size: 12px; }
+  .policy-link-group ul { display: block; }
+  .policy-links a { font-size: 12px; padding-right: 0; }
+}
+@media (max-width: 600px) {
+  .home-footer.site-footer { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .site-footer-brand { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+}
 .footer-logo { font-size: 21px; font-weight: 900; letter-spacing: -0.03em; }
 .home-footer p, .home-footer > a:last-child { font-size: 10px; color: var(--muted); }
 .item-preview { position: fixed; inset: 0; margin: auto; padding: 0; max-height: 90dvh; width: min(500px, calc(100% - 32px)); border: 1px solid #d9c5b6; border-radius: 20px; background: #fffaf4; color: #211d20; color-scheme: light; overflow: auto; overscroll-behavior: contain; box-shadow: 0 25px 80px #0004; }

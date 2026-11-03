@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { SiteHeader } from '@/components/site-header'
+import { SiteFooter } from '@/components/site-footer'
 import { CatalogCard } from '@/components/catalog-card'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { CategoryNavigation } from '@/components/category-navigation'
@@ -43,9 +44,10 @@ export default function CatalogSearch({ items, categories, tags, total, page, to
   }, [query, initialQuery, initialTag, initialCategory, initialSort, initialTagMatch, router])
 
   return (
-    <main className="home-page archive-page">
+    <div className="home-page archive-page">
+      <a className="skip-home" href="#archive-main">Skip to content</a>
       <SiteHeader query={query} onQueryChange={setQuery} searchTag={initialTag} searchCategory={initialCategory} searchSort={initialSort} searchTagMatch={initialTagMatch} />
-      <div className="page-shell catalog-layout">
+      <main id="archive-main" className="page-shell catalog-layout">
       <CategoryNavigation categories={categories} current="all" />
       <div className="search-content">
         <CatalogFilters categories={categories} tags={tags} applied={{ category: initialCategory, tag: initialTag, sort: initialSort, tagMatch: initialTagMatch }} pending={pending} onApply={changeFilters}>
@@ -71,7 +73,8 @@ export default function CatalogSearch({ items, categories, tags, total, page, to
           </nav>}
         </div>
       </div>
-      </div>
-    </main>
+      </main>
+      <SiteFooter />
+    </div>
   )
 }

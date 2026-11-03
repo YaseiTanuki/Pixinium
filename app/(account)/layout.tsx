@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { ArrowLeft, Gamepad2, Heart, ImageIcon, Music2, Sparkles } from 'lucide-react'
+import { ArrowLeft, Gamepad2, ImageIcon, Music2, Sparkles } from 'lucide-react'
 import './account.css'
 import { BrandLogo } from '@/components/brand-logo'
+import { SiteFooter } from '@/components/site-footer'
 export const metadata = { robots: { index: false, follow: false } }
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,6 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
       </aside>
       <section className="account-card">{children}</section>
     </main>
-    <footer className="account-footer page-shell"><span>A little archive. A lot to love.</span><span><Heart size={13} aria-hidden="true" /> Make yourself at home.</span></footer>
+    <SiteFooter />
   </div>
 }

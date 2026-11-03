@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Search, SearchX } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { BrandLogo } from '@/components/brand-logo'
+import { SiteFooter } from '@/components/site-footer'
 import { CategoryNavigation } from '@/components/category-navigation'
 import { CategoryResults } from '@/components/category/category-results'
 import { CatalogFilters } from '@/components/catalog-filters'
@@ -92,6 +92,6 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       </nav>}
     </main>
     </div>
-    <footer className="home-footer page-shell"><BrandLogo className="brand-logo-footer" /><p>A little archive. A lot to love.</p><Link href="/">Back to home ↑</Link></footer>
+    <SiteFooter />
   </div>
 }

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { MotionDiv, MotionNav, MotionSection } from '@/components/motion'
-import { BrandLogo } from '@/components/brand-logo'
+import { SiteFooter } from '@/components/site-footer'
 import type { CatalogCard, CatalogDetail } from '@/lib/entities/catalog'
 import { contentKind, type ContentKind } from '@/lib/content-types'
 import { categoryHref } from '@/lib/catalog'
@@ -65,11 +65,7 @@ export default function ItemDetail({ item, related }: ItemDetailProps) {
         </MotionSection>
         <RelatedItems items={related} />
       </main>
-      <footer className="home-footer home-shell">
-        <BrandLogo className="brand-logo-footer" />
-        <p>A little archive. A lot to love.</p>
-        <Link href="/search">Back to the good stuff ↑</Link>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

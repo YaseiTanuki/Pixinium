@@ -28,6 +28,7 @@ export function AuthForm({ mode, oauthError = false }: { mode: 'login' | 'signup
   }
 
   return <form action={action} className="account-form" aria-busy={pending || googlePending}>
+    {registering && <p className="account-policy-notice">By creating an account, including with Google, you agree to the <Link href="/policies/terms">Terms of Service</Link>. Read our <Link href="/policies/privacy">Privacy Policy</Link> to learn how your information is used.</p>}
     <button type="button" className="account-button w-full" disabled={pending || googlePending} onClick={signInWithGoogle}>
       {googlePending ? 'Connecting to Google…' : 'Continue with Google'}
       {googlePending && <LoaderCircle size={16} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}

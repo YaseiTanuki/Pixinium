@@ -1,5 +1,5 @@
 import { SiteHeader } from '@/components/site-header'
-import { BrandLogo } from '@/components/brand-logo'
+import { SiteFooter } from '@/components/site-footer'
 import '../(account)/account.css'
 export const metadata = { title: 'Your profile', robots: { index: false, follow: false } }
 
@@ -10,9 +10,6 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
     <main id="account-main" className="account-shell profile-route-shell">
       <section className="account-card">{children}</section>
     </main>
-    <footer className="home-footer home-shell">
-      <BrandLogo className="brand-logo-footer" />
-      <p>A little archive. A lot to love.</p>
-    </footer>
+    <SiteFooter />
   </div>
 }

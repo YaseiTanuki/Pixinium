@@ -53,8 +53,8 @@
 .account-upload-zone > svg { margin-bottom: 14px; color: #ad3434; }
 .account-upload-zone .account-input { padding: 0; border: 0; border-radius: 0; background: transparent; min-height: 44px; font-size: 12px; }
 .account-input::file-selector-button { margin: 6px 12px 6px 0; padding: 10px 12px; border: 1px solid #d9ccc1; border-radius: 7px; background: #fffdfb; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
-.account-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding-block: 23px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
-.account-footer > span:last-child { display: inline-flex; align-items: center; gap: 7px; }
+.account-policy-notice { font-size: 12px; line-height: 1.8; color: var(--muted); }
+.account-policy-notice a { color: #96352d; text-decoration: underline; text-underline-offset: 4px; }
 @media (max-width: 760px) {
   .account-shell { grid-template-columns: 1fr; max-width: 480px; gap: 28px; padding-block: 35px; }
   .account-intro-title { font-size: 36px; margin-top: 14px; }
