@@ -2,7 +2,7 @@
 
 import { getAccount } from '@/server/services/auth.service'
 import { deleteContentForActor } from '@/server/services/content-delete.service'
-import { updateContentForActor } from '@/server/services/content-edit.service'
+import { updateContentForActor, setContentStatusForActor } from '@/server/services/content-edit.service'
 import { prepareContentUploadForActor, discardContentUploadsForActor, createContentForActor } from '@/server/services/content-upload.service'
 
 export async function prepareContentUpload(input: unknown) {
@@ -23,4 +23,8 @@ export async function updateContent(input: unknown) {
 
 export async function deleteContent(input: unknown) {
   return deleteContentForActor(await getAccount(), input)
+}
+
+export async function setContentStatus(input: unknown) {
+  return setContentStatusForActor(await getAccount(), input)
 }

@@ -7,6 +7,13 @@ roles. The two active roles are `member` (displayed as User) and `admin`.
 The existing `editor` value is reserved and receives no admin/upload permission.
 Extend `lib/auth/permissions.ts` deliberately when adding roles or permissions.
 
+Admin Studio now separates Drafts and Published with category-style navigation,
+counts, URL-persisted filters and numbered pagination. Agent submissions are
+private drafts pending review; human admins can inspect media through the
+admin-only preview endpoint and publish the saved draft, or return published
+content to drafts. Editing text/files is separate from the publication action,
+so unsaved edits are never silently approved. See [agent-upload-api.md](./agent-upload-api.md).
+
 ## Required environment setup
 
 Password recovery uses Supabase `resetPasswordForEmail` and a dedicated

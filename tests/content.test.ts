@@ -29,7 +29,8 @@ test('automatic item slugs handle repeated titles, Unicode and URL-unsafe charac
 test('content validation rejects invalid publication, facts, roles and category metadata', () => {
   const valid = { ...item, attachments: [{ path: `${admin}/${member}.png`, altText: 'Original image' }] }
   assert.equal(contentSchema.safeParse(valid).success, true)
-  assert.equal(contentSchema.safeParse({ ...valid, status: 'draft' }).success, false)
+  assert.equal(contentSchema.safeParse({ ...valid, status: 'draft' }).success, true)
+  assert.equal(contentSchema.safeParse({ ...valid, status: 'archived' }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, tags: [...item.tags, { slug: 'avatar', name: 'Avatar' }] }).success, true)
   assert.equal(contentSchema.safeParse({ ...valid, tags: [...item.tags, ...item.tags] }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, attachments: [] }).success, false)

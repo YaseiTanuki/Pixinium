@@ -7,7 +7,7 @@ export const ADMIN_SORT_OPTIONS = [
   { value: 'downloads', label: 'Most downloaded' },
 ]
 export type AdminCatalogFilters = { query: string; category: string; status: string; tag: string; tagMatch: string; sort: string }
-export const EMPTY_ADMIN_FILTERS: AdminCatalogFilters = { query: '', category: '', status: '', tag: '', tagMatch: 'all', sort: '' }
+export const EMPTY_ADMIN_FILTERS: AdminCatalogFilters = { query: '', category: '', status: 'published', tag: '', tagMatch: 'all', sort: '' }
 type Params = Record<string, string | string[] | undefined>
 
 export function parseAdminCatalogFilters(params: Params): AdminCatalogFilters {
@@ -15,7 +15,7 @@ export function parseAdminCatalogFilters(params: Params): AdminCatalogFilters {
   return {
     query: text('q').trim(),
     category: searchCategories(Array.isArray(params.category) ? params.category.join(',') : text('category')).join(','),
-    status: ['published', 'archived'].includes(text('status')) ? text('status') : '',
+    status: ['draft', 'published', 'archived', 'all'].includes(text('status')) ? text('status') : 'published',
     tag: searchTags(Array.isArray(params.tag) ? params.tag.join(' ') : text('tag')).join(' '),
     tagMatch: text('match') === 'any' ? 'any' : 'all',
     sort: ADMIN_SORT_OPTIONS.some(option => option.value === text('sort')) ? text('sort') : '',
@@ -34,5 +34,5 @@ export function adminCatalogHref(filters: AdminCatalogFilters, page = 1): string
 
 export function adminCatalogParams(filters: AdminCatalogFilters) {
   const query = filters.query.replace(/[\\%_]/g, '\\$&')
-  return [query ? `%${query}%` : null, filters.category || null, filters.status || null, filters.tag || null, filters.tagMatch]
+  return [query ? `%${query}%` : null, filters.category || null, filters.status === 'all' ? null : filters.status || 'published', filters.tag || null, filters.tagMatch]
 }

@@ -32,7 +32,7 @@ export const attachmentSchema = z.object({
 export const contentSchema = z.object({
   categoryId: z.string().regex(/^[1-9][0-9]*$/),
   title: z.string().trim().min(1).max(CONTENT_LIMITS.title), summary: z.string().trim().max(CONTENT_LIMITS.summary),
-  description: z.string().trim().max(CONTENT_LIMITS.description), status: z.literal('published').default('published'),
+  description: z.string().trim().max(CONTENT_LIMITS.description), status: z.enum(['draft', 'published']).default('published'),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#f1e5dd'), isFeatured: z.boolean().default(false),
   sortOrder: z.number().int().min(0).max(CONTENT_LIMITS.sortOrder).default(0),
   metadata: z.record(z.string(), z.unknown()),
@@ -76,4 +76,4 @@ export const contentUpdateSchema = z.object({
 export type ContentInput = z.infer<typeof contentSchema>
 export type ContentUpdateInput = z.infer<typeof contentUpdateSchema>
 export type AttachmentInput = z.infer<typeof attachmentSchema>
-export type ContentResult = { error?: string; message?: string; href?: string; id?: string; slug?: string; category?: string }
+export type ContentResult = { error?: string; message?: string; href?: string; id?: string; slug?: string; category?: string; status?: string }

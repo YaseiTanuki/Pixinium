@@ -7,9 +7,14 @@ its existing Supabase authentication. The agent API uses only
 database creation privileges. It has EXECUTE access to an allowlist of checked
 functions and no direct SELECT/INSERT/UPDATE/DELETE grants on application tables.
 
+Agent uploads are saved as **private drafts awaiting admin review**. They do not
+appear in the public archive or public media API until an administrator publishes
+them in Admin Studio. Supplying `status: published` cannot bypass review: both
+the HTTP handler and the database broker enforce draft status.
+
 ## Migration and activation
 
-Test `db/migrations/0019_independent_agents.sql` on an isolated copy of the
+Test `db/migrations/0019_independent_agents.sql` and `0020_agent_draft_review.sql` on an isolated copy of the
 application database first. Production is a separate deployment/cutover choice;
 do not assume its schema matches development. Then, from the trusted server
 workspace:
@@ -50,7 +55,13 @@ points, including final publication.
 | --- | --- |
 | `catalog:read` | Read allowed category IDs, tags and upload rules |
 | `uploads:write` | Reserve uploads or discard the agent's unclaimed staging |
-| `content:create` + `content:publish` | Create a new immediately published item |
+| `content:create` + `content:publish` | Submit a new private draft for admin review |
+
+The existing `content:publish` scope name is retained for deployed keys, but it
+does not approve public visibility. `automation.publish_job` also retains its
+broker signature; its write now always uses `status = draft` and a null
+`published_at`. Existing public items and completed historical jobs are not
+changed by the migration.
 
 Agent access does not include editing/deleting existing items, reading profiles
 or saved collections, changing permissions or accessing the Admin UI. Featured
@@ -111,7 +122,7 @@ localhost. Never include API keys in URLs or forward them to object storage.
 | GET | `/api/agent/catalog` | Allowed categories, tags, file types and limits |
 | POST | `/api/agent/uploads` | Reserve bytes and return a signed PUT URL |
 | DELETE | `/api/agent/uploads` | Discard only owned, unclaimed temporary files |
-| POST | `/api/agent/content` | Idempotent publication using staged files |
+| POST | `/api/agent/content` | Idempotent draft submission using staged files |
 
 Upload JSON is `{ "name": "sunset.png", "size": 12345 }`. PUT the actual bytes
 to the returned URL using its supplied headers. Staging paths have the form
@@ -147,7 +158,8 @@ the same processing pipeline as Admin Studio:
   `fileName` for original ZIP entry names. Server-generated previews cannot be
   submitted as inputs. See [asset-packs.md](asset-packs.md).
 
-Success is HTTP 201 with the item ID, slug, category and href. A completed retry
+Success is HTTP 201 with the item ID, slug, category, `status: "draft"` and a
+review-pending message. No public `href` is returned for a new draft. A completed retry
 returns the same stored result with `Idempotency-Replayed: true`. A concurrent
 request for a running job returns 202 and `Retry-After: 5`. Reusing the same key
 with a different normalized body returns 409. After an interrupted request, retry
@@ -157,6 +169,21 @@ Other responses include 401 (invalid/revoked/expired key), 403 (scope/category/
 ownership), 409 (lease or job conflict), 429 (quota), 422 (invalid content), and
 503 (runtime not configured or uses an overprivileged role). Provider errors,
 secret hashes and storage credentials are not returned to clients.
+
+## Admin review
+
+Admin Studio has separate Drafts and Published views with counts. Search,
+category, tags, sort and pagination are URL-persisted and applied before paging.
+Filters reset to page 1 and clearing filters retains the current status view.
+An administrator can open Review to inspect private media, save text/file edits,
+then choose **Publish saved draft**. Only the saved version is approved. Published
+items can be moved back to drafts, which removes their public visibility.
+
+The status action verifies the Supabase account and Neon admin role, rechecks
+the role inside the SQL write, and requires an active category and cover image.
+Existing takedown triggers still block restricted items from publication.
+Draft review media uses `/api/admin/assets/:id`, guarded by admin authentication;
+`/api/assets/:id` continues to reject drafts for everyone, including guests.
 
 ## Resumable command-line client
 

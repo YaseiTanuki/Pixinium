@@ -4,6 +4,10 @@ import { randomUUID } from 'node:crypto'
 import { PGlite } from '@electric-sql/pglite'
 import { migrate } from '../scripts/migrations'
 import { agentPayloadHash, newAgentCredential, parseAgentCredential } from '../lib/agent-identity'
+import { cardsQuery } from '../server/repositories/catalog.queries'
+import { setContentStatusQuery } from '../server/repositories/content-edit'
+import { adminCatalogCountQuery, adminCatalogPageQuery } from '../server/repositories/admin-catalog.queries'
+import { adminCatalogHref, adminCatalogParams, parseAdminCatalogFilters } from '../lib/admin/catalog-filters'
 
 test('agent secrets are opaque, independently identified and hashed; payload hashes are canonical', () => {
   const key = newAgentCredential()
@@ -114,7 +118,7 @@ test('request, job and concurrency quotas remain separate', async () => {
   } finally { await f.db.close() }
 })
 
-test('publication atomically records provenance and replays one result without needing a profile', async () => {
+test('agent submission stays private despite published input, replays a draft receipt, and only an admin can approve it', async () => {
   const f = await fixture()
   try {
     const request = randomUUID()
@@ -123,16 +127,37 @@ test('publication atomically records provenance and replays one result without n
     await assert.rejects(f.start(request, agentPayloadHash({ different: true })), (e: { code: string }) => e.code === 'P0409')
     const uploaded = await f.upload()
     await f.call('claim_uploads', [job.id, job.leaseToken, [uploaded]])
-    const doc = f.document(job)
+    const doc = { ...f.document(job), status: 'published' }
     const schema = (await f.call<{ metadata_schema_key: string }>('category', [f.category])).metadata_schema_key
     await assert.rejects(f.call('publish_job', [job.id, job.leaseToken, schema, JSON.stringify({ ...doc, attachments: [{ ...doc.attachments[0], path: 'profile/avatar/other.png' }] }), 'assets']), (e: { code: string }) => e.code === 'P0403')
-    const result = await f.call<{ id: string }>('publish_job', [job.id, job.leaseToken, schema, JSON.stringify(doc), 'assets'])
+    const result = await f.call<{ id: string; status: string; href?: string }>('publish_job', [job.id, job.leaseToken, schema, JSON.stringify(doc), 'assets'])
     assert.equal(result.id, job.itemId)
+    assert.equal(result.status, 'draft')
+    assert.equal(result.href, undefined)
     assert.equal((await f.start(request)).result?.id, job.itemId)
     await f.db.exec('RESET ROLE')
     assert.equal((await f.db.query('SELECT * FROM catalog.profiles')).rows.length, 0)
     assert.equal((await f.db.query('SELECT * FROM automation.item_origins')).rows.length, 1)
-    assert.equal((await f.db.query("SELECT * FROM automation.audit_events WHERE action='content_published'")).rows.length, 1)
+    assert.equal((await f.db.query("SELECT * FROM automation.audit_events WHERE action='content_submitted'")).rows.length, 1)
+    const saved = (await f.db.query<{ status: string; published_at: string | null }>('SELECT status,published_at FROM catalog.items WHERE id=$1', [job.itemId])).rows[0]
+    assert.deepEqual(saved, { status: 'draft', published_at: null })
+    assert.equal((await f.db.query(cardsQuery, [null, doc.slug, null])).rows.length, 0)
+    const drafts = parseAdminCatalogFilters({ status: 'draft', q: 'Fixture' })
+    const draftParams = adminCatalogParams(drafts)
+    assert.equal((await f.db.query<{ total: number }>(adminCatalogCountQuery, draftParams)).rows[0].total, 1)
+    assert.equal((await f.db.query(adminCatalogPageQuery, [...draftParams, 20, 0, ''])).rows.length, 1)
+    assert.match(adminCatalogHref(drafts, 2), /status=draft/)
+    assert.match(adminCatalogHref(drafts, 2), /page=2/)
+    const admin = randomUUID(), member = randomUUID()
+    await f.db.query("INSERT INTO catalog.profiles(id,role) VALUES($1,'admin'),($2,'member')", [admin, member])
+    assert.equal((await f.db.query(setContentStatusQuery, [member, job.itemId, 'published'])).rows.length, 0)
+    assert.equal((await f.db.query(setContentStatusQuery, [admin, job.itemId, 'published'])).rows.length, 1)
+    assert.equal((await f.db.query(cardsQuery, [null, doc.slug, null])).rows.length, 1)
+    assert.equal((await f.db.query(setContentStatusQuery, [admin, job.itemId, 'draft'])).rows.length, 1)
+    assert.equal((await f.db.query(cardsQuery, [null, doc.slug, null])).rows.length, 0)
+    assert.equal((await f.db.query<{ published_at: string | null }>('SELECT published_at FROM catalog.items WHERE id=$1', [job.itemId])).rows[0].published_at, null)
+    await f.db.query("UPDATE catalog.categories SET is_active=false WHERE id=$1", [f.category])
+    assert.equal((await f.db.query(setContentStatusQuery, [admin, job.itemId, 'published'])).rows.length, 0)
   } finally { await f.db.close() }
 })
 
@@ -153,5 +178,31 @@ test('expired attempts are fenced and revocation is checked again at final publi
     await f.db.query('UPDATE automation.api_keys SET revoked_at=now() WHERE id=$1', [f.key.keyId])
     await f.db.exec('SET ROLE pixinium_agent')
     await assert.rejects(f.call('publish_job', [retry.id, retry.leaseToken, schema, JSON.stringify(f.document(retry)), 'assets']), (e: { code: string }) => e.code === 'P0401')
+  } finally { await f.db.close() }
+})
+
+test('admin views filter before pagination and retain status/search/category/tag/sort in URLs', async () => {
+  const f = await fixture()
+  try {
+    await f.db.exec('RESET ROLE')
+    await f.db.query(`INSERT INTO catalog.items(category_id,slug,title,status,published_at)
+      SELECT $1::bigint,'draft-'||n,'Draft '||n,'draft',NULL FROM generate_series(1,24) n`, [f.category])
+    await f.db.query(`INSERT INTO catalog.items(category_id,slug,title,status,published_at)
+      SELECT $1::bigint,'published-'||n,'Published '||n,'published',now() FROM generate_series(1,3) n`, [f.category])
+    const filters = parseAdminCatalogFilters({ status: 'draft', q: 'Draft', sort: 'title' })
+    const params = adminCatalogParams(filters)
+    assert.equal((await f.db.query<{ total: number }>(adminCatalogCountQuery, params)).rows[0].total, 24)
+    const first = (await f.db.query<{ id: string; status: string }>(adminCatalogPageQuery, [...params, 20, 0, 'title'])).rows
+    const second = (await f.db.query<{ id: string }>(adminCatalogPageQuery, [...params, 20, 20, 'title'])).rows
+    assert.equal(first.length, 20)
+    assert.equal(second.length, 4)
+    assert.ok(first.every(item => item.status === 'draft'))
+    assert.ok(second.every(item => !first.some(other => item.id === other.id)))
+    assert.equal((await f.db.query<{ total: number }>(adminCatalogCountQuery, adminCatalogParams(parseAdminCatalogFilters({})))).rows[0].total, 3)
+    assert.equal((await f.db.query<{ total: number }>(adminCatalogCountQuery, adminCatalogParams(parseAdminCatalogFilters({ status: 'all' })))).rows[0].total, 27)
+    const href = adminCatalogHref({ ...filters, category: 'images', tag: 'cozy night', tagMatch: 'any' }, 2)
+    const url = new URL(href, 'https://pixinium.test')
+    for (const [key, value] of Object.entries({ status: 'draft', q: 'Draft', category: 'images', tag: 'cozy night', match: 'any', sort: 'title', page: '2' })) assert.equal(url.searchParams.get(key), value)
+    assert.ok(!adminCatalogHref({ ...filters, query: 'Changed' }).includes('page='))
   } finally { await f.db.close() }
 })

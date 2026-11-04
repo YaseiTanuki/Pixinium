@@ -13,14 +13,17 @@ export async function POST(request: Request) {
     const input = await readAgentJson(request)
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new AgentApiError(400, 'Expected a content object.')
     const parsed = contentSchema.safeParse({
-      status: 'published', summary: '', description: '', accentColor: '#f1e5dd', isFeatured: false,
-      sortOrder: 0, metadata: {}, tags: [], facts: [], attachments: [], ...input,
+      summary: '', description: '', accentColor: '#f1e5dd', isFeatured: false,
+      sortOrder: 0, metadata: {}, tags: [], facts: [], attachments: [], ...input, status: 'draft',
     })
     if (!parsed.success) throw new AgentApiError(422, parsed.error.issues[0]?.message ?? 'Invalid content.')
     const requestKey = request.headers.get('idempotency-key')
     if (!requestKey || !/^[A-Za-z0-9._:-]{1,128}$/.test(requestKey)) throw new AgentApiError(400, 'Provide an Idempotency-Key of 1–128 letters, digits, dots, colons, underscores or hyphens.')
+    // Keep request hashes stable for existing clients/checkpoints. Requested status
+    // affects idempotency only; the handler, service and broker still write drafts.
+    const requestedStatus = (input as Record<string, unknown>).status === 'draft' ? 'draft' : 'published'
     const reservation = await agentCall<{ state: string; result?: unknown; id?: string; leaseToken?: string; itemId?: string }>(actor,
-      'start_job', [requestKey, agentPayloadHash(parsed.data), parsed.data.categoryId])
+      'start_job', [requestKey, agentPayloadHash({ ...parsed.data, status: requestedStatus }), parsed.data.categoryId])
     if (reservation.state === 'succeeded') {
       const response = agentJson(reservation.result, 201)
       response.headers.set('Idempotency-Replayed', 'true')

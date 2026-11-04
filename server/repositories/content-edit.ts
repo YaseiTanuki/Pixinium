@@ -1,9 +1,9 @@
 export const editableContentQuery = `
-SELECT i.id::text, i.title, i.summary, i.description, i.slug, c.slug AS category, c.metadata_schema_key,
+SELECT i.id::text, i.title, i.summary, i.description, i.status, i.slug, c.slug AS category, c.metadata_schema_key,
   coalesce((SELECT jsonb_agg(t.name ORDER BY t.name) FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id WHERE it.item_id = i.id), '[]'::jsonb) AS tags,
   coalesce((SELECT jsonb_agg(jsonb_build_object('key', f.key, 'label', f.label, 'value', f.value) ORDER BY f.sort_order, f.key)
     FROM catalog.item_facts f WHERE f.item_id = i.id), '[]'::jsonb) AS facts,
-  coalesce((SELECT jsonb_agg(jsonb_build_object('label', ia.alt_text, 'role', ia.role, 'mediaType', a.media_type) ORDER BY ia.sort_order, ia.id)
+  coalesce((SELECT jsonb_agg(jsonb_build_object('assetId', a.id::text, 'label', ia.alt_text, 'role', ia.role, 'mediaType', a.media_type) ORDER BY ia.sort_order, ia.id)
     FROM catalog.item_assets ia JOIN catalog.assets a ON a.id = ia.asset_id WHERE ia.item_id = i.id), '[]'::jsonb) AS files
 FROM catalog.items i JOIN catalog.categories c ON c.id = i.category_id
 WHERE i.id = $1::bigint`
@@ -63,7 +63,7 @@ WITH actor AS MATERIALIZED (
     description = coalesce(nullif(doc->>'description', doc->>'summary'), ''),
     metadata = coalesce($5::jsonb, i.metadata)
   FROM input CROSS JOIN actor
-  WHERE i.id = $2::bigint RETURNING i.id, i.slug, i.category_id
+  WHERE i.id = $2::bigint RETURNING i.id, i.slug, i.category_id, i.status
 ), tags AS (
   INSERT INTO catalog.tags(slug, name)
   SELECT t->>'slug', t->>'name' FROM item CROSS JOIN input CROSS JOIN LATERAL jsonb_array_elements(doc->'tags') t
@@ -86,4 +86,18 @@ WITH actor AS MATERIALIZED (
   ON CONFLICT (item_id, key) DO UPDATE SET label = EXCLUDED.label, value = EXCLUDED.value, sort_order = EXCLUDED.sort_order
   RETURNING 1
 )
-SELECT item.id::text, item.slug, c.slug AS category FROM item JOIN catalog.categories c ON c.id = item.category_id`
+SELECT item.id::text, item.slug, c.slug AS category, item.status FROM item JOIN catalog.categories c ON c.id = item.category_id`
+
+export const setContentStatusQuery = `
+WITH actor AS MATERIALIZED (
+  SELECT id FROM catalog.profiles WHERE id = $1::uuid AND role = 'admin' FOR SHARE
+)
+UPDATE catalog.items i SET status = $3,
+  published_at = CASE WHEN $3 = 'published' THEN coalesce(i.published_at, now()) ELSE NULL END
+FROM actor
+WHERE i.id = $2::bigint AND $3 IN ('draft', 'published') AND i.status IN ('draft', 'published')
+  AND ($3 = 'draft' OR (
+    EXISTS (SELECT 1 FROM catalog.categories c WHERE c.id = i.category_id AND c.is_active)
+    AND EXISTS (SELECT 1 FROM catalog.item_assets ia JOIN catalog.assets a ON a.id = ia.asset_id
+      WHERE ia.item_id = i.id AND ia.role = 'cover' AND a.media_type = 'image')))
+RETURNING i.id::text, i.slug, i.status, (SELECT slug FROM catalog.categories WHERE id = i.category_id) AS category`

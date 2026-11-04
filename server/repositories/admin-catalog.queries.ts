@@ -12,6 +12,7 @@ const conditions = `FROM catalog.items i JOIN catalog.categories c ON c.id = i.c
           WHERE it.item_id = i.id AND (lower(t.slug) = wanted.tag OR lower(t.name) = wanted.tag))) END)`
 
 export const adminCatalogCountQuery = `SELECT count(*)::int AS total ${conditions}`
+export const adminCatalogStatusCountsQuery = `SELECT status, count(*)::int AS total FROM catalog.items GROUP BY status`
 export const adminCatalogPageQuery = `SELECT i.id::text, i.title, i.status, i.slug, c.slug AS category ${conditions}
   ORDER BY
     CASE WHEN $8::text = 'oldest' THEN i.created_at END ASC,

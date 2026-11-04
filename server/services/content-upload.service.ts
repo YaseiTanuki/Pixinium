@@ -60,7 +60,8 @@ export async function createContentForActor(account: ContentActor | null, input:
   try {
     if (!account || (!isAgentActor(account) && !hasPermission(account.role, 'assets:upload'))) return { error: 'You do not have access to create content.' }
     if (isAgentActor(account) && !account.job) return { error: 'An agent job is required.' }
-    const parsed = contentSchema.safeParse(input)
+    const parsed = contentSchema.safeParse(isAgentActor(account) && input && typeof input === 'object'
+      ? { ...input, status: 'draft' } : input)
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Check the content fields.' }
     const value = parsed.data
     const connection = process.env.CATALOG_ADMIN_DATABASE_URL
@@ -123,8 +124,10 @@ export async function createContentForActor(account: ContentActor | null, input:
       revalidatePath('/search')
       revalidatePath('/admin')
     } catch (error) { console.error('[content.revalidate]', authDiagnostic(error)) }
-    return { id: String(rows[0].id), slug: String(rows[0].slug), category: String(rows[0].category), message: 'Content published to the archive.',
-      href: `/items/${rows[0].category}/${rows[0].slug}` }
+    const status = isAgentActor(account) ? 'draft' : value.status
+    return { id: String(rows[0].id), slug: String(rows[0].slug), category: String(rows[0].category), status,
+      message: status === 'draft' ? 'Content saved as a draft for admin review.' : 'Content published to the archive.',
+      ...(status === 'published' ? { href: `/items/${rows[0].category}/${rows[0].slug}` } : {}) }
   } catch (error) {
     if (authDiagnostic(error).code.startsWith('P04')) throw error
     console.error('[content.create]', authDiagnostic(error))

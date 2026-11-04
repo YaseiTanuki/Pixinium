@@ -11,15 +11,15 @@ import { contentUpdateSchema, type ContentResult } from '@/lib/admin/content'
 import { CONTENT_SCHEMAS, usesAutomaticFacts } from '@/lib/content-types'
 import { parseCategoryMetadata } from '@/lib/entities/metadata'
 import { itemStorageDirectory } from '@/lib/admin/storage-paths'
-import { currentAssetIdsQuery, editableContentQuery, updateContentStatements } from '@/server/repositories/content-edit'
+import { currentAssetIdsQuery, editableContentQuery, updateContentStatements, setContentStatusQuery } from '@/server/repositories/content-edit'
 import { validateContentFiles, inspectContentFiles, finalizeContentFiles } from './content-files'
 import { requirePrivateStorage, deleteStagingUploads, deleteStoredContent, deleteGeneratedPackFiles } from './storage.service'
 import type { ContentActor } from './content-upload.service'
 
 export type EditableContent = {
-  id: string; title: string; summary: string; description: string; slug: string; category: string
+  id: string; title: string; summary: string; description: string; status: string; slug: string; category: string
   schemaKey: string; tags: string[]; facts: Array<{ key: string; label: string; value: string }>
-  files: Array<{ label: string; role: string; mediaType: string }>
+  files: Array<{ assetId: string; label: string; role: string; mediaType: string }>
 }
 
 export async function getEditableContentForActor(account: ContentActor | null, id: string): Promise<EditableContent | null> {
@@ -29,7 +29,7 @@ export async function getEditableContentForActor(account: ContentActor | null, i
   const [row] = await neon(connection).query(editableContentQuery, [id])
   if (!row) return null
   return { id: String(row.id), title: String(row.title), summary: String(row.summary), description: String(row.description),
-    slug: String(row.slug), category: String(row.category), schemaKey: String(row.metadata_schema_key),
+    slug: String(row.slug), status: String(row.status), category: String(row.category), schemaKey: String(row.metadata_schema_key),
     tags: row.tags as string[], facts: row.facts as EditableContent['facts'], files: row.files as EditableContent['files'] }
 }
 
@@ -86,8 +86,8 @@ export async function updateContentForActor(account: ContentActor | null, input:
     try {
       for (const path of ['/', '/search', '/admin', '/profile', `/items/${row.category}/${row.slug}`]) revalidatePath(path)
     } catch (error) { console.error('[content.edit-revalidate]', authDiagnostic(error)) }
-    return { id: String(row.id), slug: String(row.slug), category: String(row.category), message,
-      href: `/items/${row.category}/${row.slug}` }
+    return { id: String(row.id), slug: String(row.slug), category: String(row.category), status: String(row.status), message,
+      ...(row.status === 'published' ? { href: `/items/${row.category}/${row.slug}` } : {}) }
   } catch (error) {
     console.error('[content.edit]', authDiagnostic(error))
     if (error instanceof z.ZodError) return { error: error.issues[0]?.message ?? 'Check the content fields.' }
@@ -100,5 +100,22 @@ export async function updateContentForActor(account: ContentActor | null, input:
         if (!linked.length) await deleteGeneratedPackFiles(pendingFiles.directory, pendingFiles.paths)
       } catch (error) { console.error('[content.replace-cleanup]', authDiagnostic(error)) }
     }
+  }
+}
+
+export async function setContentStatusForActor(account: ContentActor | null, input: unknown): Promise<ContentResult> {
+  if (!account || isAgentActor(account) || !hasPermission(account.role, 'admin:access')) return { error: 'Admin access is required.' }
+  const parsed = z.object({ id: z.string().regex(/^[1-9][0-9]{0,18}$/), status: z.enum(['draft', 'published']) }).safeParse(input)
+  if (!parsed.success || BigInt(parsed.data.id) > BigInt('9223372036854775807')) return { error: 'Choose a valid item and status.' }
+  if (!process.env.CATALOG_ADMIN_DATABASE_URL) return { error: 'Content writing is not configured.' }
+  try {
+    const [row] = await neon(process.env.CATALOG_ADMIN_DATABASE_URL).query(setContentStatusQuery, [account.id, parsed.data.id, parsed.data.status])
+    if (!row) return { error: 'Item unavailable, permissions changed, or an active category and cover image are required to publish.' }
+    for (const path of ['/', '/search', '/admin', '/profile', '/sitemap.xml', `/items/${row.category}/${row.slug}`]) revalidatePath(path)
+    return { id: String(row.id), status: String(row.status), message: row.status === 'published' ? 'Content published.' : 'Content moved to drafts.',
+      ...(row.status === 'published' ? { href: `/items/${row.category}/${row.slug}` } : {}) }
+  } catch (error) {
+    console.error('[content.status]', authDiagnostic(error))
+    return { error: authDiagnostic(error).code === '23514' ? 'This item is restricted and cannot be published. Review its takedown restriction first.' : 'Could not change publication status. Please retry.' }
   }
 }

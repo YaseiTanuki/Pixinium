@@ -4,6 +4,10 @@ import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { deleteContent } from '@/app/actions/content'
+import { AdminPublicationAction } from '@/components/admin-publication-action'
+import { Pencil, Trash2 } from 'lucide-react'
+import { categoryIcon } from '@/lib/category-icons'
+import styles from './admin-studio.module.css'
 
 type Item = { id: string; title: string; status: string; category: string; slug: string }
 
@@ -36,11 +40,16 @@ export function AdminContentList({ items }: { items: Item[] }) {
   }
 
   return <>
-    {message && <p className="account-notice" role="status">{message}</p>}
-    {error && <p className="account-notice" role="alert">{error}</p>}
-    {visible.length ? <ul>{visible.map(item => <li key={item.id}>
-      <div>{item.status === 'published' ? <Link className="account-text-link" href={`/items/${item.category}/${item.slug}`}>{item.title}</Link> : <strong>{item.title}</strong>}<span className="workspace-muted">{item.category}</span></div>
-      <div className="studio-content-actions"><span className="studio-status">{item.status}</span><Link className="account-text-link" href={`/admin/${item.id}/edit`} aria-label={`Edit ${item.title}`}>Edit</Link><button type="button" className="studio-delete" disabled={pending} aria-label={`Delete ${item.title}`} onClick={() => remove(item)}>{deleting === item.id ? 'Deleting…' : 'Delete'}</button></div>
-    </li>)}</ul> : <p className="workspace-muted">Saved content will appear here. New uploads are published immediately.</p>}
+    {message && <p className={`account-notice ${styles.notice}`} role="status">{message}</p>}
+    {error && <p className={`account-notice ${styles.notice}`} role="alert">{error}</p>}
+    {visible.length ? <><div className={styles.listHead} aria-hidden="true"><span>CONTENT</span><span>STATUS</span><span>ACTIONS</span></div><ul className={styles.list}>{visible.map(item => {
+      const key = ({ images: 'image', music: 'music', games: 'gamepad', assets: 'grid', stories: 'type' } as Record<string, string>)[item.category] ?? 'grid'
+      const Icon = categoryIcon(key)
+      return <li key={item.id} className={styles.row}>
+        <div className={styles.identity}><span className={styles.itemIcon} data-kind={item.category}><Icon size={20} strokeWidth={1.5} aria-hidden="true" /></span><div className={styles.itemCopy}><Link className={styles.title} href={item.status === 'published' ? `/items/${item.category}/${item.slug}` : `/admin/${item.id}/edit`}>{item.title}</Link><div className={styles.meta}><span>{item.category}</span><span>#{item.id}</span></div></div></div>
+        <span className={styles.badge} data-status={item.status}>{item.status}</span>
+        <div className={styles.actions}><Link className={styles.edit} href={`/admin/${item.id}/edit`} aria-label={`${item.status === 'draft' ? 'Review' : 'Edit'} ${item.title}`}><Pencil size={13} aria-hidden="true" />{item.status === 'draft' ? 'Review' : 'Edit'}</Link><AdminPublicationAction id={item.id} status={item.status} /><button type="button" className={styles.delete} disabled={pending} title={deleting === item.id ? 'Deleting…' : 'Delete content'} aria-label={`Delete ${item.title}`} onClick={() => remove(item)}><Trash2 size={15} aria-hidden="true" /></button></div>
+      </li>
+    })}</ul></> : <p className={styles.empty}>No content matches this view.</p>}
   </>
 }
