@@ -43,7 +43,7 @@ export function AdminContentList({ items }: { items: Item[] }) {
     {message && <p className={`account-notice ${styles.notice}`} role="status">{message}</p>}
     {error && <p className={`account-notice ${styles.notice}`} role="alert">{error}</p>}
     {visible.length ? <><div className={styles.listHead} aria-hidden="true"><span>CONTENT</span><span>STATUS</span><span>ACTIONS</span></div><ul className={styles.list}>{visible.map(item => {
-      const key = ({ images: 'image', music: 'music', games: 'gamepad', assets: 'grid', stories: 'type' } as Record<string, string>)[item.category] ?? 'grid'
+      const key = ({ images: 'image', music: 'music', games: 'gamepad', assets: 'grid' } as Record<string, string>)[item.category] ?? 'grid'
       const Icon = categoryIcon(key)
       return <li key={item.id} className={styles.row}>
         <div className={styles.identity}><span className={styles.itemIcon} data-kind={item.category}><Icon size={20} strokeWidth={1.5} aria-hidden="true" /></span><div className={styles.itemCopy}><Link className={styles.title} href={item.status === 'published' ? `/items/${item.category}/${item.slug}` : `/admin/${item.id}/edit`}>{item.title}</Link><div className={styles.meta}><span>{item.category}</span><span>#{item.id}</span></div></div></div>

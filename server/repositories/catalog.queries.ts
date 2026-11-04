@@ -30,10 +30,9 @@ FROM catalog.items i JOIN catalog.categories c ON c.id = i.category_id`
 export const categoriesQuery = `SELECT id::text, slug, name, description, icon_key AS "iconKey",
   artwork_style AS "artworkStyle", metadata_schema_key AS "metadataSchemaKey",
   sort_order AS "sortOrder", is_active AS "isActive", created_at::text AS "createdAt", updated_at::text AS "updatedAt"
-  FROM catalog.categories WHERE is_active AND slug <> 'stories' ORDER BY sort_order, id`
+  FROM catalog.categories WHERE is_active ORDER BY sort_order, id`
 
 const catalogConditions = `WHERE i.status = 'published' AND c.is_active
-  AND c.slug <> 'stories'
   AND ($1::text IS NULL OR c.slug = ANY(string_to_array($1, ',')))
   AND ($2::text IS NULL OR i.slug = $2)
   AND ($3::text IS NULL OR i.title ILIKE $3 OR i.summary ILIKE $3 OR c.name ILIKE $3
@@ -61,7 +60,7 @@ export const archiveTagsQuery = `SELECT t.id::text, t.slug, t.name FROM catalog.
   WHERE EXISTS (SELECT 1 FROM catalog.item_tags it
     JOIN catalog.items i ON i.id = it.item_id
     JOIN catalog.categories c ON c.id = i.category_id
-    WHERE it.tag_id = t.id AND i.status = 'published' AND c.is_active AND c.slug <> 'stories')
+    WHERE it.tag_id = t.id AND i.status = 'published' AND c.is_active)
   ORDER BY t.name, t.id`
 
 export const archivePageQuery = `${cardsSelect} ${archiveConditions}

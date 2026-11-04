@@ -30,7 +30,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
   const db = new PGlite()
   try {
     await seedLegacy(db)
-    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql', '0012_trim_unused_catalog_fields.sql', '0013_profile_avatar_path.sql', '0014_item_view_download_counts.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql'])
+    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql', '0012_trim_unused_catalog_fields.sql', '0013_profile_avatar_path.sql', '0014_item_view_download_counts.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql', '0020_agent_draft_review.sql', '0021_remove_stories.sql'])
 
     await t.test('tag backfill and discovery preserve one item and hide archived items', async () => {
       const first = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items ORDER BY id LIMIT 1")).rows[0]
@@ -66,19 +66,9 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
       assert.equal((await db.query(cardsQuery, [null, null, '%werewolf%'])).rows.length, 1)
     })
 
-    await t.test('removed stories category and items stay out of public catalog queries', async () => {
-      await db.exec('BEGIN')
-      try {
-        await db.exec(`INSERT INTO catalog.categories(slug, name) VALUES ('stories', 'Stories');
-          INSERT INTO catalog.items(category_id, slug, title, status, published_at)
-          SELECT id, 'example-story', 'Example Story', 'published', now()
-          FROM catalog.categories WHERE slug = 'stories'`)
-
-        const categories = (await db.query<{ slug: string }>(categoriesQuery)).rows
-        const items = (await db.query<CatalogCard & { assets: unknown[] }>(cardsQuery, [null, null, null])).rows
-        assert.ok(categories.every(category => category.slug !== 'stories'))
-        assert.ok(items.every(item => item.category.slug !== 'stories'))
-      } finally { await db.exec('ROLLBACK') }
+    await t.test('retired chapter table and category are absent', async () => {
+      assert.equal((await db.query<{ name: string | null }>("SELECT to_regclass('catalog.story_chapters') AS name")).rows[0].name, null)
+      assert.equal((await db.query("SELECT id FROM catalog.categories WHERE slug='stories'")).rows.length, 0)
     })
 
     await t.test('backfill preserves the archive, splits facts, deduplicates assets, and preserves focal points', async () => {
@@ -111,7 +101,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
     })
 
     await t.test('constraints reject ambiguous asset locations, duplicate covers, and invalid facts', async () => {
-      await assert.rejects(db.exec("UPDATE catalog.items SET status = 'draft' WHERE id = 1"), /check constraint/)
+      await db.exec("BEGIN; UPDATE catalog.items SET status = 'draft' WHERE id = 1; ROLLBACK;")
       await assert.rejects(db.exec(`INSERT INTO catalog.assets(provider) VALUES ('supabase')`), /check constraint/)
       await assert.rejects(db.exec(`INSERT INTO catalog.assets(provider, external_url) VALUES ('external', 'javascript:alert(1)')`), /check constraint/)
       await assert.rejects(db.exec(`INSERT INTO catalog.item_assets(item_id, asset_id, role) VALUES (1, 1, 'cover')`), /unique constraint/)

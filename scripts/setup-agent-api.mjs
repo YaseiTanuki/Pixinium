@@ -62,7 +62,7 @@ try {
     let categories
     if (command === 'create') {
       if (!subject || subject.length > 100 || !flags.categories) throw new Error('Usage: create <name> --categories images,music,games,assets [--url https://pixinium.com]')
-      categories = await sql`SELECT id::text,slug FROM catalog.categories WHERE is_active AND slug<>'stories' AND slug=ANY(${flags.categories.split(',')}::text[])`
+      categories = await sql`SELECT id::text,slug FROM catalog.categories WHERE is_active AND slug=ANY(${flags.categories.split(',')}::text[])`
       if (categories.length !== new Set(flags.categories.split(',')).size) throw new Error('One or more categories are unavailable.')
       agentId = randomUUID()
     } else if (!uuid(agentId)) throw new Error('Rotate needs an agent UUID.')
