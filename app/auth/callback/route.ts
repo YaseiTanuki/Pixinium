@@ -11,13 +11,13 @@ export async function GET(request: NextRequest) {
       const client = await createClient()
       const { error } = await client.auth.exchangeCodeForSession(code)
       success = !error
-      if (error) console.error('[auth.google.callback]', authDiagnostic(error))
+      if (error) console.error('[auth.oauth.callback]', authDiagnostic(error))
     } catch (error) {
-      console.error('[auth.google.callback]', authDiagnostic(error))
+      console.error('[auth.oauth.callback]', authDiagnostic(error))
     }
   }
   // Fixed local destinations prevent user-controlled redirect targets.
-  const response = NextResponse.redirect(new URL(success ? '/choose-username' : '/login?error=google', request.url))
+  const response = NextResponse.redirect(new URL(success ? '/choose-username' : '/login?error=oauth', request.url))
   response.headers.set('Cache-Control', 'private, no-store')
   response.headers.set('Referrer-Policy', 'no-referrer')
   return response

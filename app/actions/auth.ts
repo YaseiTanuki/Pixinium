@@ -26,6 +26,7 @@ export async function login(_state: AuthState, form: FormData): Promise<AuthStat
 }
 
 export async function signup(_state: AuthState, form: FormData): Promise<AuthState> {
+  if (form.get('termsAccepted') !== 'yes') return { error: 'Please agree to the Terms of Service before creating an account.' }
   const parsed = signupSchema.safeParse(Object.fromEntries(form))
   if (!parsed.success) return { error: 'Use a valid email and matching passwords of 12-128 characters.' }
   let signedIn = false

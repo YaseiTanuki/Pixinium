@@ -33,7 +33,15 @@
 .account-help { display: block; margin-top: 8px; color: var(--muted); font-size: 11px; font-weight: 400; line-height: 1.7; }
 .account-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; border: 1px solid var(--ink); border-radius: 10px; background: var(--ink); color: #fffaf1; padding: 12px 18px; font-size: 12px; font-weight: 800; box-shadow: 3px 3px 0 #e6b5a7; transition: background-color 150ms ease, transform 150ms ease; }
 .account-button:hover:not(:disabled) { background: #46333c; transform: translateY(-1px); }
-.account-button:disabled { opacity: .65; cursor: wait; }
+.account-button:disabled { opacity: .65; cursor: default; }
+.account-auth-alternatives { display: grid; gap: 14px; }
+.account-auth-divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; }
+.account-auth-divider::before, .account-auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.account-auth-options { display: flex; justify-content: center; gap: 12px; }
+.account-auth-option { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border: 1px solid #d9ccc1; border-radius: 10px; background: #fffdfb; color: var(--ink); cursor: pointer; }
+.account-auth-option:hover:not(:disabled) { border-color: #aa9482; background: #f8f5f1; }
+.account-auth-option:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
+.account-auth-option:disabled { opacity: .65; cursor: default; }
 .account-form-footer { border-top: 1px solid var(--line); padding-top: 19px; text-align: center; color: var(--muted); font-size: 12px; line-height: 1.8; }
 .account-text-link { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; color: var(--red); font-weight: 700; text-decoration: underline; text-underline-offset: 4px; font-size: 12px; }
 .account-text-link:hover { color: var(--ink); }
@@ -55,6 +63,15 @@
 .account-input::file-selector-button { margin: 6px 12px 6px 0; padding: 10px 12px; border: 1px solid #d9ccc1; border-radius: 7px; background: #fffdfb; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
 .account-policy-notice { font-size: 12px; line-height: 1.8; color: var(--muted); }
 .account-policy-notice a { color: #96352d; text-decoration: underline; text-underline-offset: 4px; }
+.account-form .account-policy-consent { display: flex; align-items: flex-start; gap: 12px; font-weight: 400; }
+.account-card:has(> .account-form) { width: 100%; max-width: 460px; justify-self: end; padding: clamp(24px, 2.5vw, 32px); }
+.account-card:has(> .account-form) h1 { font-size: clamp(26px, 2.5vw, 32px); }
+.account-card:has(> .account-form) .account-description { margin-bottom: 22px; }
+.account-card > .account-form { gap: 14px; }
+.account-card > .account-form .account-input { min-height: 44px; padding-block: 10px; }
+.account-card > .account-form .account-auth-alternatives { gap: 10px; }
+.account-card > .account-form .account-auth-option { width: 44px; height: 44px; }
+.account-card > .account-form .account-form-footer { padding-top: 12px; }
 @media (max-width: 760px) {
   .account-shell { grid-template-columns: 1fr; max-width: 480px; gap: 28px; padding-block: 35px; }
   .account-intro-title { font-size: 36px; margin-top: 14px; }

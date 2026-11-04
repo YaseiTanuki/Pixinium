@@ -38,13 +38,16 @@ test('only admin receives v1 upload and admin access permissions', () => {
 
 test('registration strips supplied roles and IDs, validates confirmation, preserves password spaces', () => {
   const input = { email: 'member@example.test', password: ' long password ',
-    confirmPassword: ' long password ', username: 'member', role: 'admin', id: 'attacker' }
+    confirmPassword: ' long password ', termsAccepted: 'yes', username: 'member', role: 'admin', id: 'attacker' }
   const parsed = signupSchema.parse(input)
   assert.equal('role' in parsed, false)
   assert.equal('id' in parsed, false)
   assert.equal('username' in parsed, false)
   assert.equal(parsed.password, input.password)
-  assert.equal(signupSchema.safeParse({ email: input.email, password: input.password, confirmPassword: input.password }).success, true)
+  assert.equal(signupSchema.safeParse({ email: input.email, password: input.password, confirmPassword: input.password, termsAccepted: 'yes' }).success, true)
+  for (const termsAccepted of [undefined, '', 'no', false, true]) {
+    assert.equal(signupSchema.safeParse({ ...input, termsAccepted }).success, false)
+  }
   assert.equal(signupSchema.safeParse({ ...input, confirmPassword: 'different' }).success, false)
   assert.equal(signupSchema.safeParse({ ...input, password: 'short', confirmPassword: 'short' }).success, false)
   assert.equal(loginSchema.safeParse({ email: input.email, password: 'x'.repeat(129) }).success, false)
