@@ -28,3 +28,4 @@ output/agent-upload
 .tools/graphify/
 graphify-out/
 .codex
+tools/
