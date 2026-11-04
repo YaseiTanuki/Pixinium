@@ -5,6 +5,7 @@ import { neon } from '@neondatabase/serverless'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { hasPermission } from '@/lib/auth/permissions'
+import { isAgentActor } from '@/lib/agent-identity'
 import { authDiagnostic } from '@/lib/auth/errors'
 import { contentUpdateSchema, type ContentResult } from '@/lib/admin/content'
 import { CONTENT_SCHEMAS, usesAutomaticFacts } from '@/lib/content-types'
@@ -22,7 +23,7 @@ export type EditableContent = {
 }
 
 export async function getEditableContentForActor(account: ContentActor | null, id: string): Promise<EditableContent | null> {
-  if (!account || !hasPermission(account.role, 'admin:access') || !/^[1-9][0-9]{0,18}$/.test(id) || BigInt(id) > BigInt('9223372036854775807')) return null
+  if (!account || isAgentActor(account) || !hasPermission(account.role, 'admin:access') || !/^[1-9][0-9]{0,18}$/.test(id) || BigInt(id) > BigInt('9223372036854775807')) return null
   const connection = process.env.CATALOG_ADMIN_DATABASE_URL
   if (!connection) return null
   const [row] = await neon(connection).query(editableContentQuery, [id])
@@ -33,7 +34,7 @@ export async function getEditableContentForActor(account: ContentActor | null, i
 }
 
 export async function updateContentForActor(account: ContentActor | null, input: unknown): Promise<ContentResult> {
-  if (!account || !hasPermission(account.role, 'admin:access')) return { error: 'Admin access is required to edit content.' }
+  if (!account || isAgentActor(account) || !hasPermission(account.role, 'admin:access')) return { error: 'Admin access is required to edit content.' }
   const parsed = contentUpdateSchema.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Check the content fields.' }
   const value = parsed.data

@@ -8,19 +8,26 @@ import { unzipSync } from 'fflate'
 import { neon } from '@neondatabase/serverless'
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { deleteContentQuery } from '../server/repositories/content-delete.ts'
+import { parseAgentCredential } from '../lib/agent-identity.ts'
 
 const origin = 'http://127.0.0.1:3210'
 const token = process.env.AGENT_API_TOKEN
-const actor = process.env.AGENT_API_ADMIN_ID
-if (!token || !actor || !process.env.CATALOG_ADMIN_DATABASE_URL) throw new Error('Smoke test credentials are missing')
+if (!token || !process.env.CATALOG_ADMIN_DATABASE_URL) throw new Error('Smoke test credentials are missing')
 const sql = neon(process.env.CATALOG_ADMIN_DATABASE_URL)
+// Operator-only cleanup uses an admin; agent authentication never receives this identity.
+const [admin] = await sql`SELECT id::text FROM catalog.profiles WHERE role='admin' ORDER BY id LIMIT 1`
+const credential = parseAgentCredential(`Bearer ${token}`)
+if (!admin || !credential) throw new Error('Operator cleanup account or independent agent key is missing')
+const actor = admin.id
+const [agent] = await sql`SELECT agent_id::text AS id FROM automation.api_keys WHERE id=${credential.keyId}::uuid`
+if (!agent) throw new Error('Agent identity is missing')
 const title = `Asset pack smoke ${randomUUID()}`
 const staged = []
 let createdId
 
 async function api(path, method = 'GET', body) {
   const response = await fetch(`${origin}/api/agent/${path}`, {
-    method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...(path === 'content' ? { 'Idempotency-Key': title.replaceAll(' ', '-') } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   const data = await response.json()
@@ -87,7 +94,7 @@ try {
     const storage = new S3Client({ forcePathStyle: true })
     try {
       for (const asset of deleted.assets) {
-        if (asset.provider !== 's3' || asset.bucket !== (process.env.S3_ASSETS_BUCKET || 'assets') || !asset.object_path.startsWith(`assets/${row.id}/`)) {
+        if (asset.provider !== 's3' || asset.bucket !== (process.env.S3_ASSETS_BUCKET || 'assets') || !asset.object_path.startsWith(`agents/${agent.id}/items/${row.id}/`)) {
           throw new Error('Unexpected smoke test storage path')
         }
         await storage.send(new DeleteObjectCommand({ Bucket: asset.bucket, Key: asset.object_path }))

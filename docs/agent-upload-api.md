@@ -1,126 +1,193 @@
-# Agent upload API
+# Independent agent upload API
 
-This API lets trusted agents create images, music, games and asset packs using the same
-validation and storage processing as Admin Studio. It grants upload and publish
-access on behalf of one existing admin. The current admin role is checked on every
-request; content creation also checks it inside the database write.
+Agents have their own machine identities in `automation.agents`. They are not
+Supabase users, Neon profiles or administrators. The human Admin Studio keeps
+its existing Supabase authentication. The agent API uses only
+`AGENT_DATABASE_URL`, a dedicated login without ownership, BYPASSRLS, role or
+database creation privileges. It has EXECUTE access to an allowlist of checked
+functions and no direct SELECT/INSERT/UPDATE/DELETE grants on application tables.
 
-## Configure
+## Migration and activation
 
-Run from the project directory, substituting the UUID of an existing admin in
-`catalog.profiles`:
+Test `db/migrations/0019_independent_agents.sql` on an isolated copy of the
+application database first. Production is a separate deployment/cutover choice;
+do not assume its schema matches development. Then, from the trusted server
+workspace:
 
-```sh
-node scripts/setup-agent-api.mjs <existing-admin-uuid> http://localhost:3000
+```powershell
+$env:AGENT_EXPECTED_BRANCH_ID = '<verified-target-branch-id>'
+node --env-file=.env.local scripts/migrate-agent-api.mjs
+node --env-file=.env.local scripts/setup-agent-api.mjs configure-runtime
+node --env-file=.env.local scripts/setup-agent-api.mjs create pixinium-upload-agent --categories images,music,games,assets --url http://localhost:3000
 ```
 
-This creates a random bearer token in gitignored `.env.agent.local` and writes
-only its SHA-256 hash and admin ID to `.env.local`. Restart Next.js. For deployment,
-configure `AGENT_API_TOKEN_SHA256` and `AGENT_API_ADMIN_ID` in the server environment
-and give the agent the token through its secret manager. Use HTTPS outside localhost.
-Never expose these settings through `NEXT_PUBLIC_*` or send the token in a URL.
+The migration script verifies existing local migration checksums and refuses
+unrelated pending migrations. Previously applied entries absent from this
+checkout are reported and left intact. This change does not repair that separate
+history discrepancy. `configure-runtime` creates `pixinium_agent_api`, grants
+only the `pixinium_agent` function role and saves `AGENT_DATABASE_URL` to
+`.env.local`. It also removes the old admin-bound environment settings. Keep the
+generated private recovery/backup environment files secure.
 
-The API stays disabled (503) until configured. Remove the hash to revoke the token,
-or change the account's role to revoke admin access. Restart/redeploy after changing
-server environment variables. To rotate locally, remove the two server settings
-and the old client credentials file, then rerun setup.
+The create command saves the API secret to gitignored `.env.agent.local`; it
+prints only agent/key IDs and scopes. Restart the app after changing its
+environment. On a deployed server, configure `AGENT_DATABASE_URL` through its
+secret manager. Give the agent only `AGENT_API_URL` and `AGENT_API_TOKEN`, never
+database credentials, storage credentials or a Supabase session.
 
-## Endpoints
+Legacy bearer tokens and `AGENT_API_ADMIN_ID` / `AGENT_API_TOKEN_SHA256` no longer
+authenticate. No admin user is created, modified or removed by agent activation.
 
-Send `Authorization: Bearer <token>` on every API request. Send
-`Content-Type: application/json` for POST and DELETE. JSON bodies are limited to
-64 KiB; binaries are uploaded directly to the temporary signed storage URL.
+## Keys and authorization
 
-| Method | Path | Purpose |
+Keys have the form `pxa_<key-uuid>_<256-bit-random-secret>`. The database stores a
+SHA-256 digest of the random secret, not the secret. Each key has independent
+scopes, expiry, revocation and last-used timestamps. Account disablement,
+category restrictions and key permissions are checked again in database entry
+points, including final publication.
+
+| Scope | Operation |
+| --- | --- |
+| `catalog:read` | Read allowed category IDs, tags and upload rules |
+| `uploads:write` | Reserve uploads or discard the agent's unclaimed staging |
+| `content:create` + `content:publish` | Create a new immediately published item |
+
+Agent access does not include editing/deleting existing items, reading profiles
+or saved collections, changing permissions or accessing the Admin UI. Featured
+status and sort order are server-controlled for agent publications. Catalog
+categories are restricted to those explicitly assigned to the machine account.
+
+The creation command defaults to all four scopes and a 90-day key. Use
+`--scopes catalog:read,uploads:write` or another explicit subset and `--days 30`
+where appropriate. An upload-only key cannot publish. At least one allowed
+category must be selected when creating the account.
+
+## Rotation and immediate disablement
+
+Run management commands only in the trusted server workspace:
+
+```powershell
+node --env-file=.env.local scripts/setup-agent-api.mjs status
+node --env-file=.env.local scripts/setup-agent-api.mjs rotate <agent-id> --scopes catalog:read,uploads:write,content:create,content:publish --url https://pixinium.com
+node --env-file=.env.local scripts/setup-agent-api.mjs revoke <old-key-id>
+node --env-file=.env.local scripts/setup-agent-api.mjs disable <agent-id>
+```
+
+Rotation issues another key without automatically revoking the old one, so
+clients can switch before revocation. Database revocation/disablement does not
+require an app redeploy. Operations already committing can complete while a
+revocation waits for their authorization locks. Previously issued storage URLs
+remain valid until their short expiry (currently five minutes); revoking a key
+does not retroactively revoke those URLs. Publication still rechecks permission.
+
+## Shared quotas and job leases
+
+Defaults per agent account (shared by all of its keys and app instances):
+
+- 60 authenticated API requests per minute.
+- 1 GiB of reserved upload bytes per UTC day.
+- 100 new publication jobs per UTC day.
+- Two concurrently processing jobs, with a ten-minute lease and at most three
+  attempts per job. An expired attempt cannot commit after a retry receives a
+  new lease token.
+
+Quota reservations are conservative: failed or cancelled uploads do not refund
+reserved daily bytes, and failed jobs still count toward the daily job budget.
+This avoids using failures/cancellation to bypass limits. Per-file limits are
+still 50 MiB; normal content allows 12 files and asset packs up to 51 inputs.
+Operators may adjust bounded limits on `automation.agents`. Failed/invalid
+credentials still require a database lookup; use deployment-level request/IP
+protection for anonymous traffic. Application quotas protect authenticated work,
+not every possible source of denial of service.
+
+## API contract
+
+All requests use `Authorization: Bearer <key>`. Send JSON with
+`Content-Type: application/json`; JSON is bounded to 64 KiB. Use HTTPS outside
+localhost. Never include API keys in URLs or forward them to object storage.
+
+| Method | Route | Behavior |
 | --- | --- | --- |
-| GET | `/api/agent/catalog` | Active category IDs, tags, file types and limits |
-| POST | `/api/agent/uploads` | Request a temporary upload URL |
-| DELETE | `/api/agent/uploads` | Delete an array of owned staging paths |
-| POST | `/api/agent/content` | Publish content |
+| GET | `/api/agent/catalog` | Allowed categories, tags, file types and limits |
+| POST | `/api/agent/uploads` | Reserve bytes and return a signed PUT URL |
+| DELETE | `/api/agent/uploads` | Discard only owned, unclaimed temporary files |
+| POST | `/api/agent/content` | Idempotent publication using staged files |
 
-### 1. Prepare and upload each file
+Upload JSON is `{ "name": "sunset.png", "size": 12345 }`. PUT the actual bytes
+to the returned URL using its supplied headers. Staging paths have the form
+`agents/<agent-id>/<upload-id>.<ext>`, distinct from user/admin staging. Final
+objects are under `agents/<agent-id>/items/<item-id>/<attempt-lease>/`. A job
+claims its upload grants before expensive file processing; another job or agent
+cannot claim those files, and active claimed inputs cannot be discarded.
 
-POST `/api/agent/uploads`:
-
-```json
-{ "name": "sunset.png", "size": 123456 }
-```
-
-The 201 response includes `path`, `url`, `method: "PUT"`, `headers` and
-`expiresIn: 300`. PUT the exact file bytes to `url` with the returned Content-Type
-and the exact Content-Length. Do **not** forward your API bearer token to storage.
-Treat signed URLs as secrets. Files are limited to 50 MiB each.
-
-### 2. Create content
-
-Get the actual `categoryId` from `/api/agent/catalog`. POST `/api/agent/content`:
+For publication, send `Idempotency-Key: <stable-job-key>` and a body such as:
 
 ```json
 {
   "categoryId": "1",
   "title": "Quiet sunset",
-  "status": "published",
-  "summary": "A warm sunset for your collection.",
-  "tags": [{ "slug": "wallpaper", "name": "Wallpaper" }, { "slug": "background", "name": "Background" }],
-  "attachments": [
-    { "path": "<returned-staging-path>", "altText": "An orange sunset over the mountains" }
-  ]
+  "metadata": {},
+  "tags": [{ "slug": "cozy", "name": "Cozy" }],
+  "attachments": [{
+    "path": "agents/<agent-id>/<upload-id>.png",
+    "altText": "Warm sunset over a quiet landscape",
+    "role": "download"
+  }]
 }
 ```
 
-Provide `categoryId`, `title` and the required uploaded files. Omitted optional fields
-default to empty descriptions, arrays and metadata, published status, display order 0,
-unfeatured and accent `#f1e5dd`. Optional `tags` are `{slug,name}` objects; optional
-`facts` are `{key,label,value}` objects. Attachment focalX/focalY default to 50.
-Attachment roles default to `download`. Asset packs require one explicit `cover`
-attachment; `preview` is server-generated and cannot be submitted. Optional `fileName`
-preserves image basenames in the generated ZIP. Do not submit item IDs, slugs, bucket
-keys or signed URLs as paths. `altText` is required for image attachments.
+Get real category IDs from the catalog endpoint. Original image ratios, file
+validation, thumbnail generation, audio metadata and asset-pack generation use
+the same processing pipeline as Admin Studio:
 
-- Images: originals remain downloads; the first image generates the thumbnail.
-- Music: one artwork image plus audio tracks. Only the thumbnail is retained for
-  artwork. Audio duration, count and formats are detected automatically.
-- Games: one artwork image plus one ZIP package. Artwork is thumbnail-only.
-- Assets: one separate `cover` image plus 1–11 `download` images. The server creates
-  one ZIP of the originals, excluding the cover, and up to five display previews.
-  See [Asset packs](asset-packs.md) for the full contract.
-- Publishing requires artwork; music also requires audio, games require a ZIP.
-- Up to 12 staged files per item, or 51 for asset packs (one cover plus 50 images). Their paths must belong to the configured admin.
+- Images: originals are downloads; the first image generates a cover thumbnail.
+- Music: one artwork image plus audio tracks; artwork becomes a thumbnail.
+- Games: one artwork image and one ZIP package.
+- Asset packs: one `cover` image plus up to 50 `download` images. Supply
+  `fileName` for original ZIP entry names. Server-generated previews cannot be
+  submitted as inputs. See [asset-packs.md](asset-packs.md).
 
-Success returns 201 with `id`, `slug`, `category`, `message`, and `href` for a
-published item. Saves remove staging objects after the database commit.
+Success is HTTP 201 with the item ID, slug, category and href. A completed retry
+returns the same stored result with `Idempotency-Replayed: true`. A concurrent
+request for a running job returns 202 and `Retry-After: 5`. Reusing the same key
+with a different normalized body returns 409. After an interrupted request, retry
+the exact body, including the same staging paths, with the same key.
 
-Creation is **not idempotent**. After a timeout or lost response, check Admin Studio
-before retrying; a save might already have committed. Validation/storage failures
-return 422 with `{ "error": "..." }`. Authentication errors use 401/403; malformed
-requests use 400/413/415; unavailable configuration uses 503.
+Other responses include 401 (invalid/revoked/expired key), 403 (scope/category/
+ownership), 409 (lease or job conflict), 429 (quota), 422 (invalid content), and
+503 (runtime not configured or uses an overprivileged role). Provider errors,
+secret hashes and storage credentials are not returned to clients.
 
-### Cancel an upload
+## Resumable command-line client
 
-DELETE `/api/agent/uploads` with an array of the returned paths. This only deletes
-the admin's temporary uploads, never published files. Abandoned staging files are
-also handled by the existing staging cleanup workflow.
-
-## Included upload client
-
-Create a manifest next to your files:
-
-```json
-{
-  "categoryId": "1",
-  "title": "Quiet sunset",
-  "status": "published",
-  "files": [
-    { "file": "sunset.png", "altText": "An orange sunset over the mountains" }
-  ]
-}
+```powershell
+node --env-file=.env.agent.local scripts/agent-upload.mjs path/to/manifest.json
 ```
 
-```sh
-node --env-file=.env.agent.local scripts/agent-upload.mjs /path/to/manifest.json
-```
+The manifest contains category/title/metadata plus `files`, each specifying
+`file`, optional `role`, and `altText`. Paths are relative to the manifest.
+The client retains a private `<manifest>.agent-state.json` checkpoint with the
+stable idempotency key and uploaded attachment paths. Rerunning the same command
+resumes that job rather than uploading everything again. Changing the manifest
+or files requires a new manifest path; do not remove a checkpoint merely to
+retry an uncertain publication. Checkpoints do not contain the bearer token or
+signed upload URLs. Polling a 202 response retains the same body and key.
 
-The client requests signed URLs, uploads bytes, creates content and prints its
-identity. It cleans up failed uploads before submission and never automatically
-retries content creation. For music/game manifests, supply artwork and tracks/ZIP
-as separate `files` entries; their types determine how they are processed.
+## Audit and maintenance
+
+`automation.item_origins` links an item to its agent, key and job. Append-only
+runtime audit events record key management, upload reservations, jobs and final
+publication without raw tokens or private request bodies. The runtime cannot
+edit/delete these records or any existing content. Operators retain separate
+database administration privileges.
+
+Retention/cleanup is an operator task: prune old usage buckets and expired,
+unclaimed upload-grant records according to operational requirements. Reconcile
+failed-attempt storage directories with successful job results before deleting
+objects; do not delete every agent object based only on age. Storage credentials
+stay in the server-side broker; prefix isolation is enforced there and through
+database grants, not by issuing bucket-wide credentials to agent clients.
+
+Validation: in-memory permission/scope/quota/idempotency tests, a real restricted
+login on an isolated Neon branch, concurrent authorization, and a synthetic HTTP
+upload/publication/replay were checked. Fixture storage objects were removed.
