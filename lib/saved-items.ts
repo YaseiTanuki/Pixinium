@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { loadSavedItems, setItemCollected } from '@/app/actions/saved-items'
 
-const initial = { saved: [] as string[], pending: false, loaded: false, error: '' }
+const initial = { saved: [] as string[], userId: null as string | null, pending: false, loaded: false, error: '' }
 let state = initial
 let generation = 0
 let loading: Promise<void> | null = null
@@ -18,6 +18,7 @@ function update(next: Partial<typeof state>) {
 }
 
 function refresh() {
+  if (!state.userId) return Promise.resolve()
   if (loading || state.pending) return loading ?? Promise.resolve()
   const version = generation
   const request = (async () => {
@@ -46,10 +47,10 @@ function subscribe(notify: () => void) {
       userId = nextUser
       generation++
       loading = null
-      update({ ...initial })
+      update({ ...initial, userId: nextUser, loaded: !nextUser })
       // Run outside the auth callback to avoid holding the auth client's lock.
       clearTimeout(timer)
-      timer = setTimeout(reload, 0)
+      if (nextUser) timer = setTimeout(reload, 0)
     })
     window.addEventListener('focus', reload)
     stop = () => {
@@ -58,6 +59,7 @@ function subscribe(notify: () => void) {
       window.removeEventListener('focus', reload)
       generation++
       loading = null
+      state = initial
     }
   }
   return () => {
@@ -73,6 +75,7 @@ export function useSavedItems() {
   const router = useRouter()
   const current = useSyncExternalStore(subscribe, snapshot, serverSnapshot)
   async function toggleSaved(id: string) {
+    if (!state.userId) { router.push('/login?reason=collect'); return }
     if (state.pending) return
     const beforeLoad = generation
     await refresh()

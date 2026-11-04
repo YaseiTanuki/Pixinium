@@ -18,8 +18,9 @@ type SiteHeaderProps = {
 }
 
 export function SiteHeader({ query, onQueryChange, searchTag, searchCategory, searchSort, searchTagMatch }: SiteHeaderProps = {}) {
-  const { saved, error } = useSavedItems()
-  const [hasAvatar, setHasAvatar] = useState(false)
+  const { saved, error, userId } = useSavedItems()
+  const [avatarUserId, setAvatarUserId] = useState<string | null>(null)
+  const hasAvatar = !!userId && avatarUserId === userId
 
   return (
     <header className="page-shell grid min-h-[76px] grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 border-b border-[#e9e1db] bg-[#f8f5f1]/90 py-3 text-[#211d20] backdrop-blur md:grid-cols-[auto_minmax(0,1fr)_auto_auto] md:gap-3">
@@ -36,7 +37,7 @@ export function SiteHeader({ query, onQueryChange, searchTag, searchCategory, se
         <Heart size={16} aria-hidden="true" /><span className="sr-only sm:not-sr-only">My collection</span><span>{saved.length}</span>
       </Link>
       <Link href="/profile" aria-label="Account" title="Account" className="col-start-3 row-start-1 flex size-11 items-center justify-center rounded-full border border-[#e4dad4] hover:bg-white md:col-start-4">
-        <img src="/api/profile/avatar" alt="" className={`${hasAvatar ? 'block' : 'hidden'} size-full rounded-full object-cover`} onLoad={() => setHasAvatar(true)} onError={() => setHasAvatar(false)} />
+        {userId && <img key={userId} src="/api/profile/avatar" alt="" className={`${hasAvatar ? 'block' : 'hidden'} size-full rounded-full object-cover`} onLoad={() => setAvatarUserId(userId)} onError={() => setAvatarUserId(null)} />}
         {!hasAvatar && <CircleUserRound size={20} aria-hidden="true" />}
       </Link>
       {error && <p role="alert" className="col-span-full text-sm text-red-700">{error}</p>}
