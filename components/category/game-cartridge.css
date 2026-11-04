@@ -1,4 +1,4 @@
-.category-page .category-game-grid { grid-template-columns: repeat(auto-fill, min(100%, 220px)); gap: 20px; }
+.category-page .category-game-grid, .detail-related .category-game-grid { grid-template-columns: repeat(auto-fill, min(100%, 220px)); gap: 20px; }
 .discovery-card-cartridge {
   position: relative;
   width: 100%;

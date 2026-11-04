@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
-import { CatalogCard } from '@/components/catalog-card'
-import { MasonryGrid } from '@/components/masonry-grid'
-import type { CatalogCard as Card } from '@/lib/entities/catalog'
+import { CategoryResults } from '@/components/category/category-results'
+import type { CatalogDetail } from '@/lib/entities/catalog'
+import '@/app/categories/category.css'
+import '@/components/category/asset-folder-card.css'
 
-export function RelatedItems({ items }: { items: Card[] }) {
+export function RelatedItems({ items, schemaKey }: { items: CatalogDetail[]; schemaKey: string }) {
   if (items.length === 0) return null
 
   return (
@@ -18,9 +19,9 @@ export function RelatedItems({ items }: { items: Card[] }) {
           Explore the archive <ArrowUpRight size={16} aria-hidden="true" />
         </Link>
       </div>
-      <MasonryGrid className="discovery-grid">
-        {items.map(entry => <CatalogCard key={entry.item.id} item={entry} />)}
-      </MasonryGrid>
+      <div className="detail-related-results">
+        <CategoryResults items={items} schemaKey={schemaKey} />
+      </div>
     </section>
   )
 }

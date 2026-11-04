@@ -1,4 +1,4 @@
-.category-page .category-asset-grid { grid-template-columns: repeat(auto-fill, min(100%, 240px)); gap: 28px; }
+.category-page .category-asset-grid, .detail-related .category-asset-grid { grid-template-columns: repeat(auto-fill, min(100%, 240px)); gap: 28px; }
 .asset-pack-card { --folder: #c4dcd2; --folder-back: #a8c9bb; --folder-ink: #304f43; position: relative; min-width: 0; padding-top: 18px; color: var(--folder-ink); }
 .asset-pack-card:nth-child(3n + 2) { --folder: #e4d8ed; --folder-back: #cbb8da; --folder-ink: #564263; }
 .asset-pack-card:nth-child(3n + 3) { --folder: #f0d9be; --folder-back: #dfbb94; --folder-ink: #61482d; }

@@ -3,7 +3,7 @@ import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { MotionDiv, MotionNav, MotionSection } from '@/components/motion'
 import { SiteFooter } from '@/components/site-footer'
-import type { CatalogCard, CatalogDetail } from '@/lib/entities/catalog'
+import type { CatalogDetail } from '@/lib/entities/catalog'
 import { contentKind, type ContentKind } from '@/lib/content-types'
 import { categoryHref } from '@/lib/catalog'
 import type { ComponentType } from 'react'
@@ -17,7 +17,7 @@ import { AssetPackPreview } from './variants/asset-pack-preview'
 
 interface ItemDetailProps {
   item: CatalogDetail
-  related: CatalogCard[]
+  related: CatalogDetail[]
 }
 
 const detailVariants = {
@@ -63,7 +63,7 @@ export default function ItemDetail({ item, related }: ItemDetailProps) {
             <p>{description || 'No description has been added yet.'}</p>
           </div>
         </MotionSection>
-        <RelatedItems items={related} />
+        <RelatedItems items={related} schemaKey={item.category.metadataSchemaKey} />
       </main>
       <SiteFooter />
     </div>
