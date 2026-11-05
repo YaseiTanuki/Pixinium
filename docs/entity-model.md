@@ -33,7 +33,7 @@ erDiagram
 | Entity | Purpose | Current screen |
 | --- | --- | --- |
 | `categories` | Slug, display name, description, icon key, artwork style, display order, active flag | Category doors, search filters, breadcrumbs |
-| `items` | Stable ID, slug, title, summary, description, category, publication state, featured flag, ordering | Archive cards, spotlight, detail heading and about section |
+| `items` | Stable ID, slug, title, summary, description, category, publication state | Archive cards, detail heading and about section |
 | `item_facts` | Ordered custom key/label/value facts and creator attribution | Image resolution/format and pack quantity/format are computed on read, not stored again |
 | `assets` | Reusable external, S3, Supabase Storage, or R2 reference; dimensions, duration, byte size | Artwork, download sizes, audio track durations |
 | `item_assets` | Media role, alt text, crop focal point, display order | One cover per item, preview and download attachments |

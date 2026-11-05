@@ -33,8 +33,6 @@ export interface Item {
   status: PublicationStatus
   publishedAt: Timestamp | null
   accentColor: string
-  isFeatured: boolean
-  sortOrder: number
   /** Optional category-specific data. Do not put ownership or asset references here. */
   metadata: JsonObject
   createdAt: Timestamp
@@ -117,7 +115,7 @@ export interface CatalogCard {
   collectCount?: number
   viewCount?: number
   downloadCount?: number
-  item: Pick<Item, 'id' | 'slug' | 'title' | 'summary' | 'accentColor' | 'isFeatured'>
+  item: Pick<Item, 'id' | 'slug' | 'title' | 'summary' | 'accentColor'>
   category: Pick<Category, 'id' | 'slug' | 'name' | 'iconKey' | 'artworkStyle'>
   cover: { url: string; altText: string; focalX: number; focalY: number; width?: number | null; height?: number | null } | null
   facts: ItemFact[]

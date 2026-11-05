@@ -64,8 +64,7 @@ broker signature; its write now always uses `status = draft` and a null
 changed by the migration.
 
 Agent access does not include editing/deleting existing items, reading profiles
-or saved collections, changing permissions or accessing the Admin UI. Featured
-status and sort order are server-controlled for agent publications. Catalog
+or saved collections, changing permissions or accessing the Admin UI. Catalog
 categories are restricted to those explicitly assigned to the machine account.
 
 The creation command defaults to all four scopes and a 90-day key. Use

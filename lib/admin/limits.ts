@@ -10,7 +10,6 @@ export const CONTENT_LIMITS = {
   factKey: 64,
   factLabel: 80,
   factValue: 300,
-  sortOrder: 2_147_483_647,
 } as const
 
 export const MAX_CONTENT_FILE_BYTES = CONTENT_LIMITS.fileMegabytes * 1024 * 1024

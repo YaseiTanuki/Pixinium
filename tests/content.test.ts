@@ -13,7 +13,7 @@ import { cardsQuery } from '../server/repositories/catalog.queries'
 const admin = '00000000-0000-4000-8000-000000000001'
 const member = '00000000-0000-4000-8000-000000000002'
 const item = { categoryId: '1', title: 'New find', slug: 'new-find', summary: 'Summary', description: '',
-  status: 'published', accentColor: '#f1e5dd', isFeatured: false, sortOrder: 0, metadata: {},
+  status: 'published', accentColor: '#f1e5dd', metadata: {},
   facts: [{ key: 'license', label: 'License', value: 'Personal use' }], tags: [{ slug: 'cozy', name: 'Cozy' }], attachments: [] }
 
 test('automatic item slugs handle repeated titles, Unicode and URL-unsafe characters', () => {
@@ -56,7 +56,7 @@ test('content write is atomic, rechecks admin role and rejects category schema r
   const db = new PGlite()
   try {
     await db.exec('BEGIN')
-    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0014_item_view_download_counts.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql', '0020_agent_draft_review.sql', '0022_download_sources.sql']) {
+    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0014_item_view_download_counts.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql', '0020_agent_draft_review.sql', '0022_download_sources.sql', '0023_remove_item_editorial_fields.sql']) {
       await db.exec(await readFile(`db/migrations/${file}`, 'utf8'))
     }
     await db.exec('COMMIT')

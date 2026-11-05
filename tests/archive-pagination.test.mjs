@@ -37,6 +37,7 @@ test('archive pages respect the configured size, preserve filters and exclude un
       UPDATE catalog.items SET view_count = 100, download_count = 50, published_at = now() + interval '1 day' WHERE slug = 'image-2';`)
     assert.equal(await count([null, null, null, 'wallpaper moon']), 1)
     assert.equal(await count([null, null, null, 'wallpaper moon'], 'any'), 45)
+    assert.equal((await page(0))[0].item.slug, 'image-2') // Default order is newest, without item sort_order.
     assert.equal((await page(0, params, 'all', 'views'))[0].item.slug, 'image-2')
     assert.equal((await page(0, params, 'all', 'downloads'))[0].item.slug, 'image-2')
     assert.equal((await page(0, params, 'all', 'newest'))[0].item.slug, 'image-2')

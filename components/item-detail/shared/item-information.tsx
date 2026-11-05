@@ -1,4 +1,3 @@
-import { Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 import { ItemActions } from './item-actions'
@@ -9,8 +8,7 @@ export function ItemInformation({ item }: { item: CatalogDetail }) {
       <p className="eyebrow"><span className="status-dot" />{item.category.name}</p>
       <h1 id="item-title">{item.item.title}</h1>
       {item.item.summary && <p className="detail-description">{item.item.summary}</p>}
-      {(item.tags.length > 0 || item.item.isFeatured) && <div className="detail-tags">
-        {item.item.isFeatured && <span><Sparkles size={12} aria-hidden="true" /> Pixinium pick</span>}
+      {item.tags.length > 0 && <div className="detail-tags">
         {item.tags.map(tag => <span key={tag.id}>{tag.name}</span>)}
       </div>}
       <div className="detail-purchase">

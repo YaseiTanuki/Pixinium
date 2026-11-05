@@ -31,14 +31,14 @@ test('content update diffs relations atomically and rechecks the admin role', { 
   const db = new PGlite()
   try {
     await db.exec('BEGIN')
-    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql', '0020_agent_draft_review.sql', '0022_download_sources.sql']) {
+    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql', '0020_agent_draft_review.sql', '0022_download_sources.sql', '0023_remove_item_editorial_fields.sql']) {
       await db.exec(await readFile(`db/migrations/${file}`, 'utf8'))
     }
     await db.exec('COMMIT')
     await db.query(`INSERT INTO catalog.profiles(id, role) VALUES ($1, 'admin'), ($2, 'member')`, [admin, member])
     const category = (await db.query<{ id: string; metadata_schema_key: string; slug: string }>(`SELECT id::text, metadata_schema_key, slug FROM catalog.categories ORDER BY id LIMIT 1`)).rows[0]
     const create = async (slug: string) => (await db.query<{ id: string }>(createContentQuery, [admin, category.id, category.metadata_schema_key,
-      JSON.stringify({ ...base, slug, status: 'published', accentColor: '#f1e5dd', isFeatured: false, sortOrder: 0, metadata: {}, attachments: [] }), 'private-uploads'])).rows[0]
+      JSON.stringify({ ...base, slug, status: 'published', accentColor: '#f1e5dd', metadata: {}, attachments: [] }), 'private-uploads'])).rows[0]
     const target = await create('target')
     const other = await create('other')
     const edit = { title: 'Renamed', summary: 'New short', description: 'New long',
@@ -71,7 +71,7 @@ test('content update diffs relations atomically and rechecks the admin role', { 
     const old = [file('image/1/originals/a.png', 'download'), file('image/1/thumbnail.webp', 'cover')]
     const shared = file('image/shared/originals/s.png', 'download')
     const withFiles = async (slug: string, attachments: unknown[]) => (await db.query<{ id: string }>(createContentQuery, [admin, category.id, category.metadata_schema_key,
-      JSON.stringify({ ...base, slug, status: 'published', accentColor: '#f1e5dd', isFeatured: false, sortOrder: 0, metadata: {}, attachments }), 'private-uploads'])).rows[0]
+      JSON.stringify({ ...base, slug, status: 'published', accentColor: '#f1e5dd', metadata: {}, attachments }), 'private-uploads'])).rows[0]
     const replaceable = await withFiles('replaceable', [...old, shared])
     const sibling = await withFiles('sibling', [])
     await db.query(`INSERT INTO catalog.item_assets(item_id, asset_id, role, alt_text)

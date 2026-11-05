@@ -7,12 +7,12 @@ WITH actor AS MATERIALIZED (
   WHERE id = $2::bigint AND is_active AND metadata_schema_key = $3 FOR SHARE
 ), input AS (SELECT $4::jsonb AS doc), item AS (
   INSERT INTO catalog.items(id, category_id, slug, title, summary, description, status,
-    published_at, accent_color, is_featured, sort_order, metadata)
+    published_at, accent_color, metadata)
   OVERRIDING SYSTEM VALUE
   SELECT coalesce((doc->>'reservedItemId')::bigint, nextval(pg_get_serial_sequence('catalog.items', 'id'))),
     c.id, doc->>'slug', doc->>'title', doc->>'summary', coalesce(nullif(doc->>'description', doc->>'summary'), ''), doc->>'status',
     CASE WHEN doc->>'status' = 'published' THEN now() ELSE NULL END,
-    doc->>'accentColor', (doc->>'isFeatured')::boolean, (doc->>'sortOrder')::integer, doc->'metadata'
+    doc->>'accentColor', doc->'metadata'
   FROM input CROSS JOIN category c CROSS JOIN actor RETURNING id, slug
 ), download_sources AS (
   INSERT INTO catalog.item_download_sources(item_id,source_slug,url)

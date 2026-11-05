@@ -56,7 +56,7 @@ test('content validation enforces the shared attachment and text limits at the b
   }))
   const item = {
     categoryId: '1', title: 'A'.repeat(CONTENT_LIMITS.title), summary: '', description: '',
-    accentColor: '#ffffff', isFeatured: false, sortOrder: 0, metadata: {}, tags: [], facts: [],
+    accentColor: '#ffffff', metadata: {}, tags: [], facts: [],
     attachments: attachments.slice(0, MAX_ATTACHMENT_COUNT),
   }
   assert.equal(contentSchema.safeParse(item).success, true)

@@ -13,8 +13,8 @@ export async function POST(request: Request) {
     const input = await readAgentJson(request)
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new AgentApiError(400, 'Expected a content object.')
     const parsed = contentSchema.safeParse({
-      summary: '', description: '', accentColor: '#f1e5dd', isFeatured: false,
-      sortOrder: 0, metadata: {}, tags: [], facts: [], attachments: [], ...input, status: 'draft',
+      summary: '', description: '', accentColor: '#f1e5dd',
+      metadata: {}, tags: [], facts: [], attachments: [], ...input, status: 'draft',
     })
     if (!parsed.success) throw new AgentApiError(422, parsed.error.issues[0]?.message ?? 'Invalid content.')
     const requestKey = request.headers.get('idempotency-key')

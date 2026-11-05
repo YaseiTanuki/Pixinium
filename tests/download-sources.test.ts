@@ -57,7 +57,7 @@ test('registry CRUD, relational links, authorization and public visibility round
     await db.query(`INSERT INTO catalog.profiles(id,role) VALUES($1,'admin'),($2,'member')`, [admin, member])
     const category = (await db.query<{ id: string; slug: string; metadata_schema_key: string }>('SELECT id::text,slug,metadata_schema_key FROM catalog.categories ORDER BY id LIMIT 1')).rows[0]
     const text = { title: 'Sources', summary: 'Summary', description: '', facts: [], tags: [] }
-    const doc = { ...text, slug: 'sources', status: 'published', accentColor: '#ffffff', isFeatured: false, sortOrder: 0, attachments: [], metadata: {}, downloadSources: [archive, github] }
+    const doc = { ...text, slug: 'sources', status: 'published', accentColor: '#ffffff', attachments: [], metadata: {}, downloadSources: [archive, github] }
     const { id } = (await db.query<{ id: string }>(createContentQuery, [admin, category.id, category.metadata_schema_key, JSON.stringify(doc), 'assets'])).rows[0]
     const links = async () => readDownloadSources((await db.query<{ download_sources: unknown }>(editableContentQuery, [id])).rows[0].download_sources)
     assert.deepEqual(await links(), [github, archive])

@@ -18,7 +18,7 @@ test('asset-pack migration supports atomic cover/preview/ZIP persistence, visibi
     const image = { mediaType: 'image', mime: 'image/webp', byteSize: 100, width: 100, height: 80,
       altText: 'Pack artwork', focalX: 50, focalY: 50 }
     const doc = { slug: 'test-pack', title: 'Test pack', summary: '', description: '', status: 'published',
-      accentColor: '#ffffff', isFeatured: false, sortOrder: 0, metadata: { image_count: 7 }, tags: [], facts: [],
+      accentColor: '#ffffff', metadata: { image_count: 7 }, tags: [], facts: [],
       attachments: [
         { ...image, role: 'cover', path: 'assets/1/thumbnail.webp' },
         ...Array.from({ length: 5 }, (_, index) => ({ ...image, role: 'preview', path: `assets/1/previews/${index + 1}.webp` })),

@@ -30,7 +30,7 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
   const db = new PGlite()
   try {
     await seedLegacy(db)
-    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql', '0012_trim_unused_catalog_fields.sql', '0013_profile_avatar_path.sql', '0014_item_view_download_counts.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql', '0020_agent_draft_review.sql', '0021_remove_stories.sql', '0022_download_sources.sql'])
+    assert.deepEqual(await migrate(connection(db)), ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0010_permanent_usernames.sql', '0011_asset_packs.sql', '0012_trim_unused_catalog_fields.sql', '0013_profile_avatar_path.sql', '0014_item_view_download_counts.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql', '0020_agent_draft_review.sql', '0021_remove_stories.sql', '0022_download_sources.sql', '0023_remove_item_editorial_fields.sql'])
 
     await t.test('tag backfill and discovery preserve one item and hide archived items', async () => {
       const first = (await db.query<{ id: string }>("SELECT id::text FROM catalog.items ORDER BY id LIMIT 1")).rows[0]
@@ -49,21 +49,31 @@ test('catalog migration, extensibility, and runtime authorization', async (t) =>
     await t.test('application query returns canonical identities, facts and assets, and enforces visibility without RLS', async () => {
       const rows = (await db.query<CatalogCard & { assets: unknown[] }>(cardsQuery, [null, null, null])).rows
       assert.equal(rows.length, 8)
-      assert.equal(rows[0].item.id, '1')
-      assert.equal(rows[0].category.slug, 'images')
-      assert.ok(!rows[0].facts.some(fact => fact.key === 'resolution'))
-      assert.equal(rows[0].assets.length, 2)
-      assert.equal(itemHref(rows[0]), `/items/images/${rows[0].item.slug}`)
-      assert.equal((await db.query(cardsQuery, ['music', rows[0].item.slug, null])).rows.length, 0)
-      assert.equal((await db.query(cardsQuery, ['images', rows[0].item.slug, null])).rows.length, 1)
+      assert.equal(rows[0].item.id, '8') // Equal publication timestamps fall back to newest ID.
+      const first = rows.find(row => row.item.id === '1')
+      assert.ok(first)
+      assert.equal(Object.hasOwn(first.item, 'isFeatured'), false)
+      assert.equal(first.category.slug, 'images')
+      assert.ok(!first.facts.some(fact => fact.key === 'resolution'))
+      assert.equal(first.assets.length, 2)
+      assert.equal(itemHref(first), `/items/images/${first.item.slug}`)
+      assert.equal((await db.query(cardsQuery, ['music', first.item.slug, null])).rows.length, 0)
+      assert.equal((await db.query(cardsQuery, ['images', first.item.slug, null])).rows.length, 1)
       await db.exec('BEGIN')
       try {
         await db.exec(`UPDATE catalog.items SET status = 'archived' WHERE id = 1`)
-        assert.equal((await db.query(cardsQuery, ['images', rows[0].item.slug, null])).rows.length, 0)
+        assert.equal((await db.query(cardsQuery, ['images', first.item.slug, null])).rows.length, 0)
         await db.exec(`UPDATE catalog.categories SET is_active = false WHERE slug = 'music'`)
         assert.equal((await db.query(cardsQuery, ['music', null, null])).rows.length, 0)
       } finally { await db.exec('ROLLBACK') }
       assert.equal((await db.query(cardsQuery, [null, null, '%werewolf%'])).rows.length, 1)
+    })
+
+    await t.test('retired item editorial columns are absent and relation ordering remains', async () => {
+      const removed = await db.query("SELECT column_name FROM information_schema.columns WHERE table_schema='catalog' AND table_name='items' AND column_name IN ('is_featured','sort_order')")
+      assert.equal(removed.rows.length, 0)
+      const retained = await db.query("SELECT table_name FROM information_schema.columns WHERE table_schema='catalog' AND table_name IN ('categories','item_assets','item_facts') AND column_name='sort_order'")
+      assert.equal(retained.rows.length, 3)
     })
 
     await t.test('retired chapter table and category are absent', async () => {

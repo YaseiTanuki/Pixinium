@@ -5,7 +5,7 @@ const cardsSelect = `SELECT
     JOIN catalog.collections saved_collection ON saved_collection.id = saved_item.collection_id
     WHERE saved_item.item_id = i.id AND saved_collection.kind = 'saved') AS collect_count,
   jsonb_build_object('id', i.id::text, 'slug', i.slug, 'title', i.title,
-    'summary', i.summary, 'accentColor', i.accent_color, 'isFeatured', i.is_featured) AS item,
+    'summary', i.summary, 'accentColor', i.accent_color) AS item,
   jsonb_build_object('id', c.id::text, 'slug', c.slug, 'name', c.name,
     'iconKey', c.icon_key, 'artworkStyle', c.artwork_style) AS category,
   i.description, c.metadata_schema_key, i.metadata->'image_count' AS image_count,
@@ -41,7 +41,7 @@ const catalogConditions = `WHERE i.status = 'published' AND c.is_active
     OR EXISTS (SELECT 1 FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id
       WHERE it.item_id = i.id AND t.name ILIKE $3))`
 
-export const cardsQuery = `${cardsSelect} ${catalogConditions} ORDER BY i.sort_order, i.id`
+export const cardsQuery = `${cardsSelect} ${catalogConditions} ORDER BY i.published_at DESC NULLS LAST, i.id DESC`
 
 const archiveConditions = `${catalogConditions}
   AND ($4::text IS NULL OR CASE WHEN $5::text = 'any' THEN
@@ -71,4 +71,4 @@ export const archivePageQuery = `${cardsSelect} ${archiveConditions}
     CASE WHEN $8::text = 'views' THEN i.view_count END DESC,
     CASE WHEN $8::text = 'downloads' THEN i.download_count END DESC,
     CASE WHEN $8::text = 'title' THEN lower(i.title) END ASC,
-    i.sort_order, i.id LIMIT $6::int OFFSET $7::bigint`
+    i.published_at DESC NULLS LAST, i.id DESC LIMIT $6::int OFFSET $7::bigint`
