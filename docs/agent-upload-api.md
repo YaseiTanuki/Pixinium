@@ -34,7 +34,7 @@ only the `pixinium_agent` function role and saves `AGENT_DATABASE_URL` to
 `.env.local`. It also removes the old admin-bound environment settings. Keep the
 generated private recovery/backup environment files secure.
 
-The create command saves the API secret to gitignored `.env.agent.local`; it
+The create command saves the API secret to gitignored `local/pixinium-agent/.env.local`; it
 prints only agent/key IDs and scopes. Restart the app after changing its
 environment. On a deployed server, configure `AGENT_DATABASE_URL` through its
 secret manager. Give the agent only `AGENT_API_URL` and `AGENT_API_TOKEN`, never
@@ -201,8 +201,16 @@ Draft review media uses `/api/admin/assets/:id`, guarded by admin authentication
 
 ## Resumable command-line client
 
+The standalone client lives in `local/pixinium-agent/`, outside the application
+source. Copy that whole folder to the agent machine; it requires only Node.js
+22 or later, no frontend dependencies. `local/` is intentionally Git-ignored,
+so transfer or back up this folder separately. Its README and manifest example
+describe the client contract. The existing API, database brokers and operator
+key-management scripts remain server-side.
+
 ```powershell
-node --env-file=.env.agent.local scripts/agent-upload.mjs path/to/manifest.json
+cd local/pixinium-agent
+node --env-file=.env.local upload.mjs path/to/manifest.json
 ```
 
 The manifest contains category/title/metadata plus `files`, each specifying

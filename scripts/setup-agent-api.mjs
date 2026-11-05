@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID, createHash } from 'node:crypto'
-import { readFile, writeFile, copyFile, constants } from 'node:fs/promises'
-import { resolve, relative } from 'node:path'
+import { readFile, writeFile, copyFile, mkdir, constants } from 'node:fs/promises'
+import { resolve, relative, dirname } from 'node:path'
 import { parse } from 'dotenv'
 import { neon } from '@neondatabase/serverless'
 
@@ -17,11 +17,12 @@ async function backup(file) {
   catch (error) { if (error.code !== 'ENOENT') throw error }
 }
 async function saveCredentials(token) {
-  const output = resolve(flags.output || '.env.agent.local')
+  const output = resolve(flags.output || 'local/pixinium-agent/.env.local')
   const rel = relative(process.cwd(), output)
   if (rel.startsWith('..') || resolve(output) === process.cwd()) throw new Error('Credential output must be a file inside this workspace.')
   const url = new URL(flags.url || process.env.AGENT_API_URL || 'http://localhost:3000')
   if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))) throw new Error('Use HTTPS outside localhost.')
+  await mkdir(dirname(output), { recursive: true })
   await backup(output)
   await writeFile(output, `AGENT_API_URL=${url.origin}\nAGENT_API_TOKEN=${token}\n`, { mode: 0o600 })
   console.log('Secret written to:', rel, '(not displayed; keep this file private)')

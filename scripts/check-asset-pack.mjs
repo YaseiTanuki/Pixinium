@@ -1,6 +1,6 @@
 // Live smoke test: run the built app on localhost:3210 first.
 // Creates one temporary published pack, then deletes its rows and storage objects.
-// node --env-file=.env.local --env-file=.env.agent.local --import tsx scripts/check-asset-pack.mjs
+// node --env-file=.env.local --env-file=local/pixinium-agent/.env.local --import tsx scripts/check-asset-pack.mjs
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import sharp from 'sharp'
