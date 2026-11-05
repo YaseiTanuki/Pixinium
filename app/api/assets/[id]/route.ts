@@ -1,9 +1,19 @@
 import { neon } from '@neondatabase/serverless'
 import { NextResponse } from 'next/server'
-import { adminStorage, signDownload, readStoredStream } from '@/server/services/storage.service'
+import { adminStorage, inspectStoredFile, readStoredStream } from '@/server/services/storage.service'
 import { CONTENT_SCHEMAS } from '@/lib/content-types'
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+type Context = { params: Promise<{ id: string }> }
+
+export function GET(request: Request, context: Context) {
+  return serveAsset(request, context, false)
+}
+
+export function HEAD(request: Request, context: Context) {
+  return serveAsset(request, context, true)
+}
+
+async function serveAsset(request: Request, { params }: Context, head: boolean) {
   const headers = { 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer' }
   const { id } = await params
   if (!/^[1-9][0-9]{0,18}$/.test(id)) return new NextResponse(null, { status: 404, headers })
@@ -24,29 +34,43 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (play && (rows[0].media_type !== 'audio' || !rows[0].download)) return new NextResponse(null, { status: 404, headers })
     if (view && (!rows[0].download || rows[0].media_type !== 'image')) return new NextResponse(null, { status: 404, headers })
     const imageThumbnail = rows[0].image_only && rows[0].media_type === 'image' && !rows[0].download
-    if (rows[0].download || imageThumbnail) {
-      // Put crawler policy on the actual bytes, not a redirect to an expiring storage URL.
-      const downloadHeaders = { ...headers, ...(imageThumbnail ? { 'X-Robots-Tag': 'noindex' } : {}) }
-      const range = request.headers.get('range') ?? undefined
-      if (range && !/^bytes=(?:\d+-\d*|-\d+)$/.test(range)) return new NextResponse(null, { status: 416, headers: downloadHeaders })
-      const file = await readStoredStream(String(rows[0].object_path), range)
-      if (!file.Body) return new NextResponse(null, { status: 404, headers: downloadHeaders })
-      if (rows[0].download && !play && !view) {
-        await sql`UPDATE catalog.items SET download_count = download_count + 1 WHERE id IN (
-          SELECT item_id FROM catalog.item_assets WHERE asset_id = ${id}::bigint AND role = 'download')`
-      }
-      return new Response(file.Body.transformToWebStream(), {
-        status: file.ContentRange ? 206 : 200,
-        headers: { ...downloadHeaders, 'Content-Type': String(rows[0].mime_type || 'application/octet-stream'),
-          'Content-Disposition': play || view || imageThumbnail ? 'inline' : rows[0].mime_type === 'application/zip' ? `attachment; filename="asset-pack-${id}.zip"` : 'attachment',
-          'Accept-Ranges': 'bytes', 'X-Content-Type-Options': 'nosniff',
-          ...(file.ContentLength !== undefined ? { 'Content-Length': String(file.ContentLength) } : {}),
-          ...(file.ContentRange ? { 'Content-Range': file.ContentRange } : {}),
-        },
-      })
+    const inline = !rows[0].download || play || view
+    const range = head ? undefined : request.headers.get('range') ?? undefined
+    const cacheImage = inline && rows[0].media_type === 'image' && !range
+    const responseHeaders = {
+      ...headers,
+      // Revalidate public status before cached bytes can be reused, including after takedowns.
+      ...(cacheImage ? { 'Cache-Control': 'private, no-cache' } : {}),
+      ...(imageThumbnail ? { 'X-Robots-Tag': 'noindex' } : {}),
     }
-    const url = await signDownload(String(rows[0].object_path), false)
-    return new NextResponse(null, { status: 307, headers: { ...headers, Location: url } })
+    if (range && !/^bytes=(?:\d+-\d*|-\d+)$/.test(range)) return new NextResponse(null, { status: 416, headers: responseHeaders })
+    const ifNoneMatch = cacheImage ? request.headers.get('if-none-match') : null
+    const path = String(rows[0].object_path)
+    const metadata = head || ifNoneMatch ? await inspectStoredFile(path) : null
+    const validators = (file: { ETag?: string; LastModified?: Date }) => ({
+      ...(file.ETag ? { ETag: file.ETag } : {}),
+      ...(file.LastModified ? { 'Last-Modified': file.LastModified.toUTCString() } : {}),
+    })
+    if (metadata && ifNoneMatch && (ifNoneMatch.trim() === '*' || (metadata.ETag && ifNoneMatch.split(',').some(tag => tag.trim().replace(/^W\//, '') === metadata.ETag)))) {
+      return new Response(null, { status: 304, headers: { ...responseHeaders, ...validators(metadata) } })
+    }
+    const file = head ? metadata! : await readStoredStream(path, range)
+    const body = 'Body' in file ? file.Body : undefined
+    if (!head && !body) return new NextResponse(null, { status: 404, headers })
+    if (!head && rows[0].download && !play && !view) {
+      await sql`UPDATE catalog.items SET download_count = download_count + 1 WHERE id IN (
+        SELECT item_id FROM catalog.item_assets WHERE asset_id = ${id}::bigint AND role = 'download')`
+    }
+    const contentRange = 'ContentRange' in file ? file.ContentRange : undefined
+    return new Response(body ? body.transformToWebStream() : null, {
+      status: contentRange ? 206 : 200,
+      headers: { ...responseHeaders, ...validators(file), 'Content-Type': String(rows[0].mime_type || 'application/octet-stream'),
+        'Content-Disposition': inline ? 'inline' : rows[0].mime_type === 'application/zip' ? `attachment; filename="asset-pack-${id}.zip"` : 'attachment',
+        'Accept-Ranges': 'bytes', 'X-Content-Type-Options': 'nosniff',
+        ...(file.ContentLength !== undefined ? { 'Content-Length': String(file.ContentLength) } : {}),
+        ...(contentRange ? { 'Content-Range': contentRange } : {}),
+      },
+    })
   } catch (error) {
     const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
     return new NextResponse(null, { status: status === 416 ? 416 : status === 404 ? 404 : 503, headers })

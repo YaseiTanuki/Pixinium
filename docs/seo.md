@@ -17,11 +17,14 @@ an HTTP(S) origin. Configure the hosting provider to redirect alternate domains
 - Vercel preview/development deployments are excluded automatically. For other
   staging hosts, set `SEO_NOINDEX=true` before deployment.
 
-`/sitemap.xml` lists only the home page, active categories, and published items
+`/sitemap.xml` lists the home page, public policies, active categories, and published items
 in active categories. It refreshes hourly. Utility, search, filtered, archived,
 and private URLs are excluded. Item entries include original downloadable image
-URLs in the image sitemap, never generated thumbnail URLs. The query fetches
-only slugs, update times and those image URLs. Split the sitemap before reaching
+URLs in the image sitemap. For other categories without an image download, their
+representative cover is included instead. Generated Images thumbnails are excluded.
+Item `lastmod` is omitted because the current database `updated_at` also changes
+on view/download counters, not just content edits. Policy dates use valid date-only
+values. The query fetches only slugs and image URLs. Split the sitemap before reaching
 the protocol's 50,000 URL limit.
 
 ## Search Console and sharing
@@ -59,6 +62,13 @@ with `X-Robots-Tag: noindex` on the actual binary response, instead of relying o
 a header on a redirect. They remain available for fast catalog cards. Public page
 metadata allows `max-image-preview:large`; private and preview deployment indexing
 restrictions remain effective. No User-Agent-specific image substitution is used.
+
+All stored public cover/preview images, including Music, Games and Assets, now
+stream through stable Pixinium URLs instead of expiring signed redirects. Inline
+images return ETag and Last-Modified validators with `private, no-cache`; unchanged
+images can be reused with a 304 after public-status validation. This saves body
+transfer on repeat views without letting a shared CDN cache bypass takedowns.
+HEAD fetches metadata only, and playback/download/range semantics remain unchanged.
 
 The SEO image URLs are stable application URLs; expiring storage signatures are
 never emitted in metadata or sitemap entries. Existing indexed thumbnails can

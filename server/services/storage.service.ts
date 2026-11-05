@@ -130,6 +130,12 @@ export async function readStoredStream(path: string, range?: string) {
   return storage.send(new GetObjectCommand({ Bucket: bucket, Key: path, Range: range }))
 }
 
+/** Read validators and size without transferring the object body. */
+export async function inspectStoredFile(path: string) {
+  const { storage, bucket } = adminStorage()
+  return storage.send(new HeadObjectCommand({ Bucket: bucket, Key: path }))
+}
+
 export async function readStoredBytes(path: string, size: number, etag?: string) {
   const { storage, bucket } = adminStorage()
   const original = await storage.send(new GetObjectCommand({ Bucket: bucket, Key: path, IfMatch: etag }))

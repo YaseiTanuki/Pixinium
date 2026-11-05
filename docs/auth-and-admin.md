@@ -150,8 +150,10 @@ the same operator path with `member`; each subsequent upload rereads the role.
   `/api/assets/[id]`, which verifies published/active status before serving bytes.
   Image originals use an indexable inline `?view=1` URL for detail/SEO without
   counting downloads; generated Images thumbnails have noindex on their streamed
-  bytes. Ordinary downloads remain attachments. Other artwork can use no-store
-  signed redirects valid for 60 seconds; issued links remain usable until expiry.
+  bytes. Ordinary downloads remain attachments. All public covers/previews stream
+  inline through stable application URLs. Inline images support ETag/304 browser
+  cache revalidation after checking public visibility; shared CDN caching is
+  disabled. HEAD reads metadata only and never counts a download.
 - The studio creates new content and lists the 20 most recent items. Admins can
   edit an item at `/admin/[id]/edit`: title, summary, description, tags and
   (for categories whose facts are not generated from files) display facts. The

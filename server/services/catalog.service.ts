@@ -18,7 +18,7 @@ type Media = CatalogDetail['media'][number] & Pick<Asset, 'provider' | 'external
 
 function assetUrl(asset: Media): string {
   if (asset.provider === 'external' && asset.externalUrl) return asset.externalUrl
-  // Resolve only published catalog assets through a fresh, no-store signed redirect.
+  // Stable application URL; the endpoint checks publication before serving stored bytes.
   if (asset.provider === 's3' && asset.bucket === (process.env.S3_ASSETS_BUCKET || 'assets')) {
     return `/api/assets/${asset.assetId}`
   }

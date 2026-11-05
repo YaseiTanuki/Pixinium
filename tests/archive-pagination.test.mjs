@@ -84,6 +84,13 @@ test('archive pages respect the configured size, preserve filters and exclude un
     assert.equal(searchHref({ category: 'images,music', page: 2 }), '/search?category=images%2Cmusic&page=2')
     const tracks = await page(0, ['soundtracks', null, null, null])
     assert.equal(tracks[0].item.title, 'Untagged track')
+    await db.query(`INSERT INTO catalog.item_assets(item_id,asset_id,role)
+      SELECT id,$1::bigint,'cover' FROM catalog.items WHERE slug='untagged-track'`, [thumbnail.id])
+    assert.deepEqual((await db.query(sitemapItemsQuery)).rows.find(item => item.slug === 'untagged-track').images, [`/api/assets/${thumbnail.id}`])
+    // An Images cover without an original must never become its SEO image.
+    await db.query(`INSERT INTO catalog.item_assets(item_id,asset_id,role)
+      SELECT id,$1::bigint,'cover' FROM catalog.items WHERE slug='image-3'`, [thumbnail.id])
+    assert.deepEqual((await db.query(sitemapItemsQuery)).rows.find(item => item.slug === 'image-3').images, [])
     assert.equal(tracks[0].collect_count, 0)
     assert.equal(await count(['soundtracks', null, '%Image%', null]), 0)
     assert.equal(await count(['missing', null, null, null]), 0)

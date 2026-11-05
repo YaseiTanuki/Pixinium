@@ -14,7 +14,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl('/') },
     ...POLICIES.map(policy => ({ url: absoluteUrl(policyHref(policy.slug)), lastModified: POLICY_RELEASE.updatedAt })),
     ...categories.map(category => ({ url: absoluteUrl(categoryHref(category.slug)) })),
-    ...items.map(item => ({ url: absoluteUrl(`/items/${encodeURIComponent(item.category)}/${encodeURIComponent(item.slug)}`), lastModified: item.updatedAt,
+    // Item updated_at also changes for counters; omit lastmod until it tracks content edits only.
+    ...items.map(item => ({ url: absoluteUrl(`/items/${encodeURIComponent(item.category)}/${encodeURIComponent(item.slug)}`),
       ...(item.images.length ? { images: item.images.map(absoluteUrl) } : {}) })),
   ]
 }

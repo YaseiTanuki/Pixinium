@@ -44,8 +44,14 @@ backfill ran on 2026-10-25; there were no existing S3 covers to convert.
 Neon stores bucket/object keys, never expiring URLs. `/api/assets/<id>` checks
 published status and active category before serving any data. Download originals
 stream unchanged; `?view=1` serves image originals inline for detail/SEO without
-counting a download. Generated Images thumbnails stream with noindex. Other
-artwork can redirect to a 60-second signed GET.
+counting a download. Generated Images thumbnails stream with noindex. Covers and
+previews in all categories also stream inline through the same stable API URLs;
+the public asset route never redirects to a signed storage URL.
+Inline images use `private, no-cache` with ETag/Last-Modified validators. Matching
+If-None-Match requests return 304 after rechecking public visibility, without
+reading the object body. Shared CDN caching is disabled so archived content is
+rejected on the next validation. Downloads, audio and range responses stay no-store.
+HEAD returns object headers without reading bytes or incrementing download counts.
 Archived items have no public application asset route. Uploaded MIME metadata is not
 malware scanning; supported file extensions are defined in `lib/admin/content.ts`.
 
@@ -120,5 +126,5 @@ The implementation uses [music-metadata](https://github.com/Borewit/music-metada
 Published audio can also play directly on the detail page. The native player uses
 `/api/assets/<id>?play=1`, which rechecks public visibility and streams S3 bytes
 inline with single-range support for seeking. Artwork and other file types cannot
-use this playback mode. Download links retain the signed attachment response.
+use this playback mode. Download links stream attachments through the public API.
 Players do not preload tracks, and starting one pauses other audio players.
