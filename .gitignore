@@ -11,6 +11,9 @@ __v0_jsx-dev-runtime.ts
 .env*.local
 *.agent-state.json
 
+# Local-only agent administration tool
+/scripts/setup-agent-api.mjs
+
 # Common ignores
 node_modules
 .next/
