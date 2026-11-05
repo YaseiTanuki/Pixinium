@@ -29,6 +29,8 @@ test('cleanup preserves files, creator, Saved ownership and useful game facts', 
       OR (table_name='collection_items' AND column_name='sort_order') OR (table_name='profiles' AND column_name='avatar_url'))`)
     assert.equal(removed.rows.length, 0)
     assert.equal((await db.query('SELECT * FROM catalog.collection_items')).rows.length, 1)
+    // Query today's public projection only after upgrading the historical fixture to today's schema.
+    for (const migration of migrations.filter(m => m.name > '0012_trim_unused_catalog_fields.sql')) await db.exec(`BEGIN;\n${migration.sql}\nCOMMIT;`)
     const image = (await db.query<{ description: string; facts: { key: string }[]; assets: { byteSize: string }[] }>(cardsQuery, ['images', 'image', null])).rows[0]
     assert.equal(image.description, '')
     assert.deepEqual(image.facts.map(f => f.key), ['creator'])

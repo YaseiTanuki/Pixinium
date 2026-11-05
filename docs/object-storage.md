@@ -33,13 +33,7 @@ thumbnail) and `download`. Asset packs also use the `preview` role introduced in
 migration 0011. They accept an explicit separate cover and pack images, then store
 the cover thumbnail, up to five WebP previews, and a generated ZIP. See [Asset packs](asset-packs.md).
 For a multi-file item, the first image supplies its single thumbnail; all originals
-remain downloadable. Every upload requires an image and publishes immediately.
-
-Migration 0008 preserves former covers/gallery/previews as download links. Run
-`node --env-file=.env.local --import tsx scripts/backfill-image-thumbnails.ts`
-to replace existing S3 full-size covers with generated thumbnails. This does not
-fetch or rewrite externally hosted images. The development migration and S3
-backfill ran on 2026-10-25; there were no existing S3 covers to convert.
+remain downloadable. Publishing requires an image; agent submissions remain private drafts until admin review.
 
 Neon stores bucket/object keys, never expiring URLs. `/api/assets/<id>` checks
 published status and active category before serving any data. Download originals
@@ -55,17 +49,8 @@ HEAD returns object headers without reading bytes or incrementing download count
 Archived items have no public application asset route. Uploaded MIME metadata is not
 malware scanning; supported file extensions are defined in `lib/admin/content.ts`.
 
-The smoke test creates two uniquely named temporary objects and removes them:
-
-```powershell
-node --env-file=.env.local scripts/check-object-storage.mjs --configure-cors
-```
-
-It verifies bucket privacy, browser preflight, a signed PUT, metadata, copy,
-signed GET, and denial of anonymous object access. By default it adds a CORS rule
-for `http://localhost:3000`, preserving other rules. Set `STORAGE_CHECK_ORIGIN`
-to the exact deployed origin when configuring another environment. Credentials
-and signed URLs are never printed. Restart the dev server after changing env vars.
+Configure bucket CORS for the exact production origin before enabling browser uploads.
+Verify that anonymous object reads are denied and authenticated uploads succeed.
 
 Removing an attachment or discarding uploads deletes the current admin's staging
 objects. Successful saves remove staging only after the database commit. Failed
@@ -99,14 +84,6 @@ Future category slugs use their own root. The server reserves an item ID before
 copying uploads and commits that same ID with its asset records. Failed saves can
 leave harmless sequence gaps. Uses and title-based public URLs do not affect keys.
 Only items with an uploaded image have a generated thumbnail.
-
-Preview existing S3 paths with:
-`node --env-file=.env.local --import tsx scripts/migrate-storage-layout.ts`.
-Add `--apply` to copy and verify ETag, length and content type, update each
-attachment atomically, then remove unreferenced legacy `content/` objects.
-Run while catalog writes are paused. Shared source assets are copied per item;
-external assets and staging uploads are untouched. Reruns skip migrated links.
-No table alteration is required.
 
 ## Music uploads
 

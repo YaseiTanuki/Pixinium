@@ -14,34 +14,18 @@ the HTTP handler and the database broker enforce draft status.
 
 ## Migration and activation
 
-Test `db/migrations/0019_independent_agents.sql` and `0020_agent_draft_review.sql` on an isolated copy of the
-application database first. Production is a separate deployment/cutover choice;
-do not assume its schema matches development. Then, from the trusted server
-workspace:
+The main database migration chain includes the independent-agent schema and draft
+review rules. Run `pnpm db:migrate` against the verified target as described in the
+root README. No machine credentials or agent data are copied from development.
 
-```powershell
-$env:AGENT_EXPECTED_BRANCH_ID = '<verified-target-branch-id>'
-node --env-file=.env.local scripts/migrate-agent-api.mjs
-node --env-file=.env.local scripts/setup-agent-api.mjs configure-runtime
-node --env-file=.env.local scripts/setup-agent-api.mjs create pixinium-upload-agent --categories images,music,games,assets --url http://localhost:3000
-```
+Agent administration and client scripts are local-only and are not deployed with
+this branch. Use the backed-up administration tool from a trusted workstation to
+create a restricted `pixinium_agent_api` login and issue per-agent credentials.
+Configure `AGENT_DATABASE_URL` through the deployment secret manager. Leave it
+unset to keep the optional agent API disabled until activation is complete.
 
-The migration script verifies existing local migration checksums and refuses
-unrelated pending migrations. Previously applied entries absent from this
-checkout are reported and left intact. This change does not repair that separate
-history discrepancy. `configure-runtime` creates `pixinium_agent_api`, grants
-only the `pixinium_agent` function role and saves `AGENT_DATABASE_URL` to
-`.env.local`. It also removes the old admin-bound environment settings. Keep the
-generated private recovery/backup environment files secure.
-
-The create command saves the API secret to gitignored `local/pixinium-agent/.env.local`; it
-prints only agent/key IDs and scopes. Restart the app after changing its
-environment. On a deployed server, configure `AGENT_DATABASE_URL` through its
-secret manager. Give the agent only `AGENT_API_URL` and `AGENT_API_TOKEN`, never
-database credentials, storage credentials or a Supabase session.
-
-Legacy bearer tokens and `AGENT_API_ADMIN_ID` / `AGENT_API_TOKEN_SHA256` no longer
-authenticate. No admin user is created, modified or removed by agent activation.
+Give clients only `AGENT_API_URL` and `AGENT_API_TOKEN`; never share database,
+storage or Supabase credentials with an agent client.
 
 ## Keys and authorization
 
@@ -74,14 +58,8 @@ category must be selected when creating the account.
 
 ## Rotation and immediate disablement
 
-Run management commands only in the trusted server workspace:
-
-```powershell
-node --env-file=.env.local scripts/setup-agent-api.mjs status
-node --env-file=.env.local scripts/setup-agent-api.mjs rotate <agent-id> --scopes catalog:read,uploads:write,content:create,content:publish --url https://pixinium.com
-node --env-file=.env.local scripts/setup-agent-api.mjs revoke <old-key-id>
-node --env-file=.env.local scripts/setup-agent-api.mjs disable <agent-id>
-```
+Use the local administration tool from a trusted workstation for status, rotation,
+revocation and disablement. That setup tool is intentionally absent from production.
 
 Rotation issues another key without automatically revoking the old one, so
 clients can switch before revocation. Database revocation/disablement does not
