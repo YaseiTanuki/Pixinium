@@ -29,3 +29,4 @@ output/agent-upload
 graphify-out/
 .codex
 tools/
+local/
