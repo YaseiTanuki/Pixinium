@@ -20,23 +20,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { bucket } = adminStorage()
     if (rows[0].bucket !== bucket) return new NextResponse(null, { status: 404, headers })
     const play = new URL(request.url).searchParams.get('play') === '1'
+    const view = new URL(request.url).searchParams.get('view') === '1'
     if (play && (rows[0].media_type !== 'audio' || !rows[0].download)) return new NextResponse(null, { status: 404, headers })
-    if (rows[0].download) {
-      // Only image-category originals duplicate their thumbnail. A shared asset
-      // used by another category remains indexable, regardless of its MIME type.
-      const downloadHeaders = { ...headers, ...(rows[0].image_only ? { 'X-Robots-Tag': 'noindex' } : {}) }
+    if (view && (!rows[0].download || rows[0].media_type !== 'image')) return new NextResponse(null, { status: 404, headers })
+    const imageThumbnail = rows[0].image_only && rows[0].media_type === 'image' && !rows[0].download
+    if (rows[0].download || imageThumbnail) {
+      // Put crawler policy on the actual bytes, not a redirect to an expiring storage URL.
+      const downloadHeaders = { ...headers, ...(imageThumbnail ? { 'X-Robots-Tag': 'noindex' } : {}) }
       const range = request.headers.get('range') ?? undefined
       if (range && !/^bytes=(?:\d+-\d*|-\d+)$/.test(range)) return new NextResponse(null, { status: 416, headers: downloadHeaders })
       const file = await readStoredStream(String(rows[0].object_path), range)
       if (!file.Body) return new NextResponse(null, { status: 404, headers: downloadHeaders })
-      if (!play) {
+      if (rows[0].download && !play && !view) {
         await sql`UPDATE catalog.items SET download_count = download_count + 1 WHERE id IN (
           SELECT item_id FROM catalog.item_assets WHERE asset_id = ${id}::bigint AND role = 'download')`
       }
       return new Response(file.Body.transformToWebStream(), {
         status: file.ContentRange ? 206 : 200,
         headers: { ...downloadHeaders, 'Content-Type': String(rows[0].mime_type || 'application/octet-stream'),
-          'Content-Disposition': play ? 'inline' : rows[0].mime_type === 'application/zip' ? `attachment; filename="asset-pack-${id}.zip"` : 'attachment',
+          'Content-Disposition': play || view || imageThumbnail ? 'inline' : rows[0].mime_type === 'application/zip' ? `attachment; filename="asset-pack-${id}.zip"` : 'attachment',
           'Accept-Ranges': 'bytes', 'X-Content-Type-Options': 'nosniff',
           ...(file.ContentLength !== undefined ? { 'Content-Length': String(file.ContentLength) } : {}),
           ...(file.ContentRange ? { 'Content-Range': file.ContentRange } : {}),

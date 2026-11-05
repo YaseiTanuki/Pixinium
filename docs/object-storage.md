@@ -42,7 +42,10 @@ fetch or rewrite externally hosted images. The development migration and S3
 backfill ran on 2026-10-25; there were no existing S3 covers to convert.
 
 Neon stores bucket/object keys, never expiring URLs. `/api/assets/<id>` checks
-published status and active category before redirecting to a 60-second signed GET.
+published status and active category before serving any data. Download originals
+stream unchanged; `?view=1` serves image originals inline for detail/SEO without
+counting a download. Generated Images thumbnails stream with noindex. Other
+artwork can redirect to a 60-second signed GET.
 Archived items have no public application asset route. Uploaded MIME metadata is not
 malware scanning; supported file extensions are defined in `lib/admin/content.ts`.
 

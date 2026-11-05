@@ -19,8 +19,10 @@ an HTTP(S) origin. Configure the hosting provider to redirect alternate domains
 
 `/sitemap.xml` lists only the home page, active categories, and published items
 in active categories. It refreshes hourly. Utility, search, filtered, archived,
-and private URLs are excluded. The query fetches only slugs and update times,
-not media. Split the sitemap before reaching the protocol's 50,000 URL limit.
+and private URLs are excluded. Item entries include original downloadable image
+URLs in the image sitemap, never generated thumbnail URLs. The query fetches
+only slugs, update times and those image URLs. Split the sitemap before reaching
+the protocol's 50,000 URL limit.
 
 ## Search Console and sharing
 
@@ -31,11 +33,36 @@ not media. Split the sitemap before reaching the protocol's 50,000 URL limit.
 4. Inspect the home page, a category and an item URL; monitor indexing and
    Core Web Vitals with actual production traffic.
 
-Open Graph and Twitter metadata use each item's cover and summary. Pages
-without a cover use the branded 1200 × 630 image at `/share-image`.
+Open Graph, Twitter and structured data prefer the first original downloadable
+image, including its real dimensions and alt text. Images items do not substitute
+a low-resolution cover when an original is unavailable. Other content types
+without image downloads can still use their artwork; pages without an available
+image use the branded 1200 x 630 image at `/share-image`.
 Structured data describes the website, category/item breadcrumbs and actual
 creative works. No pricing, ratings, authorship or licensing claims are added.
 
 Validate representative URLs with Google's Rich Results Test and social sharing
 debuggers after deployment. Metadata and structured data improve interpretation
 and previews; they do not guarantee ranking or rich results.
+
+## Full-resolution Images policy
+
+Images detail pages embed the actual original in an HTML img using the same URL
+as SEO metadata: `/api/assets/<original-id>?view=1`. The endpoint streams the
+unchanged stored bytes inline, without image resizing, a signed redirect or a
+download-counter increment. Ordinary download links remain attachments and count
+as downloads. Range requests remain supported. Both modes recheck published item
+and active category before serving any bytes.
+
+Original image responses are indexable. Generated Images thumbnails are streamed
+with `X-Robots-Tag: noindex` on the actual binary response, instead of relying on
+a header on a redirect. They remain available for fast catalog cards. Public page
+metadata allows `max-image-preview:large`; private and preview deployment indexing
+restrictions remain effective. No User-Agent-specific image substitution is used.
+
+The SEO image URLs are stable application URLs; expiring storage signatures are
+never emitted in metadata or sitemap entries. Existing indexed thumbnails can
+remain visible until crawlers revisit them. Search Console inspection and sitemap
+resubmission are deployment follow-up steps, not actions performed by this code.
+
+Reference: https://developers.google.com/search/docs/appearance/google-images

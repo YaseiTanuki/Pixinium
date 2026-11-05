@@ -4,11 +4,12 @@ import { useRef, type ReactNode } from 'react'
 import { Maximize2, Sparkles, X } from 'lucide-react'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 
-export function ArtworkViewer({ cover, title, category, children }: {
+export function ArtworkViewer({ cover, title, category, children, imageLabel = 'Preview' }: {
   cover: NonNullable<CatalogDetail['cover']>
   title: string
   category: string
   children?: ReactNode
+  imageLabel?: string
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
 
@@ -23,9 +24,9 @@ export function ArtworkViewer({ cover, title, category, children }: {
         </button>
         {children && <div className="artwork-controls">{children}</div>}
       </div>
-      <figcaption className="artwork-caption"><span>{category} <span aria-hidden="true">/</span> Preview</span><span>Made for a closer look <Maximize2 size={12} aria-hidden="true" /></span></figcaption>
+      <figcaption className="artwork-caption"><span>{category} <span aria-hidden="true">/</span> {imageLabel}</span><span>Made for a closer look <Maximize2 size={12} aria-hidden="true" /></span></figcaption>
       <dialog ref={dialog} className="artwork-dialog" aria-label={title} onClick={event => { if (event.target === event.currentTarget) dialog.current?.close() }}>
-        <button type="button" className="artwork-close" onClick={() => dialog.current?.close()} aria-label="Close fullscreen preview" autoFocus><X size={22} /></button>
+        <button type="button" className="artwork-close" onClick={() => dialog.current?.close()} aria-label="Close fullscreen image" autoFocus><X size={22} /></button>
         <img src={cover.url} alt={cover.altText || title} />
         <p>{title}</p>
       </dialog>

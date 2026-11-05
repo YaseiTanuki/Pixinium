@@ -147,9 +147,11 @@ the same operator path with `member`; each subsequent upload rereads the role.
   Category metadata is validated against the database's schema key. The atomic
   SQL write locks/rechecks the admin role and category, preventing partial saves.
 - Drafts are private; publish requires a cover. Public catalog assets use
-  `/api/assets/[id]`, which verifies published/active status before issuing a
-  no-store signed redirect valid for 60 seconds. Existing signed links remain
-  usable until expiry. Download assets use attachment disposition.
+  `/api/assets/[id]`, which verifies published/active status before serving bytes.
+  Image originals use an indexable inline `?view=1` URL for detail/SEO without
+  counting downloads; generated Images thumbnails have noindex on their streamed
+  bytes. Ordinary downloads remain attachments. Other artwork can use no-store
+  signed redirects valid for 60 seconds; issued links remain usable until expiry.
 - The studio creates new content and lists the 20 most recent items. Admins can
   edit an item at `/admin/[id]/edit`: title, summary, description, tags and
   (for categories whose facts are not generated from files) display facts. The

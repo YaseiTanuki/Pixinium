@@ -4,10 +4,10 @@ import { ArtworkViewer } from './artwork-viewer'
 import type { ReactNode } from 'react'
 
 // All detail categories share the same artwork presentation.
-export function ArtworkDetail({ item, children }: { item: CatalogDetail; children?: ReactNode }) {
+export function ArtworkDetail({ item, children, imageLabel }: { item: CatalogDetail; children?: ReactNode; imageLabel?: string }) {
   const isRecordArtwork = item.category.artworkStyle === 'record'
 
-  if (item.cover) return <ArtworkViewer cover={item.cover} title={item.item.title} category={item.category.name}>{children}</ArtworkViewer>
+  if (item.cover) return <ArtworkViewer cover={item.cover} title={item.item.title} category={item.category.name} imageLabel={imageLabel}>{children}</ArtworkViewer>
 
   return (
     <div className="detail-media-column">

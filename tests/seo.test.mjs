@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { absoluteUrl, breadcrumbData, indexingAllowed, itemMetadata, itemStructuredData, pageMetadata, serializeJsonLd, robotsConfiguration as robots } from '../lib/seo.ts'
+import { imageViewUrl } from '../lib/media.ts'
+import { itemSeoImage } from '../lib/item-image.ts'
 
 test('public metadata uses the production origin and result filters can opt out of indexing', () => {
   assert.equal(absoluteUrl('/images?page=2'), 'https://pixinium.com/images?page=2')
@@ -14,6 +16,31 @@ test('public metadata uses the production origin and result filters can opt out 
   assert.equal(robots().sitemap, 'https://pixinium.com/sitemap.xml')
   // Do not prevent crawlers from reading the noindex on public search results.
   assert.ok(!robots().rules.disallow.includes('/search'))
+})
+
+test('Images SEO uses original download bytes and dimensions, not the cover thumbnail', () => {
+  const item = { item: { slug: 'moon-cat', title: 'Moon Cat', summary: '' }, description: '', category: { slug: 'images', name: 'Images', metadataSchemaKey: 'images.v1' },
+    cover: { url: '/api/assets/123', altText: 'Thumbnail', width: 800, height: 450 }, tags: [],
+    media: [{ role: 'cover', mediaType: 'image', url: '/api/assets/123' },
+      { role: 'download', mediaType: 'image', url: '/api/assets/124', altText: 'Original moon cat', width: 3840, height: 2160, focalX: 50, focalY: 50 }] }
+  const original = 'https://pixinium.com/api/assets/124?view=1'
+  const metadata = itemMetadata(item)
+  assert.equal(metadata.openGraph.images[0].url, original)
+  assert.equal(metadata.twitter.images[0].url, original)
+  assert.equal(metadata.openGraph.images[0].width, 3840)
+  assert.equal(metadata.openGraph.images[0].height, 2160)
+  assert.equal(metadata.robots['max-image-preview'], 'large')
+  const [, work, image] = itemStructuredData(item)
+  assert.equal(work.image, original)
+  assert.equal(image['@type'], 'ImageObject')
+  assert.equal(image.contentUrl, original)
+  assert.equal(image.width, 3840)
+  assert.equal(itemSeoImage(item).url, '/api/assets/124?view=1')
+  const missing = { ...item, media: [] }
+  assert.equal(itemSeoImage(missing), null)
+  assert.equal(itemStructuredData(missing)[1].image, undefined)
+  assert.equal(imageViewUrl('/api/assets/1?token=abc#photo'), '/api/assets/1?token=abc&view=1#photo')
+  assert.equal(imageViewUrl('https://cdn.test/photo.png?signature=a%2Fb'), 'https://cdn.test/photo.png?signature=a%2Fb')
 })
 
 test('preview deployments cannot accidentally override the indexing exclusion', () => {
