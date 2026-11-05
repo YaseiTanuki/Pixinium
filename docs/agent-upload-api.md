@@ -131,6 +131,20 @@ objects are under `agents/<agent-id>/items/<item-id>/<attempt-lease>/`. A job
 claims its upload grants before expensive file processing; another job or agent
 cannot claim those files, and active claimed inputs cannot be discarded.
 
+Optional `downloadSources` accepts HTTPS links to configured external sources:
+`[{ "provider": "github", "url": "https://github.com/owner/repo" },
+{ "provider": "internet_archive", "url": "https://archive.org/details/item" }]`.
+Read source IDs, names, exact domains and priorities from `GET /api/agent/catalog`
+(`downloadSources`). Administrators manage these at `/admin/download-sources`.
+Source definitions and priorities live in `catalog.download_sources`; each item's
+URLs live in `catalog.item_download_sources`. The enabled source with the lowest
+priority number becomes the main action, including Pixinium's hosted files.
+Other sources appear as mirrors. Disabled sources retain their links but are
+hidden from visitors. Only enabled external sources accept new links, and URLs
+must use the source's configured domain. Omit the field or send an empty array
+for hosted-file downloads only. The default source order is GitHub (1), Internet
+Archive (2), Pixinium (3); this order is editable in Admin Studio.
+
 For publication, send `Idempotency-Key: <stable-job-key>` and a body such as:
 
 ```json

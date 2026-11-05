@@ -14,6 +14,10 @@ WITH actor AS MATERIALIZED (
     CASE WHEN doc->>'status' = 'published' THEN now() ELSE NULL END,
     doc->>'accentColor', (doc->>'isFeatured')::boolean, (doc->>'sortOrder')::integer, doc->'metadata'
   FROM input CROSS JOIN category c CROSS JOIN actor RETURNING id, slug
+), download_sources AS (
+  INSERT INTO catalog.item_download_sources(item_id,source_slug,url)
+  SELECT item.id,s->>'provider',s->>'url' FROM item CROSS JOIN input
+  CROSS JOIN LATERAL jsonb_array_elements(coalesce(doc->'downloadSources','[]'::jsonb)) s
 ), facts AS (
   INSERT INTO catalog.item_facts(item_id, key, label, value, sort_order)
   SELECT item.id, f->>'key', f->>'label', f->>'value', (ord-1)::integer

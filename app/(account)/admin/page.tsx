@@ -1,3 +1,4 @@
+import { listDownloadProviders } from '@/server/services/download-sources.service'
 import styles from '@/components/admin-studio.module.css'
 import { AdminStudioIntro } from '@/components/admin-studio-intro'
 import { requireAccount } from '@/server/services/auth.service'
@@ -15,7 +16,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   await requireAccount('admin:access')
   const params = await searchParams
   const filters = parseAdminCatalogFilters(params)
-  const categories = await listCategories()
+  const [categories, downloadProviders] = await Promise.all([listCategories(), listDownloadProviders()])
   const ready = Boolean(process.env.CATALOG_ADMIN_DATABASE_URL && storageConfigured())
   let recent: Array<{ id: string; title: string; status: string; category: string; slug: string }> = []
   let listError = false
@@ -42,6 +43,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       recent = await sql.query(adminCatalogPageQuery, [...values, ADMIN_CATALOG_PAGE_SIZE, (page - 1) * ADMIN_CATALOG_PAGE_SIZE, filters.sort]) as typeof recent
     } catch { listError = true }
   }
-  return <div className={`workspace-page ${styles.studio}`}><AdminStudioIntro><AdminUploadForm categories={categories.map(({ id, name, metadataSchemaKey }) => ({ id, name, metadataSchemaKey }))} ready={ready} /></AdminStudioIntro>
+  return <div className={`workspace-page ${styles.studio}`}><AdminStudioIntro><AdminUploadForm downloadProviders={downloadProviders} categories={categories.map(({ id, name, metadataSchemaKey }) => ({ id, name, metadataSchemaKey }))} ready={ready} /></AdminStudioIntro>
     <AdminCollectionView filters={filters} statusCounts={statusCounts} recent={recent} filterCategories={filterCategories} tags={tags} total={total} page={page} totalPages={totalPages} listError={listError} /></div>
 }

@@ -9,6 +9,8 @@ const cardsSelect = `SELECT
   jsonb_build_object('id', c.id::text, 'slug', c.slug, 'name', c.name,
     'iconKey', c.icon_key, 'artworkStyle', c.artwork_style) AS category,
   i.description, c.metadata_schema_key, i.metadata->'image_count' AS image_count,
+  coalesce((SELECT jsonb_agg(jsonb_build_object('provider',ds.source_slug,'url',ds.url) ORDER BY ds.source_slug)
+    FROM catalog.item_download_sources ds WHERE ds.item_id=i.id),'[]'::jsonb) AS download_sources,
   CASE WHEN c.metadata_schema_key = 'music.v1' THEN i.metadata ELSE '{}'::jsonb END AS music_metadata,
   coalesce((SELECT jsonb_agg(jsonb_build_object('itemId', f.item_id::text,
     'key', f.key, 'label', f.label, 'value', f.value, 'sortOrder', f.sort_order)

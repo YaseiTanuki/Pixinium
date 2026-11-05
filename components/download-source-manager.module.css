@@ -1,0 +1,16 @@
+.form { padding-block: 24px; border-top: 1px solid var(--line); }
+.identity { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; margin-bottom: 16px; }
+.identity strong { font-size: 16px; }
+.identity span { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.fields { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.2fr) minmax(95px, .5fr); gap: 16px; min-width: 0; }
+.fields > label { min-width: 0; font-size: 13px; font-weight: 600; }
+.fields .active { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.active input { width: 18px; height: 18px; accent-color: var(--red); }
+.buttons { grid-column: 2 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 16px; }
+.buttons button:disabled { opacity: .55; cursor: default; }
+.fields input[readonly] { color: var(--muted); }
+.add { margin-top: 24px; }
+@media (max-width: 680px) {
+  .fields { grid-template-columns: 1fr; }
+  .buttons { grid-column: auto; justify-content: flex-start; }
+}

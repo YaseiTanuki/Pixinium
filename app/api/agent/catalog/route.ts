@@ -7,8 +7,8 @@ export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
   return agentEndpoint(request, 'catalog:read', async actor => {
-    const { categories, tags } = await agentCall<{ categories: unknown[]; tags: unknown[] }>(actor, 'catalog')
-    return agentJson({ categories, tags, fileTypes, limits: { maxFileBytes: MAX_CONTENT_FILE_BYTES, maxFiles: CONTENT_LIMITS.files,
+    const { categories, tags, downloadSources } = await agentCall<{ categories: unknown[]; tags: unknown[]; downloadSources: unknown[] }>(actor, 'catalog')
+    return agentJson({ categories, tags, downloadSources, fileTypes, limits: { maxFileBytes: MAX_CONTENT_FILE_BYTES, maxFiles: CONTENT_LIMITS.files,
       maxPackFiles: ASSET_PACK_LIMITS.images + 1, maxPackImages: ASSET_PACK_LIMITS.images, maxPackPreviews: ASSET_PACK_LIMITS.previews },
       rules: { workflow: 'All agent submissions are saved as private drafts. Only a human admin can approve publication in Admin Studio.', images: 'Original images are downloads; the first image generates a thumbnail. Resolution and format are detected automatically; Creator is Pixinium. Manual image facts are ignored.',
         music: 'One artwork image and audio tracks. Artwork is thumbnail-only; audio metadata is automatic.',

@@ -1,5 +1,7 @@
 export const editableContentQuery = `
 SELECT i.id::text, i.title, i.summary, i.description, i.status, i.slug, c.slug AS category, c.metadata_schema_key,
+  coalesce((SELECT jsonb_agg(jsonb_build_object('provider',source_slug,'url',url) ORDER BY source_slug)
+    FROM catalog.item_download_sources WHERE item_id=i.id),'[]'::jsonb) AS download_sources,
   coalesce((SELECT jsonb_agg(t.name ORDER BY t.name) FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id WHERE it.item_id = i.id), '[]'::jsonb) AS tags,
   coalesce((SELECT jsonb_agg(jsonb_build_object('key', f.key, 'label', f.label, 'value', f.value) ORDER BY f.sort_order, f.key)
     FROM catalog.item_facts f WHERE f.item_id = i.id), '[]'::jsonb) AS facts,
@@ -64,6 +66,15 @@ WITH actor AS MATERIALIZED (
     metadata = coalesce($5::jsonb, i.metadata)
   FROM input CROSS JOIN actor
   WHERE i.id = $2::bigint RETURNING i.id, i.slug, i.category_id, i.status
+), removed_sources AS (
+  DELETE FROM catalog.item_download_sources ds USING item CROSS JOIN input
+  WHERE ds.item_id=item.id AND doc ? 'downloadSources'
+    AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(doc->'downloadSources') s WHERE s->>'provider'=ds.source_slug)
+), saved_sources AS (
+  INSERT INTO catalog.item_download_sources(item_id,source_slug,url)
+  SELECT item.id,s->>'provider',s->>'url' FROM item CROSS JOIN input
+  CROSS JOIN LATERAL jsonb_array_elements(coalesce(doc->'downloadSources','[]'::jsonb)) s
+  ON CONFLICT (item_id,source_slug) DO UPDATE SET url=EXCLUDED.url
 ), tags AS (
   INSERT INTO catalog.tags(slug, name)
   SELECT t->>'slug', t->>'name' FROM item CROSS JOIN input CROSS JOIN LATERAL jsonb_array_elements(doc->'tags') t

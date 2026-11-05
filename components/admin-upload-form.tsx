@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { DownloadSourceFields } from './download-source-fields'
+import { downloadSourcesFromForm, type DownloadProvider } from '@/lib/download-sources'
 import { ASSET_PACK_LIMITS, CONTENT_LIMITS } from '@/lib/admin/limits'
 import { CONTENT_SCHEMAS, contentKind } from '@/lib/content-types'
 import { ContentFileFields } from '@/components/content-file-fields'
@@ -12,9 +14,9 @@ import type { Category } from '@/lib/entities/catalog'
 import type { ContentResult } from '@/lib/admin/content'
 import { createContent } from '@/app/actions/content'
 
-type Props = { categories: Pick<Category, 'id' | 'name' | 'metadataSchemaKey'>[]; ready: boolean }
+type Props = { categories: Pick<Category, 'id' | 'name' | 'metadataSchemaKey'>[]; ready: boolean; downloadProviders: DownloadProvider[] }
 
-export function AdminUploadForm({ categories, ready }: Props) {
+export function AdminUploadForm({ categories, ready, downloadProviders }: Props) {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '')
@@ -40,7 +42,7 @@ export function AdminUploadForm({ categories, ready }: Props) {
     saveInProgress.current = true
     setResult({})
     try {
-      const response = await createContent({ categoryId, title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', metadata, tags, facts: isImage ? [] : facts, attachments })
+      const response = await createContent({ categoryId, title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', metadata, downloadSources: downloadSourcesFromForm(form), tags, facts: isImage ? [] : facts, attachments })
       setResult(response)
       if (response.message) { pendingUploads.current.clear(); router.refresh() }
     } catch { setResult({ error: 'Could not save content. Your entries are preserved; please retry.' }) }
@@ -61,6 +63,7 @@ export function AdminUploadForm({ categories, ready }: Props) {
       </section>
       <ContentFileFields kind={{ isMusic, isGame, isAssetPack }} attachments={attachments} ready={ready} upload={upload} remove={removeUploads} editLabel={editLabel} />
       <div role="status" className="account-help">{progress}</div>
+      <DownloadSourceFields providers={downloadProviders} />
       {attachments.length > 0 && <button type="button" className="account-text-link" onClick={() => void removeUploads([...pendingUploads.current])}>Discard all uploads</button>}
       {!isImage && <section className="workspace-panel"><h2>Display facts</h2><p className="workspace-muted">Enter the details you want to display, such as creator, format or license. Facts are saved as entered and appear in this order.</p>
         {facts.map((fact, index) => <div className="studio-fact" key={index}>{(['key', 'label', 'value'] as const).map(key => <label key={key}>{key}<input className="account-input" required value={fact[key]} maxLength={key === 'key' ? CONTENT_LIMITS.factKey : key === 'label' ? CONTENT_LIMITS.factLabel : CONTENT_LIMITS.factValue} onChange={e => setFacts(current => current.map((f, i) => i === index ? { ...f, [key]: e.target.value } : f))} /></label>)}<button type="button" className="account-text-link" aria-label={`Remove fact ${index + 1}`} onClick={() => setFacts(current => current.filter((_, i) => i !== index))}><Trash2 size={16} aria-hidden="true" /></button></div>)}

@@ -127,7 +127,9 @@ test('agent submission stays private despite published input, replays a draft re
     await assert.rejects(f.start(request, agentPayloadHash({ different: true })), (e: { code: string }) => e.code === 'P0409')
     const uploaded = await f.upload()
     await f.call('claim_uploads', [job.id, job.leaseToken, [uploaded]])
-    const doc = { ...f.document(job), status: 'published' }
+    const doc = { ...f.document(job), status: 'published', downloadSources: [{ provider: 'github', url: 'https://github.com/pixinium/archive' }] }
+    const catalog = await f.call<{ downloadSources: Array<{ slug: string; priority: number }> }>('catalog')
+    assert.equal(catalog.downloadSources.find(source => source.slug === 'github')?.priority, 1)
     const schema = (await f.call<{ metadata_schema_key: string }>('category', [f.category])).metadata_schema_key
     await assert.rejects(f.call('publish_job', [job.id, job.leaseToken, schema, JSON.stringify({ ...doc, attachments: [{ ...doc.attachments[0], path: 'profile/avatar/other.png' }] }), 'assets']), (e: { code: string }) => e.code === 'P0403')
     const result = await f.call<{ id: string; status: string; href?: string }>('publish_job', [job.id, job.leaseToken, schema, JSON.stringify(doc), 'assets'])
@@ -138,6 +140,8 @@ test('agent submission stays private despite published input, replays a draft re
     await f.db.exec('RESET ROLE')
     assert.equal((await f.db.query('SELECT * FROM catalog.profiles')).rows.length, 0)
     assert.equal((await f.db.query('SELECT * FROM automation.item_origins')).rows.length, 1)
+    assert.deepEqual((await f.db.query('SELECT source_slug,url FROM catalog.item_download_sources WHERE item_id=$1', [job.itemId])).rows,
+      [{ source_slug: 'github', url: 'https://github.com/pixinium/archive' }])
     assert.equal((await f.db.query("SELECT * FROM automation.audit_events WHERE action='content_submitted'")).rows.length, 1)
     const saved = (await f.db.query<{ status: string; published_at: string | null }>('SELECT status,published_at FROM catalog.items WHERE id=$1', [job.itemId])).rows[0]
     assert.deepEqual(saved, { status: 'draft', published_at: null })

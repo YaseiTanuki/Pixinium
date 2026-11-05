@@ -1,4 +1,6 @@
 import 'server-only'
+import { resolveDownloadSources, type DownloadProvider } from '../../lib/download-sources'
+import { listDownloadProviders } from './download-sources.service'
 import { cache } from 'react'
 import { catalogFacts } from '../../lib/catalog-facts'
 import { neon } from '@neondatabase/serverless'
@@ -49,7 +51,7 @@ export const listArchiveTags = cache(async (): Promise<Tag[]> => {
 export async function listCatalogItems(filters: { category?: string; slug?: string; query?: string } = {}): Promise<CatalogDetail[]> {
   const rows = await database().query(cardsQuery, [filters.category ?? null, filters.slug ?? null,
     filters.query?.trim() ? `%${filters.query.trim()}%` : null])
-  return presentCatalogRows(rows as CatalogRow[])
+  return presentCatalogRows(rows as CatalogRow[], await listDownloadProviders())
 }
 
 export async function listArchivePage(filters: { category?: string; tag?: string; query?: string; page?: number; sort?: string; tagMatch?: string }) {
@@ -66,10 +68,11 @@ export async function listArchivePage(filters: { category?: string; tag?: string
   const requested = Number.isSafeInteger(filters.page) && filters.page! > 0 ? filters.page! : 1
   const page = Math.min(requested, totalPages)
   const rows = await sql.query(archivePageQuery, [...params, pageSize, (page - 1) * pageSize, searchSort(filters.sort ?? '')])
-  return { items: presentCatalogRows(rows as CatalogRow[]), total, page, totalPages }
+  return { items: presentCatalogRows(rows as CatalogRow[], await listDownloadProviders()), total, page, totalPages }
 }
 
 type CatalogRow = {
+  download_sources?: unknown
   collect_count: number; view_count: number; download_count: number
   item: CatalogDetail['item']; category: CatalogDetail['category']; assets: Media[]
   facts: CatalogDetail['facts']; metadata_schema_key: string; image_count: number
@@ -77,7 +80,7 @@ type CatalogRow = {
   description: string; tags: CatalogDetail['tags']
 }
 
-function presentCatalogRows(rows: CatalogRow[]): CatalogDetail[] {
+function presentCatalogRows(rows: CatalogRow[], providers: DownloadProvider[]): CatalogDetail[] {
   return rows.map((row) => {
     const assets = row.assets as Media[]
     const media = assets.map(({ provider, externalUrl, bucket, objectPath, ...asset }) => ({
@@ -87,6 +90,7 @@ function presentCatalogRows(rows: CatalogRow[]): CatalogDetail[] {
     const storedFacts = row.facts as CatalogDetail['facts']
     const facts = catalogFacts(row.metadata_schema_key, row.item.id, media, storedFacts)
     return { item: row.item, collectCount: row.collect_count, viewCount: row.view_count, downloadCount: row.download_count, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
+      downloadSources: resolveDownloadSources(row.download_sources, providers, media.some(asset => asset.role === 'download')),
       tags: row.tags, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY, width: cover.width, height: cover.height } : null } as CatalogDetail
   })

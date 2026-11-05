@@ -1,3 +1,5 @@
+import { validateSourceLinks } from '@/lib/download-sources'
+import { listDownloadProviders } from './download-sources.service'
 import { CONTENT_SCHEMAS, usesAutomaticFacts } from '../../lib/content-types'
 import 'server-only'
 
@@ -64,6 +66,8 @@ export async function createContentForActor(account: ContentActor | null, input:
       ? { ...input, status: 'draft' } : input)
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Check the content fields.' }
     const value = parsed.data
+    const sourceError = validateSourceLinks(value.downloadSources, await listDownloadProviders())
+    if (sourceError) return { error: sourceError }
     const connection = process.env.CATALOG_ADMIN_DATABASE_URL
     if (!isAgentActor(account) && !connection) return { error: 'Content writing is not configured. Set the server-side catalog admin connection.' }
     const sql = isAgentActor(account) ? undefined : neon(connection!)

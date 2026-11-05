@@ -56,7 +56,7 @@ test('content write is atomic, rechecks admin role and rejects category schema r
   const db = new PGlite()
   try {
     await db.exec('BEGIN')
-    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0014_item_view_download_counts.sql', '0016_merge_uses_into_tags.sql']) {
+    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0014_item_view_download_counts.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql', '0020_agent_draft_review.sql', '0022_download_sources.sql']) {
       await db.exec(await readFile(`db/migrations/${file}`, 'utf8'))
     }
     await db.exec('COMMIT')
