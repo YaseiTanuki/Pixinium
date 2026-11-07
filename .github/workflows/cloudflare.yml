@@ -17,6 +17,8 @@ jobs:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
       NEXT_PUBLIC_SITE_URL: https://example.com
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-only.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_only
       SEO_NOINDEX: 'true'
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +38,7 @@ jobs:
       - name: Smoke test Workers runtime
         shell: bash
         run: |
-          pnpm exec wrangler dev --port 8787 --var SEO_NOINDEX:true > /tmp/pixinium-worker.log 2>&1 &
+          pnpm exec wrangler dev --port 8787 --var SEO_NOINDEX:true --var NEXT_PUBLIC_SUPABASE_URL:https://ci-only.supabase.co --var NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:sb_publishable_ci_only > /tmp/pixinium-worker.log 2>&1 &
           worker_pid=$!
           trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
           for attempt in {1..60}; do
@@ -51,6 +53,7 @@ jobs:
               exit 0
             fi
             if [ "$status" = 500 ]; then
+              sleep 2
               cat /tmp/robots.txt
               cat /tmp/pixinium-worker.log
               exit 1
