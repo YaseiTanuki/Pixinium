@@ -5,7 +5,7 @@ import { Zip, ZipPassThrough } from 'fflate'
 import { packEntryName, validateAssetPackFiles } from '../../lib/admin/asset-pack'
 import { ASSET_PACK_LIMITS } from '../../lib/admin/limits'
 import type { AttachmentInput } from '../../lib/admin/content'
-import { createImageThumbnail } from './image-thumbnail'
+import { createImageThumbnail } from '@/server/services/image-thumbnail'
 
 export type InspectedPackImage = AttachmentInput & { byteSize: number; etag: string }
 export type PackAttachment = {

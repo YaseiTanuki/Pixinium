@@ -38,7 +38,7 @@ jobs:
       - name: Smoke test Workers runtime
         shell: bash
         run: |
-          pnpm exec wrangler dev --port 8787 --var SEO_NOINDEX:true --var NEXT_PUBLIC_SUPABASE_URL:https://ci-only.supabase.co --var NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:sb_publishable_ci_only > /tmp/pixinium-worker.log 2>&1 &
+          pnpm exec wrangler dev --port 8787 --var SEO_NOINDEX:true --var NEXT_PUBLIC_SUPABASE_URL:https://ci-only.supabase.co --var NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:sb_publishable_ci_only --var AGENT_DATABASE_URL:postgresql://ci:unused@example.invalid/neondb > /tmp/pixinium-worker.log 2>&1 &
           worker_pid=$!
           trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
           for attempt in {1..60}; do
@@ -50,6 +50,17 @@ jobs:
             if [ "$status" = 200 ]; then
               cat /tmp/robots.txt
               grep -q 'Disallow: /' /tmp/robots.txt
+              # No bearer token: these routes must load and reject before any DB/S3 I/O.
+              # A native dependency import failure returns an empty 500 instead.
+              for endpoint in uploads content; do
+                agent_status=$(curl --silent --max-time 30 --output /tmp/agent-response.json --write-out '%{http_code}' --request POST --header 'Content-Type: application/json' --data '{}' "http://127.0.0.1:8787/api/agent/$endpoint" || true)
+                if [ "$agent_status" != 401 ]; then
+                  cat /tmp/agent-response.json
+                  cat /tmp/pixinium-worker.log
+                  exit 1
+                fi
+                node -e "const r = JSON.parse(require('fs').readFileSync('/tmp/agent-response.json', 'utf8')); if (r.error !== 'Invalid bearer token.') process.exit(1)"
+              done
               exit 0
             fi
             if [ "$status" = 500 ]; then
