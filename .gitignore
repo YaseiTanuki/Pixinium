@@ -18,6 +18,9 @@ __v0_jsx-dev-runtime.ts
 # Common ignores
 node_modules
 .next/
+.open-next/
+.wrangler/
+.dev.vars*
 .DS_Store
 
 # Local browser verification artifacts
