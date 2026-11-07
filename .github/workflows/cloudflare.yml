@@ -12,6 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
@@ -35,14 +36,24 @@ jobs:
       - name: Smoke test Workers runtime
         shell: bash
         run: |
-          pnpm cf:preview --port 8787 > /tmp/pixinium-worker.log 2>&1 &
+          pnpm exec wrangler dev --port 8787 --var SEO_NOINDEX:true > /tmp/pixinium-worker.log 2>&1 &
           worker_pid=$!
           trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
           for attempt in {1..60}; do
-            if curl --fail --silent http://127.0.0.1:8787/robots.txt > /tmp/robots.txt; then
+            if ! kill -0 "$worker_pid" 2>/dev/null; then
+              cat /tmp/pixinium-worker.log
+              exit 1
+            fi
+            status=$(curl --silent --max-time 5 --output /tmp/robots.txt --write-out '%{http_code}' http://127.0.0.1:8787/robots.txt || true)
+            if [ "$status" = 200 ]; then
               cat /tmp/robots.txt
               grep -q 'Disallow: /' /tmp/robots.txt
               exit 0
+            fi
+            if [ "$status" = 500 ]; then
+              cat /tmp/robots.txt
+              cat /tmp/pixinium-worker.log
+              exit 1
             fi
             sleep 2
           done
