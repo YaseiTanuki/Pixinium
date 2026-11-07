@@ -1,0 +1,48 @@
+name: Cloudflare build
+
+on:
+  pull_request:
+    branches: [production]
+  push:
+    branches: [production]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_SITE_URL: https://example.com
+      SEO_NOINDEX: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prod=false
+      - name: Verify image thumbnail implementations
+        run: node --import tsx --test tests/image-thumbnail.test.ts tests/cloudflare-thumbnail.test.ts
+      - run: pnpm cf:build
+      - name: Validate Worker bundle
+        run: pnpm exec wrangler deploy --dry-run --outdir .tmp/worker-dry-run
+      - name: Smoke test Workers runtime
+        shell: bash
+        run: |
+          pnpm cf:preview --port 8787 > /tmp/pixinium-worker.log 2>&1 &
+          worker_pid=$!
+          trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8787/robots.txt > /tmp/robots.txt; then
+              cat /tmp/robots.txt
+              grep -q 'Disallow: /' /tmp/robots.txt
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/pixinium-worker.log
+          exit 1
