@@ -2,9 +2,9 @@ name: Cloudflare build
 
 on:
   pull_request:
-    branches: [production]
+    branches: [main, dev]
   push:
-    branches: [production]
+    branches: [main, dev]
 
 permissions:
   contents: read

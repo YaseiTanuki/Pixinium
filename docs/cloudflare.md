@@ -6,7 +6,15 @@ workflow. Next.js 16.4.5 meets the adapter's minimum supported patch version.
 
 ## Workers Builds settings
 
-Connect the `production` branch and select the directory containing `package.json`.
+Connect the `main` branch and select the directory containing `package.json`.
+
+`main` is the deployment branch and `dev` is the development branch. Create feature
+branches from `dev`, merge reviewed changes into `dev`, then release through a PR
+from `dev` to `main`. CI checks pushes and PRs targeting either branch. The older
+`production` branch is retained as historical release context.
+
+In Cloudflare Workers Builds, set the production branch to `main`. This is a
+dashboard setting; changing Git branches or this workflow does not update it.
 
 | Setting | Value |
 | --- | --- |
@@ -26,10 +34,11 @@ resources and `SEO_NOINDEX=true` before enabling non-production builds.
 
 ## Cloudflare resources
 
-The validated Worker bundle is about 3.6 MiB compressed. It exceeds the Workers
-Free plan's 3 MiB script limit, so this build requires Workers Paid (10 MiB limit),
-or a separate bundle-size reduction before deploying on Free. The dry run does
-not activate or purchase a plan.
+The validated Worker bundle is about 15.7 MiB uncompressed / 3.6 MiB compressed.
+Since 4 September 2026, Workers Free and Paid both allow 64 MiB uncompressed;
+there is no compressed-size limit. This build meets the size limit on Free.
+CPU, memory, startup time and service-specific quotas still apply. The dry run
+does not activate or purchase a plan.
 
 Before the first deployment, enable R2 and create the `pixinium-next-cache` bucket
 in the intended Cloudflare account, for example with
