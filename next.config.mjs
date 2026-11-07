@@ -7,6 +7,8 @@ const cloudflareThumbnail = './server/services/image-thumbnail.cloudflare.ts'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   ...(cloudflareBuild ? {
+    // Let OpenNext resolve conditional exports and dynamic parser dependencies.
+    serverExternalPackages: ['music-metadata'],
     turbopack: { resolveAlias: { [thumbnailModule]: cloudflareThumbnail } },
     webpack(config) {
       config.resolve.alias[thumbnailModule] = fileURLToPath(new URL(cloudflareThumbnail, import.meta.url))
