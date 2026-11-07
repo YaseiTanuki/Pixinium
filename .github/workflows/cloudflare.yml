@@ -24,7 +24,9 @@ jobs:
         with:
           node-version: '22'
           cache: pnpm
-      - run: pnpm install --frozen-lockfile --prod=false
+      - run: pnpm install --frozen-lockfile
+        env:
+          NODE_ENV: development
       - name: Verify image thumbnail implementations
         run: node --import tsx --test tests/image-thumbnail.test.ts tests/cloudflare-thumbnail.test.ts
       - run: pnpm cf:build
