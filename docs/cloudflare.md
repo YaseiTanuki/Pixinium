@@ -26,6 +26,11 @@ resources and `SEO_NOINDEX=true` before enabling non-production builds.
 
 ## Cloudflare resources
 
+The validated Worker bundle is about 3.6 MiB compressed. It exceeds the Workers
+Free plan's 3 MiB script limit, so this build requires Workers Paid (10 MiB limit),
+or a separate bundle-size reduction before deploying on Free. The dry run does
+not activate or purchase a plan.
+
 Before the first deployment, enable R2 and create the `pixinium-next-cache` bucket
 in the intended Cloudflare account, for example with
 `pnpm exec wrangler r2 bucket create pixinium-next-cache` after authenticating.
@@ -68,3 +73,4 @@ still need verification with the intended runtime secrets after deployment.
 References: [OpenNext setup](https://opennext.js.org/cloudflare/get-started),
 [caching](https://opennext.js.org/cloudflare/caching),
 [Images binding](https://developers.cloudflare.com/images/optimization/binding/).
+See also [Workers limits](https://developers.cloudflare.com/workers/platform/limits/).
