@@ -1,0 +1,64 @@
+name: Cloudflare build
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_SITE_URL: https://example.com
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-only.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_only
+      SEO_NOINDEX: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        env:
+          NODE_ENV: development
+      - name: Verify image thumbnail implementations
+        run: node --import tsx --test tests/image-thumbnail.test.ts tests/cloudflare-thumbnail.test.ts
+      - run: pnpm cf:build
+      - name: Validate Worker bundle
+        run: pnpm exec wrangler deploy --dry-run --outdir .tmp/worker-dry-run
+      - name: Smoke test Workers runtime
+        shell: bash
+        run: |
+          pnpm exec wrangler dev --port 8787 --var SEO_NOINDEX:true --var NEXT_PUBLIC_SUPABASE_URL:https://ci-only.supabase.co --var NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:sb_publishable_ci_only > /tmp/pixinium-worker.log 2>&1 &
+          worker_pid=$!
+          trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..60}; do
+            if ! kill -0 "$worker_pid" 2>/dev/null; then
+              cat /tmp/pixinium-worker.log
+              exit 1
+            fi
+            status=$(curl --silent --max-time 5 --output /tmp/robots.txt --write-out '%{http_code}' http://127.0.0.1:8787/robots.txt || true)
+            if [ "$status" = 200 ]; then
+              cat /tmp/robots.txt
+              grep -q 'Disallow: /' /tmp/robots.txt
+              exit 0
+            fi
+            if [ "$status" = 500 ]; then
+              sleep 2
+              cat /tmp/robots.txt
+              cat /tmp/pixinium-worker.log
+              exit 1
+            fi
+            sleep 2
+          done
+          cat /tmp/pixinium-worker.log
+          exit 1

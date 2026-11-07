@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, CopyObjectCommand, DeleteObjectCommand, GetBucketAclCommand, GetBucketPolicyCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { createImageThumbnail } from './image-thumbnail'
+import { createImageThumbnail } from '@/server/services/image-thumbnail'
 
 export function storageConfigured() {
   return Boolean(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_ENDPOINT_URL_S3 && process.env.AWS_REGION)

@@ -49,7 +49,7 @@ policies begin following independent release schedules.
 
 If changing the operator or a public email, update both the registry and the
 relevant Markdown text. Run `node --import tsx --test tests/policies.test.ts`,
-the production build and `node scripts/graphify.mjs update .` after editing.
+the production build after editing.
 
 Terms and Privacy links are shown on registration, including Google signup.
 No record of accepted policy versions is written to a database, and no new

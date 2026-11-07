@@ -8,7 +8,8 @@ __v0_jsx-dev-runtime.ts
 .vercel/
 
 # Environment variables
-.env*.local
+.env*
+!.env.example
 *.agent-state.json
 
 # Local-only agent administration tool
@@ -17,6 +18,9 @@ __v0_jsx-dev-runtime.ts
 # Common ignores
 node_modules
 .next/
+.open-next/
+.wrangler/
+.dev.vars*
 .DS_Store
 
 # Local browser verification artifacts
@@ -29,7 +33,21 @@ output/agent-upload
 
 # Local Graphify environment and generated knowledge graph
 .tools/graphify/
+.tools/
 graphify-out/
 .codex
 tools/
 local/
+
+# Development assistants, generators and verification artifacts stay local.
+.agents/
+.claude/
+.impeccable/
+.mcp.json
+.graphifyignore
+AGENTS.md
+skills-lock.json
+output/
+*.tsbuildinfo
+/scripts/graphify.mjs
+/scripts/graphify-requirements.txt
