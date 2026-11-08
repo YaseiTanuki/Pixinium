@@ -41,6 +41,10 @@ stream unchanged; `?view=1` serves image originals inline for detail/SEO without
 counting a download. Generated Images thumbnails stream with noindex. Covers and
 previews in all categories also stream inline through the same stable API URLs;
 the public asset route never redirects to a signed storage URL.
+Server-side presigned storage reads use Fetch with `cache: no-store` and reject
+redirects. This avoids intermittent signature failures observed with the
+Cloudflare Worker cache path and prevents caching private storage responses;
+it does not change the browser-facing cache policy below.
 Inline images use `private, no-cache` with ETag/Last-Modified validators. Matching
 If-None-Match requests return 304 after rechecking public visibility, without
 reading the object body. Shared CDN caching is disabled so archived content is

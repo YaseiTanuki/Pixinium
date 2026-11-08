@@ -9,8 +9,15 @@ const oldSigningHeaders = new Set(['authorization', 'x-amz-date', 'x-amz-securit
 
 /** Keep read authorization in a short-lived query signature, generated and consumed on the server. */
 export function usePresignedStorageReads(storage: S3Client, customFetch?: typeof fetch) {
-  const reads = new FetchHttpHandler({ requestInit: () => ({ redirect: 'manual' }), customFetch: async (input, init) => {
-    const request = (input as Request).clone()
+  const reads = new FetchHttpHandler({ requestInit: () => ({ redirect: 'manual', cache: 'no-store' }), customFetch: async (input, init) => {
+    const request = input as Request
+    let before: ReturnType<typeof querySignatureSnapshot>
+    try {
+      before = querySignatureSnapshot(request, await storage.config.credentials())
+      if (!before) console.error(JSON.stringify({ event: 'storage.query_signature.check_failed', stage: 'before_fetch' }))
+    } catch {
+      console.error(JSON.stringify({ event: 'storage.query_signature.check_failed', stage: 'before_fetch' }))
+    }
     const response = await (customFetch ?? fetch)(input, init)
     if (response.status === 403) {
       try {
@@ -18,12 +25,21 @@ export function usePresignedStorageReads(storage: S3Client, customFetch?: typeof
         if (snapshot) {
           setUploadTraceContext({
             'storage.signature.local_recalculation_matches': snapshot.signature_matches,
-            'storage.signature.before_transport_hash': snapshot.canonical_request_hash,
+            'storage.signature.before_transport_hash': before?.canonical_request_hash,
             'storage.signature.credential_fingerprint': snapshot.credential_fingerprint,
           })
-          console.error(JSON.stringify({ event: 'storage.query_signature.debug', status: 403, ...snapshot }))
+          console.error(JSON.stringify({ event: 'storage.query_signature.debug', status: 403, ...snapshot,
+            before_fetch_signature_matches: before?.signature_matches,
+            before_fetch_canonical_request_hash: before?.canonical_request_hash,
+            signed_request_unchanged_after_fetch: before ? before.canonical_request_hash === snapshot.canonical_request_hash &&
+              before.provided_signature_hash === snapshot.provided_signature_hash : undefined,
+          }))
+        } else {
+          console.error(JSON.stringify({ event: 'storage.query_signature.check_failed', stage: 'after_fetch' }))
         }
-      } catch { /* Diagnostics must preserve the storage response. */ }
+      } catch {
+        console.error(JSON.stringify({ event: 'storage.query_signature.check_failed', stage: 'after_fetch' }))
+      }
     }
     return response
   } })
