@@ -56,6 +56,10 @@ private S3 storage; no public source URL is required.
 
 ## Environment variables
 
+S3 GET/HEAD requests use the SDK's FetchHttpHandler to avoid the Node HTTP
+compatibility wrapper for signed reads. Other methods retain the SDK's existing
+transport, including streamed ZIP uploads. Traces identify this as `storage.transport`.
+
 Temporary S3 signature diagnostics are enabled by `PIXINIUM_S3_SIGNATURE_DEBUG=true`.
 Failed signed GET/HEAD requests emit `storage.signature.debug`: hashes of canonical
 requests after signing and before the SDK HTTP handler, per-header hashes, a
