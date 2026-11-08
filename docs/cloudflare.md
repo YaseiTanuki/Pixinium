@@ -56,12 +56,17 @@ private S3 storage; no public source URL is required.
 
 ## Environment variables
 
-S3 GET/HEAD requests use the SDK's FetchHttpHandler to avoid the Node HTTP
-compatibility wrapper for signed reads. Other methods retain the SDK's existing
-transport, including streamed ZIP uploads. Traces identify this as `storage.transport`.
+S3 GET/HEAD requests use presigned query authorization expiring after 30 seconds,
+generated and consumed inside the server through FetchHttpHandler. Range and
+IfMatch validators are retained, redirects are rejected, and SDK deserialization
+still handles metadata, errors and streaming bodies. Other methods retain the
+SDK's existing transport, including streamed ZIP uploads. Traces identify this
+as `storage.auth_mode=presigned_query` and `storage.transport=fetch`.
 
-Temporary S3 signature diagnostics are enabled by `PIXINIUM_S3_SIGNATURE_DEBUG=true`.
-Failed signed GET/HEAD requests emit `storage.signature.debug`: hashes of canonical
+Temporary header-signature diagnostics are currently disabled with
+`PIXINIUM_S3_SIGNATURE_DEBUG=false`. They describe the original header-signed SDK
+request and should stay disabled while reads use presigned query authorization.
+When enabled for header-signed reads, failures emit `storage.signature.debug`: hashes of canonical
 requests after signing and before the SDK HTTP handler, per-header hashes, a
 credential fingerprint, and local signature verification results. Raw credentials,
 Authorization, signed URLs, object keys and provider messages are omitted. This

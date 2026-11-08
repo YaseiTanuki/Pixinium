@@ -6,6 +6,7 @@ const attributeNames = new Set([
   'storage.object_id', 'storage.if_match', 'storage.if_match_quoted', 'storage.signed_headers',
   'storage.response_status', 'storage.request_id',
   'storage.transport',
+  'storage.auth_mode', 'storage.presigned_ttl',
   'storage.failed_operation', 'storage.failed_object_id',
   'storage.signature.after_signing_hash', 'storage.signature.before_transport_hash',
   'storage.signature.unchanged_before_transport', 'storage.signature.local_recalculation_matches',
