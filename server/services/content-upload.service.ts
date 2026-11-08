@@ -19,6 +19,7 @@ import { validateContentFiles, inspectContentFiles, finalizeContentFiles } from 
 import { deleteGeneratedPackFiles } from '@/server/services/storage.service'
 import { authDiagnostic } from '@/lib/auth/errors'
 import { contentCreateDiagnostic, type ContentCreateStage } from '@/lib/content-diagnostics'
+import { setUploadTraceContext } from '@/lib/upload-tracing'
 import { isAgentActor, stagingOwner, type ContentActor } from '@/lib/agent-identity'
 import { agentCall, agentDatabase } from './agent-store'
 
@@ -61,20 +62,26 @@ export async function createContentForActor(account: ContentActor | null, input:
   let pendingPack: { directory: string; paths: string[] } | undefined
   let committed = false
   let stage: ContentCreateStage = 'validate'
+  const setStage = (value: ContentCreateStage) => {
+    stage = value
+    setUploadTraceContext({ 'upload.stage': value })
+  }
+  setStage('validate')
   try {
     if (!account || (!isAgentActor(account) && !hasPermission(account.role, 'assets:upload'))) return { error: 'You do not have access to create content.' }
+    setUploadTraceContext(isAgentActor(account) ? { 'agent.id': account.id } : { 'user.id': account.id })
     if (isAgentActor(account) && !account.job) return { error: 'An agent job is required.' }
     const parsed = contentSchema.safeParse(isAgentActor(account) && input && typeof input === 'object'
       ? { ...input, status: 'draft' } : input)
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Check the content fields.' }
     const value = parsed.data
-    stage = 'download_providers'
+    setStage('download_providers')
     const sourceError = validateSourceLinks(value.downloadSources, await listDownloadProviders())
     if (sourceError) return { error: sourceError }
     const connection = process.env.CATALOG_ADMIN_DATABASE_URL
     if (!isAgentActor(account) && !connection) return { error: 'Content writing is not configured. Set the server-side catalog admin connection.' }
     const sql = isAgentActor(account) ? undefined : neon(connection!)
-    stage = 'category'
+    setStage('category')
     const categories = isAgentActor(account)
       ? [await agentCall<{ slug: string; metadata_schema_key: string }>(account, 'category', [value.categoryId])]
       : await sql!`SELECT slug, metadata_schema_key FROM catalog.categories WHERE id = ${value.categoryId}::bigint AND is_active`
@@ -88,27 +95,27 @@ export async function createContentForActor(account: ContentActor | null, input:
     let metadata = parseCategoryMetadata(schemaKey, isAssetPack
       ? { image_count: value.attachments.filter(asset => asset.role === 'download').length }
       : isMusic ? {} : value.metadata)
-    stage = 'storage_policy'
+    setStage('storage_policy')
     const { bucket } = await requirePrivateStorage()
-    stage = 'claim_uploads'
+    setStage('claim_uploads')
     if (isAgentActor(account)) await agentCall(account, 'claim_uploads', [account.job!.id, account.job!.leaseToken, value.attachments.map(asset => asset.path)])
-    stage = 'inspect_uploads'
+    setStage('inspect_uploads')
     const inspected = await inspectContentFiles(stagingOwner(account), value.attachments)
     if ('error' in inspected) return { error: inspected.error }
     const attachments = inspected.attachments
     // Allocate a stable identity before copying files; failed saves may leave sequence gaps.
-    stage = 'reserve_item'
+    setStage('reserve_item')
     const [reservation] = isAgentActor(account) ? [{ id: account.job!.itemId }]
       : await sql!`SELECT nextval(pg_get_serial_sequence('catalog.items', 'id'))::text AS id`
     const reservedItemId = String(reservation.id)
     const directory = isAgentActor(account)
       ? `agents/${account.id}/items/${reservedItemId}/${account.job!.leaseToken}`
       : itemStorageDirectory(String(categories[0].slug), reservedItemId)
-    stage = 'finalize_files'
+    setStage('finalize_files')
     const { finalized, pack, musicMetadata } = await finalizeContentFiles(schemaKey, attachments, directory)
     pendingPack = pack
     if (musicMetadata) metadata = musicMetadata
-    stage = 'facts'
+    setStage('facts')
     let facts = value.facts
     if (usesAutomaticFacts(schemaKey)) {
       const [profile] = !isAgentActor(account) && source === 'studio' && account.role !== 'admin'
@@ -119,7 +126,7 @@ export async function createContentForActor(account: ContentActor | null, input:
         .filter(fact => fact.key === 'creator')
     }
     const document = { ...value, reservedItemId, metadata, facts, attachments: finalized }
-    stage = 'save_item'
+    setStage('save_item')
     const rows = isAgentActor(account)
       ? await withContentSlug(value.title,
         async base => {
@@ -145,7 +152,9 @@ export async function createContentForActor(account: ContentActor | null, input:
       ...(status === 'published' ? { href: `/items/${rows[0].category}/${rows[0].slug}` } : {}) }
   } catch (error) {
     if (authDiagnostic(error).code.startsWith('P04')) throw error
-    console.error(JSON.stringify(contentCreateDiagnostic(error, stage)))
+    const diagnostic = contentCreateDiagnostic(error, stage)
+    setUploadTraceContext({ 'upload.error.provider': diagnostic.providerError ?? diagnostic.code })
+    console.error(JSON.stringify(diagnostic))
     if (error instanceof z.ZodError) return { error: error.issues[0]?.message ?? 'Check category details.' }
     if (authDiagnostic(error).code === '23505') return { error: 'Content could not be saved because of a duplicate entry. Please try again.' }
     return { error: 'Content could not be saved. Your form is preserved; check server configuration and try again.' }

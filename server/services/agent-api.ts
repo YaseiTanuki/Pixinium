@@ -1,6 +1,7 @@
 import 'server-only'
 import { parseAgentCredential, type AgentActor, type AgentScope } from '@/lib/agent-identity'
 import { authenticateAgent, agentError } from './agent-store'
+import { setUploadTraceContext } from '@/lib/upload-tracing'
 
 export class AgentApiError extends Error {
   constructor(public status: number, message: string) { super(message) }
@@ -12,15 +13,21 @@ export function agentJson(data: unknown, status = 200) {
 }
 
 export async function agentEndpoint(request: Request, scope: AgentScope, handler: (actor: AgentActor) => Promise<Response>) {
+  setUploadTraceContext({ 'upload.scope': scope })
   try {
     if (!process.env.AGENT_DATABASE_URL) {
       throw new AgentApiError(503, 'Agent API is not configured.')
     }
     const credential = parseAgentCredential(request.headers.get('authorization'))
     if (!credential) throw new AgentApiError(401, 'Invalid bearer token.')
-    return await handler(await authenticateAgent(credential, scope))
+    const actor = await authenticateAgent(credential, scope)
+    setUploadTraceContext({ 'agent.id': actor.id })
+    const response = await handler(actor)
+    setUploadTraceContext({ 'upload.response_status': response.status })
+    return response
   } catch (error) {
     const failure = error instanceof AgentApiError ? { status: error.status, message: error.message } : agentError(error)
+    setUploadTraceContext({ 'upload.response_status': failure.status })
     const response = agentJson({ error: failure.message }, failure.status)
     return response
   }
