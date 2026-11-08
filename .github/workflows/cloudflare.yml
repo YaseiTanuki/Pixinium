@@ -31,7 +31,7 @@ jobs:
         env:
           NODE_ENV: development
       - name: Verify thumbnails and safe runtime diagnostics
-        run: node --import tsx --test tests/image-thumbnail.test.ts tests/cloudflare-thumbnail.test.ts tests/catalog-diagnostics.test.ts tests/content-diagnostics.test.ts tests/storage-inspection.test.ts tests/upload-tracing.test.ts tests/storage-signature-debug.test.ts tests/storage-read-transport.test.ts
+        run: node --import tsx --test tests/image-thumbnail.test.ts tests/cloudflare-thumbnail.test.ts tests/catalog-diagnostics.test.ts tests/content-diagnostics.test.ts tests/storage-inspection.test.ts tests/upload-tracing.test.ts tests/storage-signature-debug.test.ts tests/storage-read-transport.test.ts tests/storage-query-signature.test.ts tests/storage-fetch-binding.test.ts
       - run: pnpm cf:build
       - name: Validate Worker bundle
         run: pnpm exec wrangler deploy --dry-run --outdir .tmp/worker-dry-run
