@@ -68,7 +68,9 @@ test('writes retain their existing streaming transport', async () => {
   assert.equal(fetchCalls, 0)
 })
 
-test('presigned reads still propagate storage permission failures', async () => {
+test('presigned reads still propagate storage permission failures and emit hash-only diagnostics', async t => {
+  const logs: string[] = []
+  t.mock.method(console, 'error', (value: string) => logs.push(value))
   let requests = 0
   const storage = new S3Client({ region: 'ap-southeast-1', endpoint: 'https://storage.example.invalid', forcePathStyle: true,
     credentials: { accessKeyId: 'test-access', secretAccessKey: 'test-secret' }, maxAttempts: 1,
@@ -81,6 +83,10 @@ test('presigned reads still propagate storage permission failures', async () => 
   })
   await assert.rejects(storage.send(new GetObjectCommand({ Bucket: 'pixinium', Key: 'staging/test.png' })), { name: 'AccessDenied' })
   assert.equal(requests, 1)
+  const diagnostic = JSON.parse(logs[0])
+  assert.equal(diagnostic.event, 'storage.query_signature.debug')
+  assert.equal(diagnostic.signature_matches, true)
+  for (const value of ['test-secret', 'test-access', 'staging/test.png', 'X-Amz-Signature=']) assert.equal(logs[0].includes(value), false)
 })
 
 test('Workers-compatible manual mode rejects redirects without following them', async () => {

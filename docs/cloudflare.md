@@ -63,6 +63,12 @@ still handles metadata, errors and streaming bodies. Other methods retain the
 SDK's existing transport, including streamed ZIP uploads. Traces identify this
 as `storage.auth_mode=presigned_query` and `storage.transport=fetch`.
 
+Read responses returning 403 emit `storage.query_signature.debug`. This verifies
+the Fetch Request's query signature with an independent Node HMAC calculation;
+only canonical/path/header/signature hashes, a credential fingerprint and match
+results are recorded. It does not require unredacted URLs from the dashboard.
+It checks the Request passed to fetch, not the request received by Neon.
+
 Temporary header-signature diagnostics are currently disabled with
 `PIXINIUM_S3_SIGNATURE_DEBUG=false`. They describe the original header-signed SDK
 request and should stay disabled while reads use presigned query authorization.
