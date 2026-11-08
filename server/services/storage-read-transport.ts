@@ -2,13 +2,31 @@ import type { S3Client } from '@aws-sdk/client-s3'
 import { FetchHttpHandler } from '@smithy/fetch-http-handler'
 import { S3RequestPresigner } from '@aws-sdk/s3-request-presigner'
 import { setUploadTraceContext } from '../../lib/upload-tracing'
+import { querySignatureSnapshot } from './storage-query-signature'
 
 const oldSigningHeaders = new Set(['authorization', 'x-amz-date', 'x-amz-security-token', 'x-amz-content-sha256',
   'amz-sdk-invocation-id', 'amz-sdk-request', 'x-amz-user-agent'])
 
 /** Keep read authorization in a short-lived query signature, generated and consumed on the server. */
 export function usePresignedStorageReads(storage: S3Client, customFetch?: typeof fetch) {
-  const reads = new FetchHttpHandler({ customFetch, requestInit: () => ({ redirect: 'manual' }) })
+  const reads = new FetchHttpHandler({ requestInit: () => ({ redirect: 'manual' }), customFetch: async (input, init) => {
+    const request = (input as Request).clone()
+    const response = await (customFetch ?? fetch)(input, init)
+    if (response.status === 403) {
+      try {
+        const snapshot = querySignatureSnapshot(request, await storage.config.credentials())
+        if (snapshot) {
+          setUploadTraceContext({
+            'storage.signature.local_recalculation_matches': snapshot.signature_matches,
+            'storage.signature.before_transport_hash': snapshot.canonical_request_hash,
+            'storage.signature.credential_fingerprint': snapshot.credential_fingerprint,
+          })
+          console.error(JSON.stringify({ event: 'storage.query_signature.debug', status: 403, ...snapshot }))
+        }
+      } catch { /* Diagnostics must preserve the storage response. */ }
+    }
+    return response
+  } })
   const presigner = new S3RequestPresigner(storage.config)
   const handler = storage.config.requestHandler
   const handle = handler.handle.bind(handler)
