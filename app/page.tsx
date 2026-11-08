@@ -6,9 +6,17 @@ import type { Metadata } from 'next'
 import { JsonLd } from '@/components/json-ld'
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, pageMetadata } from '@/lib/seo'
 import { withCatalogDiagnostics } from '@/lib/catalog-diagnostics'
+import { redirect } from 'next/navigation'
+import { getAccount } from '@/server/services/auth.service'
 export const metadata: Metadata = { ...pageMetadata({ title: SITE_TITLE, description: SITE_DESCRIPTION, path: '/' }), title: { absolute: SITE_TITLE } }
 export const dynamic = 'force-dynamic'
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ code?: string | string[] }> }) {
+ // Supabase can return to Site URL when the requested callback is not allowlisted.
+ // Exchange the code before rendering the archive or checking the new session.
+ const { code } = await searchParams
+ if (typeof code === 'string') redirect(`/auth/callback?${new URLSearchParams({ code })}`)
+ const account = await getAccount()
+ if (account && !account.username) redirect('/choose-username')
  const [items, categories] = await withCatalogDiagnostics('home', () => Promise.all([listCatalogItems(), listCategories()]))
  const images = items.filter(card => card.category.metadataSchemaKey === CONTENT_SCHEMAS.image && card.cover)
  const music = items.filter(card => card.category.artworkStyle === 'record')
