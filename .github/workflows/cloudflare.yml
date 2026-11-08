@@ -20,6 +20,9 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://ci-only.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_only
       SEO_NOINDEX: 'true'
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_DATABASE_POOL: postgresql://ci:unused@example.invalid/postgres
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_CATALOG_ADMIN_POOL: postgresql://ci:unused@example.invalid/postgres
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_AGENT_POOL: postgresql://ci:unused@example.invalid/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

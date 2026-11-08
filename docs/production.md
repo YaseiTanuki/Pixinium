@@ -59,7 +59,10 @@ configs as `DATABASE_POOL`, `CATALOG_ADMIN_POOL` and `AGENT_POOL` for the matchi
 restricted roles. Disable query caching on all three configs because requests
 use RLS and transaction-local identity. The driver selects only the pool matching
 its configured runtime URL; maintenance/local commands keep their direct/pooler URL.
-Pool IDs must be provisioned and added to Wrangler before using this option.
+The production pools are bound in Wrangler with query caching disabled and
+`verify-full` against the uploaded Supabase CA. For local Wrangler development,
+set `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_<BINDING>` for each pool.
+CI uses unreachable fixture URLs and checks authentication before database I/O.
 
 Initialize and verify the target, then configure hosting runtime secrets before
 releasing the migration branch. Validate catalog/auth, role restrictions, file
