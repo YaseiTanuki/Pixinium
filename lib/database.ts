@@ -1,5 +1,6 @@
 import { Client, types, type QueryResultRow } from 'pg'
 import { runtimeDatabaseConnection } from './database-connection'
+import { databaseTlsConfig } from './database-tls'
 
 // Preserve the HTTP driver's string representation of SQL dates/timestamps.
 for (const oid of [1082, 1114, 1184]) types.setTypeParser(oid, value => value)
@@ -40,7 +41,7 @@ export interface Database {
 
 /** Lazy statements keep transaction-local identity settings and writes on one connection. */
 export function createDatabase(connectionString: string, createClient: () => DatabaseClient = () =>
-  new Client({ connectionString: runtimeDatabaseConnection(connectionString), connectionTimeoutMillis: 10_000, application_name: 'pixinium' })): Database {
+  new Client({ ...databaseTlsConfig(runtimeDatabaseConnection(connectionString)), connectionTimeoutMillis: 10_000, application_name: 'pixinium' })): Database {
   if (!connectionString) throw new Error('A PostgreSQL connection string is required.')
   const owner = Symbol('database')
   async function withClient<T>(operation: (client: DatabaseClient) => Promise<T>) {

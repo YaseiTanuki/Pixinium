@@ -11,7 +11,7 @@ test('Supabase maintenance targeting pins project identity as well as shared poo
   const runtime = new URL(target.runtimeUrl('pixinium_runtime', 'fixture:@/secret'))
   assert.equal(runtime.username, `pixinium_runtime.${ref}`)
   assert.equal(decodeURIComponent(runtime.password), 'fixture:@/secret')
-  assert.equal(runtime.searchParams.get('sslmode'), 'require')
+  assert.equal(runtime.searchParams.get('sslmode'), 'verify-full')
   assert.throws(() => supabaseTarget({ ...env, DATABASE_URL_UNPOOLED: env.DATABASE_URL_UNPOOLED.replace(ref, 'aaaaaaaaaaaaaaaaaaaa') }), /confirmed Supabase/)
   assert.throws(() => supabaseTarget({ ...env, DATABASE_URL_UNPOOLED: env.DATABASE_URL_UNPOOLED.replace('5432', '6543') }), /Session pooler/)
   assert.throws(() => supabaseTarget({ ...env, MIGRATION_TARGET_HOST: 'wrong.supabase.co' }), /confirmed Supabase/)

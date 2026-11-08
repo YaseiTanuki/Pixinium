@@ -3,10 +3,11 @@ import { writeFile } from 'node:fs/promises'
 import { Client } from 'pg'
 import { freshSupabaseSchema } from './prepare-supabase-schema'
 import { supabaseTarget } from './supabase-target'
+import { databaseTlsConfig } from '../lib/database-tls'
 
 async function main() {
   const target = supabaseTarget()
-  const client = new Client({ connectionString: target.connectionString, connectionTimeoutMillis: 10_000 })
+  const client = new Client({ ...databaseTlsConfig(target.connectionString), connectionTimeoutMillis: 10_000 })
   const apply = process.argv.includes('--apply')
   try {
     await client.connect()

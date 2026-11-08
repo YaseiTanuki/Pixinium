@@ -11,7 +11,7 @@ export function supabaseTarget(env: Record<string, string | undefined> = process
     (url.port && url.port !== '5432') || (direct && decodeURIComponent(url.username) !== 'postgres')) {
     throw new Error('Use the confirmed Supabase owner direct or Session pooler connection on port 5432.')
   }
-  url.searchParams.set('sslmode', 'require')
+  url.searchParams.set('sslmode', 'verify-full')
   return { connectionString: url.href, runtimeUrl(role: string, password: string) {
     const runtime = new URL(url)
     runtime.username = pooled ? `${role}.${ref}` : role
