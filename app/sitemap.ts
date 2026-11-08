@@ -5,7 +5,8 @@ import { listSitemapItems } from '@/server/services/catalog-seo.service'
 import { categoryHref } from '@/lib/catalog'
 import { POLICIES, POLICY_RELEASE, policyHref } from '@/lib/policies'
 
-export const revalidate = 3600
+// Read the active runtime backend, rather than embedding a build-time catalog.
+export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!indexingAllowed()) return []

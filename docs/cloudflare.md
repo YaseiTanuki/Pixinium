@@ -27,6 +27,8 @@ dashboard setting; changing Git branches or this workflow does not update it.
 the package's `build` script with this command: OpenNext calls `build` internally.
 `cf:deploy` deploys an already built Worker and populates the incremental cache.
 For local verification after `cf:build`, run `pnpm cf:preview`.
+The sitemap reads the catalog at request time, so builds do not require a database
+credential or retain catalog data from a previous backend.
 
 `cf:upload` uploads a version without promoting it, using the same configured
 bindings. It does not isolate production databases or storage. Configure separate
