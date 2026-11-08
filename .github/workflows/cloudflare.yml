@@ -16,10 +16,11 @@ jobs:
     env:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
-      NEXT_PUBLIC_SITE_URL: https://example.com
-      NEXT_PUBLIC_SUPABASE_URL: https://ci-only.supabase.co
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_only
-      SEO_NOINDEX: 'true'
+      NEXT_PUBLIC_SITE_URL: ${{ github.ref == 'refs/heads/main' && 'https://pixinium.com' || 'https://example.com' }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.PIXINIUM_BUILD_SUPABASE_URL || 'https://ci-only.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ github.ref == 'refs/heads/main' && secrets.PIXINIUM_BUILD_SUPABASE_KEY || 'sb_publishable_ci_only' }}
+      DATABASE_URL: ${{ github.ref == 'refs/heads/main' && secrets.PIXINIUM_BUILD_DATABASE_URL || '' }}
+      SEO_NOINDEX: ${{ github.ref == 'refs/heads/main' && 'false' || 'true' }}
       CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_DATABASE_POOL: postgresql://ci:unused@example.invalid/postgres
       CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_CATALOG_ADMIN_POOL: postgresql://ci:unused@example.invalid/postgres
       CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_AGENT_POOL: postgresql://ci:unused@example.invalid/postgres
@@ -76,3 +77,11 @@ jobs:
           done
           cat /tmp/pixinium-worker.log
           exit 1
+      - name: Save production Worker bundle
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-worker-${{ github.sha }}
+          path: .open-next/
+          include-hidden-files: true
+          retention-days: 3
