@@ -28,9 +28,6 @@
     }
   ],
   "keep_vars": true,
-  "vars": {
-    "PIXINIUM_S3_SIGNATURE_DEBUG": "false"
-  },
   "observability": {
     "logs": {
       "enabled": true,
