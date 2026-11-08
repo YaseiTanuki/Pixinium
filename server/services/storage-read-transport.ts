@@ -8,7 +8,7 @@ const oldSigningHeaders = new Set(['authorization', 'x-amz-date', 'x-amz-securit
 
 /** Keep read authorization in a short-lived query signature, generated and consumed on the server. */
 export function usePresignedStorageReads(storage: S3Client, customFetch?: typeof fetch) {
-  const reads = new FetchHttpHandler({ customFetch, requestInit: () => ({ redirect: 'error' }) })
+  const reads = new FetchHttpHandler({ customFetch, requestInit: () => ({ redirect: 'manual' }) })
   const presigner = new S3RequestPresigner(storage.config)
   const handler = storage.config.requestHandler
   const handle = handler.handle.bind(handler)
@@ -22,6 +22,13 @@ export function usePresignedStorageReads(storage: S3Client, customFetch?: typeof
     const signed = await presigner.presign({ ...request, headers, query: { ...request.query } }, { expiresIn: 30 })
     setUploadTraceContext({ 'storage.auth_mode': 'presigned_query', 'storage.presigned_ttl': 30,
       'storage.signed_headers': signed.query?.['X-Amz-SignedHeaders'] })
-    return reads.handle(Object.assign(request.clone(), signed), ...args)
+    const result = await reads.handle(Object.assign(request.clone(), signed), ...args)
+    // Workers supports manual/follow only. Reject redirects before the SDK can
+    // retry them or forward the signed query to another destination.
+    if (result.response.statusCode >= 300 && result.response.statusCode < 400) {
+      await result.response.body?.cancel?.()
+      throw new Error('Storage read redirects are not allowed.')
+    }
+    return result
   }
 }

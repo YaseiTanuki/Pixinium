@@ -37,7 +37,7 @@ test('presigned reads verify independently and retain range and conditional vali
     assert.equal(url.searchParams.get('X-Amz-Expires'), '30')
     assert.equal(request.headers.has('authorization'), false)
     assert.equal(request.headers.has('amz-sdk-request'), false)
-    assert.equal(request.redirect, 'error')
+    assert.equal(request.redirect, 'manual')
     assert.equal(request.headers.get('if-match'), '"original-etag"')
     return request.method === 'HEAD'
       ? new Response(null, { status: 200, headers: { 'content-length': '20', etag: '"original-etag"' } })
@@ -81,4 +81,23 @@ test('presigned reads still propagate storage permission failures', async () => 
   })
   await assert.rejects(storage.send(new GetObjectCommand({ Bucket: 'pixinium', Key: 'staging/test.png' })), { name: 'AccessDenied' })
   assert.equal(requests, 1)
+})
+
+test('Workers-compatible manual mode rejects redirects without following them', async () => {
+  let requests = 0
+  let cancelled = false
+  const storage = new S3Client({ region: 'ap-southeast-1', endpoint: 'https://storage.example.invalid', forcePathStyle: true,
+    credentials: { accessKeyId: 'test-access', secretAccessKey: 'test-secret' }, maxAttempts: 1,
+  })
+  usePresignedStorageReads(storage, async input => {
+    requests++
+    assert.equal((input as Request).redirect, 'manual')
+    return new Response(new ReadableStream({ cancel() { cancelled = true } }), {
+      status: 307, headers: { location: 'https://other.example.invalid/file' },
+    })
+  })
+  await assert.rejects(storage.send(new GetObjectCommand({ Bucket: 'pixinium', Key: 'staging/test.png' })),
+    /Storage read redirects are not allowed/)
+  assert.equal(requests, 1)
+  assert.equal(cancelled, true)
 })
