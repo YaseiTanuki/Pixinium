@@ -1,11 +1,11 @@
 import 'server-only'
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import type { AgentActor, AgentScope } from '@/lib/agent-identity'
 
 export function agentDatabase() {
   const connection = process.env.AGENT_DATABASE_URL
   if (!connection) throw Object.assign(new Error('Agent API unavailable'), { code: 'P0503' })
-  return neon(connection)
+  return createDatabase(connection)
 }
 
 // Function names are an application allowlist, never interpolated from a request.

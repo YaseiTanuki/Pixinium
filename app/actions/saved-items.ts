@@ -1,6 +1,6 @@
 'use server'
 
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { z } from 'zod'
 import { getAccount } from '@/server/services/auth.service'
 import { authDiagnostic } from '@/lib/auth/errors'
@@ -15,7 +15,7 @@ export async function loadSavedItems() {
   try {
     const account = await getAccount()
     if (!account) return { ids: [] as string[], loginRequired: true }
-    const sql = neon(process.env.DATABASE_URL!)
+    const sql = createDatabase(process.env.DATABASE_URL!)
     const results = await sql.transaction([
       sql`SELECT set_config('app.user_id', ${account.id}, true)`,
       sql.query(savedItemsQuery, [account.id]),
@@ -33,7 +33,7 @@ export async function setItemCollected(input: unknown) {
   try {
     const account = await getAccount()
     if (!account) return { loginRequired: true }
-    const sql = neon(process.env.DATABASE_URL!)
+    const sql = createDatabase(process.env.DATABASE_URL!)
     const { id, saved } = parsed.data
     const results = await sql.transaction([
       sql`SELECT set_config('app.user_id', ${account.id}, true)`,

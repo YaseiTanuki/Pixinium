@@ -3,7 +3,7 @@ import { resolveDownloadSources, type DownloadProvider } from '../../lib/downloa
 import { listDownloadProviders } from './download-sources.service'
 import { cache } from 'react'
 import { catalogFacts } from '../../lib/catalog-facts'
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import type { CatalogDetail, Category, Asset, Tag } from '../../lib/entities/catalog'
 import { archiveCountQuery, archivePageQuery, archiveTagsQuery, cardsQuery, categoriesQuery } from '../repositories/catalog.queries'
 import { CATALOG_DISPLAY } from '../../lib/catalog'
@@ -11,7 +11,7 @@ import { searchTags, searchSort, searchCategories } from '../../lib/search-filte
 
 function database() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required to load the catalog.')
-  return neon(process.env.DATABASE_URL)
+  return createDatabase(process.env.DATABASE_URL)
 }
 
 type Media = CatalogDetail['media'][number] & Pick<Asset, 'provider' | 'externalUrl' | 'bucket' | 'objectPath'>
@@ -19,7 +19,7 @@ type Media = CatalogDetail['media'][number] & Pick<Asset, 'provider' | 'external
 function assetUrl(asset: Media): string {
   if (asset.provider === 'external' && asset.externalUrl) return asset.externalUrl
   // Stable application URL; the endpoint checks publication before serving stored bytes.
-  if (asset.provider === 's3' && asset.bucket === (process.env.S3_ASSETS_BUCKET || 'assets')) {
+  if (asset.provider === 's3' && asset.bucket === process.env.R2_BUCKET_NAME) {
     return `/api/assets/${asset.assetId}`
   }
   // Storage origins must be explicitly configured for public catalog media.

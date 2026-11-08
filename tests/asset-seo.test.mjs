@@ -18,7 +18,7 @@ function fixture(row = { bucket: 'assets', object_path: 'original.png', media_ty
   const exports = {}
   runInNewContext(source, { exports, process: { env: { DATABASE_URL: 'fixture-only' } }, Response, URL,
     require(name) {
-      if (name === '@neondatabase/serverless') return { neon: () => sql }
+      if (name === '@/lib/database') return { createDatabase: () => sql }
       if (name === 'next/server') return { NextResponse: Response }
       if (name === '@/lib/content-types') return { CONTENT_SCHEMAS: { image: 'images.v1' } }
       if (name === '@/server/services/storage.service') return {

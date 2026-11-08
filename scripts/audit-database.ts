@@ -1,8 +1,8 @@
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '../lib/database'
 
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required.')
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = createDatabase(process.env.DATABASE_URL)
   const [role, tables, constraints, indexes, policies, migrations] = await sql.transaction([
     sql.query('SELECT current_user, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user'),
     sql.query("SELECT schemaname, tablename, tableowner, rowsecurity FROM pg_tables WHERE schemaname IN ('public', 'catalog') ORDER BY 1, 2"),

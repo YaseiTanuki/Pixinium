@@ -1,4 +1,4 @@
-// Neon stores member (displayed as User) and admin. Unknown/future roles fail closed.
+// Catalog profiles store member (displayed as User) and admin. Unknown/future roles fail closed.
 export type Permission = 'admin:access' | 'assets:upload'
 const permissions: Record<string, readonly Permission[]> = {
   member: [],

@@ -27,6 +27,8 @@ dashboard setting; changing Git branches or this workflow does not update it.
 the package's `build` script with this command: OpenNext calls `build` internally.
 `cf:deploy` deploys an already built Worker and populates the incremental cache.
 For local verification after `cf:build`, run `pnpm cf:preview`.
+The sitemap reads the catalog at request time, so builds do not require a database
+credential or retain catalog data from a previous backend.
 
 `cf:upload` uploads a version without promoting it, using the same configured
 bindings. It does not isolate production databases or storage. Configure separate
@@ -80,8 +82,9 @@ Set `SEO_NOINDEX=false` only for the canonical production deployment.
 
 Set runtime variables and secrets in **Settings > Variables & Secrets** using
 `.env.example` and the local production example as the checklist. In particular,
-configure `DATABASE_URL`, `CATALOG_ADMIN_DATABASE_URL`, private S3 credentials,
-endpoint, region and bucket. Runtime secrets and build secrets are separate.
+configure the restricted Supabase `DATABASE_URL`, `CATALOG_ADMIN_DATABASE_URL`,
+`AGENT_DATABASE_URL` and private Cloudflare R2 `R2_*` settings. R2 uses region
+`auto` internally. Runtime secrets and build secrets are separate.
 Do not add database-owner migration credentials to the Worker. `keep_vars` retains
 dashboard-managed ordinary variables across Wrangler deployments.
 

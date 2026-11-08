@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { NextResponse } from 'next/server'
 import { adminStorage, inspectStoredFile, readStoredStream } from '@/server/services/storage.service'
 import { CONTENT_SCHEMAS } from '@/lib/content-types'
@@ -19,7 +19,7 @@ async function serveAsset(request: Request, { params }: Context, head: boolean) 
   if (!/^[1-9][0-9]{0,18}$/.test(id)) return new NextResponse(null, { status: 404, headers })
   try {
     if (!process.env.DATABASE_URL) throw new Error('Catalog unavailable')
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = createDatabase(process.env.DATABASE_URL)
     const rows = await sql`SELECT a.bucket, a.object_path, a.media_type, a.mime_type, bool_or(ia.role = 'download') AS download,
       bool_and(c.metadata_schema_key = ${CONTENT_SCHEMAS.image}) AS image_only
       FROM catalog.assets a JOIN catalog.item_assets ia ON ia.asset_id = a.id

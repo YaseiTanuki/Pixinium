@@ -1,6 +1,6 @@
 'use server'
 
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getAccount } from '@/server/services/auth.service'
@@ -13,7 +13,7 @@ export async function chooseUsername(_state: AuthState, form: FormData): Promise
   const parsed = usernameSchema.safeParse(form.get('username'))
   if (!parsed.success) return { error: 'Use 3-12 letters, numbers or underscores.' }
   try {
-    const sql = neon(process.env.DATABASE_URL!)
+    const sql = createDatabase(process.env.DATABASE_URL!)
     const results = await sql.transaction([
       sql`SELECT set_config('app.user_id', ${account.id}, true)`,
       sql`UPDATE catalog.profiles SET username = ${parsed.data}
