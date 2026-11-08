@@ -2,7 +2,7 @@ import { MAX_CONTENT_FILE_BYTES } from '../../lib/admin/limits'
 import 'server-only'
 import { randomUUID } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, CopyObjectCommand, DeleteObjectCommand, GetBucketAclCommand, GetBucketPolicyCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, CopyObjectCommand, DeleteObjectCommand, HeadBucketCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createImageThumbnail } from '@/server/services/image-thumbnail'
 import { inspectStorageObject } from './storage-inspection'
@@ -11,15 +11,15 @@ import { usePresignedStorageReads } from './storage-read-transport'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { STORAGE_FETCH_BINDING } from './storage-fetch-binding'
 import { setUploadTraceContext } from '../../lib/upload-tracing'
+import { r2Config, requirePrivateR2 } from '../../lib/r2-config'
 
 export function storageConfigured() {
-  return Boolean(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_ENDPOINT_URL_S3 && process.env.AWS_REGION)
+  try { r2Config(); return true } catch { return false }
 }
 
 export function adminStorage() {
-  if (!storageConfigured()) throw new Error('Object storage is not configured.')
-  if (new URL(process.env.AWS_ENDPOINT_URL_S3!).protocol !== 'https:') throw new Error('Storage requires HTTPS.')
-  const storage = new S3Client({ forcePathStyle: true })
+  const config = r2Config()
+  const storage = new S3Client(config.client)
   let nativeFetch: typeof fetch | undefined
   try {
     const env = getCloudflareContext().env as unknown as Record<string, { fetch?: typeof fetch } | undefined>
@@ -28,26 +28,15 @@ export function adminStorage() {
   setUploadTraceContext({ 'storage.fetch_runtime': nativeFetch ? 'workers_native' : 'default' })
   usePresignedStorageReads(storage, nativeFetch)
   addStorageTracing(storage)
-  return { bucket: process.env.S3_ASSETS_BUCKET || 'assets', storage }
+  return { bucket: config.bucket, storage }
 }
 
 export async function requirePrivateStorage() {
+  // R2 has no S3 bucket ACL/policy APIs. Public access is an infrastructure
+  // setting; uploads require explicit confirmation of the deployment check.
+  requirePrivateR2(r2Config())
   const { storage, bucket } = adminStorage()
-  const acl = await storage.send(new GetBucketAclCommand({ Bucket: bucket }))
-  if (acl.Grants?.some(grant => grant.Grantee?.Type === 'Group' && /AllUsers|AuthenticatedUsers/.test(grant.Grantee.URI ?? ''))) {
-    throw new Error('The assets bucket must be private.')
-  }
-  try {
-    const result = await storage.send(new GetBucketPolicyCommand({ Bucket: bucket }))
-    const policy = JSON.parse(result.Policy || '{}')
-    const statements = Array.isArray(policy.Statement) ? policy.Statement : policy.Statement ? [policy.Statement] : []
-    if (statements.some((statement: { Effect?: string; Principal?: unknown }) =>
-      statement.Effect === 'Allow' && JSON.stringify(statement.Principal ?? '').includes('*'))) {
-      throw new Error('The assets bucket must be private.')
-    }
-  } catch (error) {
-    if (!(error instanceof Error && error.name === 'NoSuchBucketPolicy')) throw error
-  }
+  await storage.send(new HeadBucketCommand({ Bucket: bucket }))
   return { storage, bucket }
 }
 

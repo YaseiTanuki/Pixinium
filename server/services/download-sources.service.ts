@@ -1,6 +1,6 @@
 import 'server-only'
 import { cache } from 'react'
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { revalidatePath } from 'next/cache'
 import { hasPermission } from '@/lib/auth/permissions'
 import { providerInputSchema, sourceSlugSchema, type DownloadProvider, type ManagedDownloadProvider } from '@/lib/download-sources'
@@ -8,11 +8,11 @@ import { downloadProvidersQuery, managedDownloadProvidersQuery, createDownloadPr
 
 export const listDownloadProviders = cache(async (): Promise<DownloadProvider[]> => {
   if (!process.env.DATABASE_URL) throw new Error('Catalog reading is not configured.')
-  return await neon(process.env.DATABASE_URL).query(downloadProvidersQuery) as DownloadProvider[]
+  return await createDatabase(process.env.DATABASE_URL).query(downloadProvidersQuery) as DownloadProvider[]
 })
 export async function listManagedDownloadProviders(): Promise<ManagedDownloadProvider[]> {
   if (!process.env.CATALOG_ADMIN_DATABASE_URL) throw new Error('Catalog writing is not configured.')
-  return await neon(process.env.CATALOG_ADMIN_DATABASE_URL).query(managedDownloadProvidersQuery) as ManagedDownloadProvider[]
+  return await createDatabase(process.env.CATALOG_ADMIN_DATABASE_URL).query(managedDownloadProvidersQuery) as ManagedDownloadProvider[]
 }
 
 export async function manageDownloadProviderForActor(actor: { id: string; role: string } | null, operation: 'create' | 'update' | 'delete', input: unknown) {
@@ -26,7 +26,7 @@ export async function manageDownloadProviderForActor(actor: { id: string; role: 
     const slug = provider?.slug ?? parsed.data as string
     const values = provider ? [actor.id, provider.slug, provider.name, provider.hostname, provider.priority, provider.isActive] : [actor.id, slug]
     const query = operation === 'create' ? createDownloadProviderQuery : operation === 'update' ? updateDownloadProviderQuery : deleteDownloadProviderQuery
-    const rows = await neon(process.env.CATALOG_ADMIN_DATABASE_URL).query(query, values)
+    const rows = await createDatabase(process.env.CATALOG_ADMIN_DATABASE_URL).query(query, values)
     if (!rows.length) return { error: 'Source unavailable or admin access changed. Refresh and retry.' }
     revalidatePath('/admin')
     revalidatePath('/admin/download-sources')

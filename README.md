@@ -16,20 +16,21 @@ pnpm start
 
 Set `NODE_ENV=production` when building. Use the pooled production `DATABASE_URL`
 for runtime reads and a separate server-only `CATALOG_ADMIN_DATABASE_URL` for the
-admin writer. Database URLs must all target the intended Neon production branch.
-Migrations require the direct `DATABASE_URL_UNPOOLED` and its verified hostname in
-`MIGRATION_TARGET_HOST`; `NEON_BRANCH` is only a safety label, not a connection switch.
+admin writer. Database URLs must all target the intended Supabase project.
+Migrations require the Supabase owner `DATABASE_URL_UNPOOLED`, its verified
+`MIGRATION_TARGET_HOST`, and `SUPABASE_PROJECT_REF`. Use a direct or Session pooler
+connection. Fresh setup is documented in [production.md](docs/production.md).
 
 ```sh
 pnpm db:migrate
 ```
 
 The runner checks migration checksums and applies the retained SQL history in one
-transaction. Back up production and rehearse on a Neon branch before migrating.
+transaction. Back up production and rehearse on an isolated PostgreSQL database before migrating.
 Do not copy local development credentials or test content into production.
 
-Configure Supabase Auth redirect URLs and email delivery, a private S3-compatible
-bucket and server-side storage credentials before enabling uploads. The optional
+Configure Supabase Auth redirect URLs and email delivery, the private Cloudflare
+R2 bucket and server-only `R2_*` credentials before enabling uploads. The optional
 `AGENT_DATABASE_URL` must use a restricted broker login, not the database owner.
 Agent client tools, API setup helpers, skills, MCP configuration, browser profiles,
 screenshots and local backups are excluded from this branch; the publishing API

@@ -1,6 +1,6 @@
 /** Database bigint IDs are strings at API boundaries; never coerce them to JS numbers. */
 export type EntityId = string
-/** Supabase auth.users.id. A logical reference across providers, not a Neon FK. */
+/** Supabase auth.users.id, authorized through the server's verified Auth identity. */
 export type UserId = string
 export type Timestamp = string
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }

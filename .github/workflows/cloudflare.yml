@@ -20,6 +20,9 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://ci-only.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_only
       SEO_NOINDEX: 'true'
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_DATABASE_POOL: postgresql://ci:unused@example.invalid/postgres
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_CATALOG_ADMIN_POOL: postgresql://ci:unused@example.invalid/postgres
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_AGENT_POOL: postgresql://ci:unused@example.invalid/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -31,14 +34,14 @@ jobs:
         env:
           NODE_ENV: development
       - name: Verify thumbnails and safe runtime diagnostics
-        run: node --import tsx --test tests/image-thumbnail.test.ts tests/cloudflare-thumbnail.test.ts tests/catalog-diagnostics.test.ts tests/content-diagnostics.test.ts tests/storage-inspection.test.ts tests/upload-tracing.test.ts tests/storage-read-transport.test.ts tests/storage-fetch-binding.test.ts
+        run: node --import tsx --test --test-concurrency=1 tests/image-thumbnail.test.ts tests/cloudflare-thumbnail.test.ts tests/catalog-diagnostics.test.ts tests/content-diagnostics.test.ts tests/storage-inspection.test.ts tests/upload-tracing.test.ts tests/storage-read-transport.test.ts tests/storage-fetch-binding.test.ts tests/database.test.ts tests/database-tls.test.ts tests/database-connection.test.ts tests/supabase-schema.test.ts tests/supabase-target.test.ts tests/r2-config.test.ts
       - run: pnpm cf:build
       - name: Validate Worker bundle
         run: pnpm exec wrangler deploy --dry-run --outdir .tmp/worker-dry-run
       - name: Smoke test Workers runtime
         shell: bash
         run: |
-          pnpm exec wrangler dev --port 8787 --var SEO_NOINDEX:true --var NEXT_PUBLIC_SUPABASE_URL:https://ci-only.supabase.co --var NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:sb_publishable_ci_only --var AGENT_DATABASE_URL:postgresql://ci:unused@example.invalid/neondb > /tmp/pixinium-worker.log 2>&1 &
+          pnpm exec wrangler dev --port 8787 --var SEO_NOINDEX:true --var NEXT_PUBLIC_SUPABASE_URL:https://ci-only.supabase.co --var NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:sb_publishable_ci_only --var AGENT_DATABASE_URL:postgresql://ci:unused@example.invalid/postgres > /tmp/pixinium-worker.log 2>&1 &
           worker_pid=$!
           trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
           for attempt in {1..60}; do

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { revalidatePath } from 'next/cache'
 import { hasPermission } from '@/lib/auth/permissions'
 import { isAgentActor } from '@/lib/agent-identity'
@@ -17,7 +17,7 @@ export async function deleteContentForActor(account: ContentActor | null, input:
   if (!connection) return { error: 'Content writing is not configured.' }
   let row
   try {
-    ;[row] = await neon(connection).query(deleteContentQuery, [account.id, input])
+    ;[row] = await createDatabase(connection).query(deleteContentQuery, [account.id, input])
   } catch (error) {
     console.error('[content.delete]', authDiagnostic(error))
     return { error: 'Content could not be deleted. Please try again.' }

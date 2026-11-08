@@ -5,7 +5,7 @@ import 'server-only'
 
 import { imageFacts, imageCreator } from '@/lib/image-facts'
 import { randomUUID } from 'node:crypto'
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { hasPermission } from '@/lib/auth/permissions'
@@ -80,7 +80,7 @@ export async function createContentForActor(account: ContentActor | null, input:
     if (sourceError) return { error: sourceError }
     const connection = process.env.CATALOG_ADMIN_DATABASE_URL
     if (!isAgentActor(account) && !connection) return { error: 'Content writing is not configured. Set the server-side catalog admin connection.' }
-    const sql = isAgentActor(account) ? undefined : neon(connection!)
+    const sql = isAgentActor(account) ? undefined : createDatabase(connection!)
     setStage('category')
     const categories = isAgentActor(account)
       ? [await agentCall<{ slug: string; metadata_schema_key: string }>(account, 'category', [value.categoryId])]
@@ -166,7 +166,7 @@ export async function createContentForActor(account: ContentActor | null, input:
           const state = await agentCall<string>(account, 'job_state', [account.job!.id])
           if (state && state !== 'succeeded') await deleteGeneratedPackFiles(pendingPack.directory, pendingPack.paths)
         } else {
-          const sql = neon(process.env.CATALOG_ADMIN_DATABASE_URL!)
+          const sql = createDatabase(process.env.CATALOG_ADMIN_DATABASE_URL!)
           const linked = await sql.query('SELECT 1 FROM catalog.assets WHERE provider = $1 AND object_path = ANY($2::text[]) LIMIT 1', ['s3', pendingPack.paths])
           if (!linked.length) await deleteGeneratedPackFiles(pendingPack.directory, pendingPack.paths)
         }

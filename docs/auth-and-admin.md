@@ -2,7 +2,7 @@
 
 Routes: `/login`, `/register`, `/forgot-password`, `/auth/recovery`, `/reset-password`, `/auth/confirm`, `/choose-username`, `/profile`, `/admin`.
 The header's Account link opens the profile (or redirects guests to login).
-Supabase owns passwords and sessions; Neon `catalog.profiles` owns application
+Supabase owns passwords and sessions; Supabase Postgres `catalog.profiles` owns application
 roles. The two active roles are `member` (displayed as User) and `admin`.
 The existing `editor` value is reserved and receives no admin/upload permission.
 Extend `lib/auth/permissions.ts` deliberately when adding roles or permissions.
@@ -46,7 +46,7 @@ server terminal; these distinguish exchange failures from expired tokens
 without logging email addresses, reset links or credentials.
 
 1. Apply the existing catalog migrations through 0003. No new migration is
-   required for this change. Configure a restricted Neon runtime credential with
+   required for this change. Configure a restricted Supabase Postgres runtime credential with
    the grants documented in [entity-model.md](./entity-model.md#hybrid-ownership-and-access).
    Auth operations set `app.user_id` transaction-locally from Supabase's verified
    user, insert missing profiles with role `member`, and select only that UUID.
@@ -68,7 +68,7 @@ without logging email addresses, reset links or credentials.
    [object-storage.md](./object-storage.md). Supabase handles authentication only;
    new uploads do not need a Supabase service-role key or Storage bucket.
 4. Set `CATALOG_ADMIN_DATABASE_URL` to a dedicated server-only catalog writer on
-   the same Neon database as `DATABASE_URL`. The writer needs SELECT on profiles
+   the same Supabase Postgres database as `DATABASE_URL`. The writer needs SELECT on profiles
    and categories (including locks), SELECT/INSERT/UPDATE on tags, INSERT/SELECT
    on items/assets and relationship tables, and USAGE on their identity sequences.
    Existing public-reader RLS policies do not authorize draft access or writes:
@@ -114,7 +114,7 @@ See the [Supabase Google setup guide](https://supabase.com/docs/guides/auth/soci
 
 Register and confirm the intended account, then open `/profile` once. An operator
 must verify its UUID in Supabase Auth and promote that exact profile using the
-trusted Neon owner connection. For example, with a bound UUID parameter:
+trusted Supabase Postgres owner connection. For example, with a bound UUID parameter:
 
 ```sql
 UPDATE catalog.profiles SET role = 'admin' WHERE id = $1::uuid RETURNING id, role;
@@ -185,7 +185,7 @@ use that diagnostic to choose the fix; elapsed time alone is not a diagnosis.
 - Category `email_delivery`: inspect SMTP configuration and Auth/email logs.
 - `signup_disabled` / `email_provider_disabled`: review registration/provider settings.
 - Category `database`: inspect Supabase Auth triggers and its database logs. Signup
-  does not query Neon; moving profile storage cannot fix an Auth insert failure.
+  does not query Supabase Postgres; moving profile storage cannot fix an Auth insert failure.
 - Category `network`: inspect the reported transport code, local DNS/TLS/proxy
   configuration and the Supabase project URL.
 - HTTP 401 / invalid API key: verify URL and publishable key belong to the same
@@ -218,7 +218,7 @@ pnpm test:db
 pnpm test:content
 ```
 
-Then validate with an isolated Supabase/Neon fixture: signup and email confirmation;
+Then validate with an isolated Supabase/Supabase Postgres fixture: signup and email confirmation;
 invalid credentials; expired confirmation; signout; guest redirects; member direct
 access to `/admin` and direct upload-action calls; admin upload; demotion followed
 by upload denial; database/Auth outages; public-bucket rejection; oversized and

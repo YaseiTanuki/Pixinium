@@ -28,6 +28,11 @@
     }
   ],
   "keep_vars": true,
+  "hyperdrive": [
+    { "binding": "DATABASE_POOL", "id": "e8543f1ae19d4dd485daa7415429b610" },
+    { "binding": "CATALOG_ADMIN_POOL", "id": "2d001f4efa4349359b87421ab94501ae" },
+    { "binding": "AGENT_POOL", "id": "66eaa33bcc4a4717af922918fc35bdde" }
+  ],
   "observability": {
     "logs": {
       "enabled": true,

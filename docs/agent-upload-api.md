@@ -1,7 +1,7 @@
 # Independent agent upload API
 
 Agents have their own machine identities in `automation.agents`. They are not
-Supabase users, Neon profiles or administrators. The human Admin Studio keeps
+Supabase users, Supabase Postgres profiles or administrators. The human Admin Studio keeps
 its existing Supabase authentication. The agent API uses only
 `AGENT_DATABASE_URL`, a dedicated login without ownership, BYPASSRLS, role or
 database creation privileges. It has EXECUTE access to an allowlist of checked
@@ -170,7 +170,7 @@ An administrator can open Review to inspect private media, save text/file edits,
 then choose **Publish saved draft**. Only the saved version is approved. Published
 items can be moved back to drafts, which removes their public visibility.
 
-The status action verifies the Supabase account and Neon admin role, rechecks
+The status action verifies the Supabase account and Supabase Postgres admin role, rechecks
 the role inside the SQL write, and requires an active category and cover image.
 Existing takedown triggers still block restricted items from publication.
 Draft review media uses `/api/admin/assets/:id`, guarded by admin authentication;
@@ -215,5 +215,5 @@ stay in the server-side broker; prefix isolation is enforced there and through
 database grants, not by issuing bucket-wide credentials to agent clients.
 
 Validation: in-memory permission/scope/quota/idempotency tests, a real restricted
-login on an isolated Neon branch, concurrent authorization, and a synthetic HTTP
+login on an isolated PostgreSQL test database, concurrent authorization, and a synthetic HTTP
 upload/publication/replay were checked. Fixture storage objects were removed.

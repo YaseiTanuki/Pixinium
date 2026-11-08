@@ -80,8 +80,9 @@ Set `SEO_NOINDEX=false` only for the canonical production deployment.
 
 Set runtime variables and secrets in **Settings > Variables & Secrets** using
 `.env.example` and the local production example as the checklist. In particular,
-configure `DATABASE_URL`, `CATALOG_ADMIN_DATABASE_URL`, private S3 credentials,
-endpoint, region and bucket. Runtime secrets and build secrets are separate.
+configure the restricted Supabase `DATABASE_URL`, `CATALOG_ADMIN_DATABASE_URL`,
+`AGENT_DATABASE_URL` and private Cloudflare R2 `R2_*` settings. R2 uses region
+`auto` internally. Runtime secrets and build secrets are separate.
 Do not add database-owner migration credentials to the Worker. `keep_vars` retains
 dashboard-managed ordinary variables across Wrangler deployments.
 
