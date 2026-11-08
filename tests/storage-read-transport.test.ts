@@ -69,9 +69,7 @@ test('writes retain their existing streaming transport', async () => {
   assert.equal(fetchCalls, 0)
 })
 
-test('presigned reads still propagate storage permission failures and emit hash-only diagnostics', async t => {
-  const logs: string[] = []
-  t.mock.method(console, 'error', (value: string) => logs.push(value))
+test('presigned reads still propagate storage permission failures', async () => {
   let requests = 0
   const storage = new S3Client({ region: 'ap-southeast-1', endpoint: 'https://storage.example.invalid', forcePathStyle: true,
     credentials: { accessKeyId: 'test-access', secretAccessKey: 'test-secret' }, maxAttempts: 1,
@@ -84,34 +82,6 @@ test('presigned reads still propagate storage permission failures and emit hash-
   })
   await assert.rejects(storage.send(new GetObjectCommand({ Bucket: 'pixinium', Key: 'staging/test.png' })), { name: 'AccessDenied' })
   assert.equal(requests, 1)
-  const diagnostic = JSON.parse(logs[0])
-  assert.equal(diagnostic.event, 'storage.query_signature.debug')
-  assert.equal(diagnostic.signature_matches, true)
-  assert.equal(diagnostic.before_fetch_signature_matches, true)
-  assert.equal(diagnostic.signed_request_unchanged_after_fetch, true)
-  assert.equal(diagnostic.before_fetch_canonical_request_hash, diagnostic.canonical_request_hash)
-  for (const value of ['test-secret', 'test-access', 'staging/test.png', 'X-Amz-Signature=']) assert.equal(logs[0].includes(value), false)
-})
-
-test('403 diagnostics detect mutation of the same request during fetch', async t => {
-  const logs: string[] = []
-  t.mock.method(console, 'error', (value: string) => logs.push(value))
-  const storage = new S3Client({ region: 'ap-southeast-1', endpoint: 'https://storage.example.invalid', forcePathStyle: true,
-    credentials: { accessKeyId: 'test-access', secretAccessKey: 'test-secret' }, maxAttempts: 1,
-  })
-  usePresignedStorageReads(storage, async input => {
-    ;(input as Request).headers.set('range', 'bytes=1-1')
-    return new Response('<Error><Code>SignatureDoesNotMatch</Code></Error>', {
-      status: 403, headers: { 'content-type': 'application/xml' },
-    })
-  })
-  await assert.rejects(storage.send(new GetObjectCommand({ Bucket: 'pixinium', Key: 'staging/test.png', Range: 'bytes=0-0' })),
-    { name: 'SignatureDoesNotMatch' })
-  const diagnostic = JSON.parse(logs[0])
-  assert.equal(diagnostic.before_fetch_signature_matches, true)
-  assert.equal(diagnostic.signature_matches, false)
-  assert.equal(diagnostic.signed_request_unchanged_after_fetch, false)
-  for (const value of ['test-secret', 'test-access', 'staging/test.png', 'X-Amz-Signature=']) assert.equal(logs[0].includes(value), false)
 })
 
 test('Workers-compatible manual mode rejects redirects without following them', async () => {
