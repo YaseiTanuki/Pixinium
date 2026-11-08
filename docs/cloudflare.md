@@ -63,6 +63,12 @@ still handles metadata, errors and streaming bodies. Other methods retain the
 SDK's existing transport, including streamed ZIP uploads. Traces identify this
 as `storage.auth_mode=presigned_query` and `storage.transport=fetch`.
 
+The custom `cloudflare-worker.mjs` entry captures Workers fetch before OpenNext
+initializes its runtime wrappers. It passes an internal per-request transport
+through the Workers context for S3 reads only, enforcing `cache: no-store` at
+the native fetch call. Trace `storage.fetch_runtime=workers_native` confirms
+the path in production. OpenNext's global fetch/Request wrappers are unchanged.
+
 Read responses returning 403 emit `storage.query_signature.debug`. This verifies
 the Fetch Request's query signature with an independent Node HMAC calculation;
 only canonical/path/header/signature hashes, a credential fingerprint and match
