@@ -74,6 +74,8 @@ the Fetch Request's query signature with an independent Node HMAC calculation;
 only canonical/path/header/signature hashes, a credential fingerprint and match
 results are recorded. It does not require unredacted URLs from the dashboard.
 It checks the Request passed to fetch, not the request received by Neon.
+The pre-fetch Request is cloned, and both diagnostic HMAC calculations run only
+after a 403; successful reads do not pay for signature-debug recalculation.
 
 Temporary header-signature diagnostics are currently disabled with
 `PIXINIUM_S3_SIGNATURE_DEBUG=false`. They describe the original header-signed SDK
