@@ -11,17 +11,16 @@ const oldSigningHeaders = new Set(['authorization', 'x-amz-date', 'x-amz-securit
 export function usePresignedStorageReads(storage: S3Client, customFetch?: typeof fetch) {
   const reads = new FetchHttpHandler({ requestInit: () => ({ redirect: 'manual', cache: 'no-store' }), customFetch: async (input, init) => {
     const request = input as Request
-    let before: ReturnType<typeof querySignatureSnapshot>
-    try {
-      before = querySignatureSnapshot(request, await storage.config.credentials())
-      if (!before) console.error(JSON.stringify({ event: 'storage.query_signature.check_failed', stage: 'before_fetch' }))
-    } catch {
-      console.error(JSON.stringify({ event: 'storage.query_signature.check_failed', stage: 'before_fetch' }))
-    }
+    // Retain the before-fetch inputs without hashing every successful read.
+    // Expensive diagnostic HMAC work is needed only for failed authorization.
+    const beforeRequest = request.clone()
     const response = await (customFetch ?? fetch)(input, init)
     if (response.status === 403) {
       try {
-        const snapshot = querySignatureSnapshot(request, await storage.config.credentials())
+        const credentials = await storage.config.credentials()
+        const before = querySignatureSnapshot(beforeRequest, credentials)
+        const snapshot = querySignatureSnapshot(request, credentials)
+        if (!before) console.error(JSON.stringify({ event: 'storage.query_signature.check_failed', stage: 'before_fetch' }))
         if (snapshot) {
           setUploadTraceContext({
             'storage.signature.local_recalculation_matches': snapshot.signature_matches,
