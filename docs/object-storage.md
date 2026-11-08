@@ -44,7 +44,9 @@ the public asset route never redirects to a signed storage URL.
 Server-side presigned storage reads use Fetch with `cache: no-store` and reject
 redirects. This avoids intermittent signature failures observed with the
 Cloudflare Worker cache path and prevents caching private storage responses;
-it does not change the browser-facing cache policy below.
+it does not change the browser-facing cache policy below. The Cloudflare build
+preserves `no-store` in OpenNext's Fetch and Request wrappers, which otherwise
+remove the cache option. The build fails if those wrappers change unexpectedly.
 Inline images use `private, no-cache` with ETag/Last-Modified validators. Matching
 If-None-Match requests return 304 after rechecking public visibility, without
 reading the object body. Shared CDN caching is disabled so archived content is
