@@ -69,23 +69,9 @@ through the Workers context for S3 reads only, enforcing `cache: no-store` at
 the native fetch call. Trace `storage.fetch_runtime=workers_native` confirms
 the path in production. OpenNext's global fetch/Request wrappers are unchanged.
 
-Read responses returning 403 emit `storage.query_signature.debug`. This verifies
-the Fetch Request's query signature with an independent Node HMAC calculation;
-only canonical/path/header/signature hashes, a credential fingerprint and match
-results are recorded. It does not require unredacted URLs from the dashboard.
-It checks the Request passed to fetch, not the request received by Neon.
-The pre-fetch Request is cloned, and both diagnostic HMAC calculations run only
-after a 403; successful reads do not pay for signature-debug recalculation.
-
-Temporary header-signature diagnostics are currently disabled with
-`PIXINIUM_S3_SIGNATURE_DEBUG=false`. They describe the original header-signed SDK
-request and should stay disabled while reads use presigned query authorization.
-When enabled for header-signed reads, failures emit `storage.signature.debug`: hashes of canonical
-requests after signing and before the SDK HTTP handler, per-header hashes, a
-credential fingerprint, and local signature verification results. Raw credentials,
-Authorization, signed URLs, object keys and provider messages are omitted. This
-captures the SDK handler boundary; changes inside the HTTP transport or on the
-network require separate verification. Set the variable to `false` after debugging.
+Temporary signature-debug recalculation has been removed. Runtime reads retain
+the SDK's required S3 signing and ordinary operation/status tracing, without
+additional diagnostic HMACs, credential fingerprints or Request clones.
 
 Set the public configuration (`NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
 and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) in Workers Builds before building.

@@ -7,7 +7,6 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createImageThumbnail } from '@/server/services/image-thumbnail'
 import { inspectStorageObject } from './storage-inspection'
 import { addStorageTracing } from './storage-tracing'
-import { addStorageSignatureDebug } from './storage-signature-debug'
 import { usePresignedStorageReads } from './storage-read-transport'
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { STORAGE_FETCH_BINDING } from './storage-fetch-binding'
@@ -29,7 +28,6 @@ export function adminStorage() {
   setUploadTraceContext({ 'storage.fetch_runtime': nativeFetch ? 'workers_native' : 'default' })
   usePresignedStorageReads(storage, nativeFetch)
   addStorageTracing(storage)
-  addStorageSignatureDebug(storage)
   return { bucket: process.env.S3_ASSETS_BUCKET || 'assets', storage }
 }
 

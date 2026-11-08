@@ -26,9 +26,6 @@ importers:
       '@smithy/fetch-http-handler':
         specifier: 5.8.0
         version: 5.8.0
-      '@smithy/signature-v4':
-        specifier: 5.7.4
-        version: 5.7.4
       '@supabase/ssr':
         specifier: 0.12.7
         version: 0.12.7(@supabase/supabase-js@2.118.0)
@@ -84,6 +81,9 @@ importers:
       '@electric-sql/pglite':
         specifier: 0.5.11
         version: 0.5.11
+      '@smithy/signature-v4':
+        specifier: 5.7.4
+        version: 5.7.4
       '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
