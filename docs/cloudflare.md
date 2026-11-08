@@ -56,6 +56,14 @@ private S3 storage; no public source URL is required.
 
 ## Environment variables
 
+Temporary S3 signature diagnostics are enabled by `PIXINIUM_S3_SIGNATURE_DEBUG=true`.
+Failed signed GET/HEAD requests emit `storage.signature.debug`: hashes of canonical
+requests after signing and before the SDK HTTP handler, per-header hashes, a
+credential fingerprint, and local signature verification results. Raw credentials,
+Authorization, signed URLs, object keys and provider messages are omitted. This
+captures the SDK handler boundary; changes inside the HTTP transport or on the
+network require separate verification. Set the variable to `false` after debugging.
+
 Set the public configuration (`NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL`,
 and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) in Workers Builds before building.
 Those values are embedded in browser assets and require a rebuild to change.
