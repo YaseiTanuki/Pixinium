@@ -4,6 +4,7 @@ import { contentSchema } from '@/lib/admin/content'
 import { agentPayloadHash } from '@/lib/agent-identity'
 import { agentCall } from '@/server/services/agent-store'
 import { authDiagnostic } from '@/lib/auth/errors'
+import { setUploadTraceContext } from '@/lib/upload-tracing'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
       return response
     }
     const job = { id: reservation.id!, leaseToken: reservation.leaseToken!, itemId: reservation.itemId! }
+    setUploadTraceContext({ 'agent.job.id': job.id, 'content.item.id': job.itemId })
     let failed = true
     try {
       const result = await createContentForActor({ ...actor, job }, parsed.data, 'agent')
