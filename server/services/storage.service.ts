@@ -6,6 +6,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, CopyOb
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createImageThumbnail } from '@/server/services/image-thumbnail'
 import { inspectStorageObject } from './storage-inspection'
+import { addStorageTracing } from './storage-tracing'
 
 export function storageConfigured() {
   return Boolean(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.AWS_ENDPOINT_URL_S3 && process.env.AWS_REGION)
@@ -14,7 +15,9 @@ export function storageConfigured() {
 export function adminStorage() {
   if (!storageConfigured()) throw new Error('Object storage is not configured.')
   if (new URL(process.env.AWS_ENDPOINT_URL_S3!).protocol !== 'https:') throw new Error('Storage requires HTTPS.')
-  return { bucket: process.env.S3_ASSETS_BUCKET || 'assets', storage: new S3Client({ forcePathStyle: true }) }
+  const storage = new S3Client({ forcePathStyle: true })
+  addStorageTracing(storage)
+  return { bucket: process.env.S3_ASSETS_BUCKET || 'assets', storage }
 }
 
 export async function requirePrivateStorage() {
