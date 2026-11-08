@@ -3,7 +3,7 @@ import { readDownloadSources, validateSourceLinks, type ExternalDownloadSource }
 
 import { listManagedDownloadProviders } from './download-sources.service'
 import { randomUUID } from 'node:crypto'
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { hasPermission } from '@/lib/auth/permissions'
@@ -29,7 +29,7 @@ export async function getEditableContentForActor(account: ContentActor | null, i
   if (!account || isAgentActor(account) || !hasPermission(account.role, 'admin:access') || !/^[1-9][0-9]{0,18}$/.test(id) || BigInt(id) > BigInt('9223372036854775807')) return null
   const connection = process.env.CATALOG_ADMIN_DATABASE_URL
   if (!connection) return null
-  const [row] = await neon(connection).query(editableContentQuery, [id])
+  const [row] = await createDatabase(connection).query(editableContentQuery, [id])
   if (!row) return null
   return { id: String(row.id), title: String(row.title), summary: String(row.summary), description: String(row.description),
     slug: String(row.slug), status: String(row.status), category: String(row.category), schemaKey: String(row.metadata_schema_key),
@@ -45,7 +45,7 @@ export async function updateContentForActor(account: ContentActor | null, input:
   if (BigInt(value.id) > BigInt('9223372036854775807')) return { error: 'Choose a valid content item.' }
   const connection = process.env.CATALOG_ADMIN_DATABASE_URL
   if (!connection) return { error: 'Content writing is not configured.' }
-  const sql = neon(connection)
+  const sql = createDatabase(connection)
   let pendingFiles: { directory: string; paths: string[] } | undefined
   let committed = false
   try {
@@ -118,7 +118,7 @@ export async function setContentStatusForActor(account: ContentActor | null, inp
   if (!parsed.success || BigInt(parsed.data.id) > BigInt('9223372036854775807')) return { error: 'Choose a valid item and status.' }
   if (!process.env.CATALOG_ADMIN_DATABASE_URL) return { error: 'Content writing is not configured.' }
   try {
-    const [row] = await neon(process.env.CATALOG_ADMIN_DATABASE_URL).query(setContentStatusQuery, [account.id, parsed.data.id, parsed.data.status])
+    const [row] = await createDatabase(process.env.CATALOG_ADMIN_DATABASE_URL).query(setContentStatusQuery, [account.id, parsed.data.id, parsed.data.status])
     if (!row) return { error: 'Item unavailable, permissions changed, or an active category and cover image are required to publish.' }
     for (const path of ['/', '/search', '/admin', '/profile', '/sitemap.xml', `/items/${row.category}/${row.slug}`]) revalidatePath(path)
     return { id: String(row.id), status: String(row.status), message: row.status === 'published' ? 'Content published.' : 'Content moved to drafts.',

@@ -4,7 +4,7 @@ import { AdminStudioIntro } from '@/components/admin-studio-intro'
 import { requireAccount } from '@/server/services/auth.service'
 import { AdminUploadForm } from '@/components/admin-upload-form'
 import { listCategories } from '@/server/services/catalog.service'
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { storageConfigured } from '@/server/services/storage.service'
 import { AdminCollectionView } from '@/components/admin-collection-view'
 import { ADMIN_CATALOG_PAGE_SIZE, adminCatalogParams, parseAdminCatalogFilters } from '@/lib/admin/catalog-filters'
@@ -28,7 +28,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   let statusCounts = { draft: 0, published: 0 }
   if (process.env.CATALOG_ADMIN_DATABASE_URL) {
     try {
-      const sql = neon(process.env.CATALOG_ADMIN_DATABASE_URL)
+      const sql = createDatabase(process.env.CATALOG_ADMIN_DATABASE_URL)
       const values = adminCatalogParams(filters)
       const [[count], categoryRows, tagRows, counts] = await Promise.all([
         sql.query(adminCatalogCountQuery, values), sql.query(adminCatalogCategoriesQuery), sql.query(adminCatalogTagsQuery), sql.query(adminCatalogStatusCountsQuery),

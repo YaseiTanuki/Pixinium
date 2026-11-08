@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { NextResponse } from 'next/server'
 import { getAccount } from '@/server/services/auth.service'
 import { hasPermission } from '@/lib/auth/permissions'
@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params
     if (!/^[1-9][0-9]{0,18}$/.test(id) || BigInt(id) > BigInt('9223372036854775807')) return new NextResponse(null, { status: 404, headers })
     if (!process.env.CATALOG_ADMIN_DATABASE_URL) return new NextResponse(null, { status: 503, headers })
-    const [asset] = await neon(process.env.CATALOG_ADMIN_DATABASE_URL).query(`SELECT a.bucket, a.object_path, a.media_type, a.mime_type
+    const [asset] = await createDatabase(process.env.CATALOG_ADMIN_DATABASE_URL).query(`SELECT a.bucket, a.object_path, a.media_type, a.mime_type
       FROM catalog.assets a WHERE a.id = $1::bigint AND a.provider = 's3'
       AND EXISTS (SELECT 1 FROM catalog.item_assets ia JOIN catalog.items i ON i.id = ia.item_id WHERE ia.asset_id = a.id)`, [id])
     if (!asset || asset.bucket !== adminStorage().bucket) return new NextResponse(null, { status: 404, headers })

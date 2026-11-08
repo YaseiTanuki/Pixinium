@@ -1,45 +1,28 @@
-# Hybrid backend
+# Supabase and Cloudflare R2
 
-Supabase owns authentication and sessions. Neon `catalog.profiles` stores profile
-details and application roles: `member` (displayed as User) and `admin`.
-Neon owns website content, including the existing archive. Content queries remain
-in `server/repositories` and use the server-only `DATABASE_URL`.
+Supabase Auth owns identities and sessions. Supabase Postgres owns application
+schemas `catalog` and `automation`: profiles, roles, content metadata, collections
+and independent agent jobs. Private Cloudflare R2 stores uploaded bytes, generated
+thumbnails and ZIPs. Supabase Storage is not used.
 
-The extensible catalog schema, entity relationships, migration workflow, and
-runtime ownership rules are documented in [entity-model.md](./entity-model.md).
-The application uses canonical catalog entities for all content reads.
-Migration 0005 removes the obsolete archive tables and imported metadata snapshots.
-Images is the content category; wallpaper, background and avatar are tags.
+`lib/database.ts` uses the standard PostgreSQL `pg` driver with parameterized lazy
+queries. Transaction-local `app.user_id` settings, profile changes and reads run
+on the same connection. Connections close after each query/transaction instead
+of being shared across Workers requests. Use the Supabase Session pooler for
+IPv4 connectivity; Hyperdrive can be added for Workers connection pooling.
 
-## Supabase clients
+Use separate restricted credentials for public runtime, catalog writer and agent
+broker. Owner credentials are maintenance-only. See [production.md](production.md).
+The server verifies `auth.getUser()`, requires a confirmed non-anonymous user, and
+reads the current role from `catalog.profiles`. No browser-supplied identity grants
+authority. Personal data uses RLS and transaction-local identity. Catalog writes
+remain server-only behind application permission checks. Agents use broker
+functions rather than human login or direct table grants.
 
-- Client Components: import `createClient` from `@/lib/supabase/client`.
-- Server Components, Server Actions, and Route Handlers: import `createClient`
-  from `@/lib/supabase/server` and await it. Create a client per request.
-- `proxy.ts` refreshes auth cookies and forwards the SDK's cache-prevention headers.
+The existing Supabase browser/server clients and Auth cookies are preserved.
+Authenticated pages and auth-changing responses remain private and unshared.
+Public file routes check publication before streaming private R2 objects.
 
-The connection is configured in `.env.local`; `.env.example` lists the variables
-needed for another environment. Configure the same values in the deployment
-environment before building. Only the publishable key belongs in browser code.
-
-## Authorization across databases
-
-For protected account/admin operations, verify the Supabase identity on the server
-using `auth.getUser()` (check the error and require a confirmed, non-anonymous user),
-then read the current role from Neon `catalog.profiles`. Set `app.user_id` to the
-verified UUID in the same transaction as profile creation and selection. Never accept
-a user ID from the browser as proof of identity. Supabase RLS does not protect
-Neon queries. A future Neon owner identifier should reference the Supabase user
-ID logically; these separate databases cannot enforce a cross-database foreign key.
-
-No account table or role migration is required in Supabase. Existing Neon admin
-assignments remain authoritative. Signup itself calls only Supabase Auth; Neon is
-accessed when a confirmed account opens a protected page or performs an upload.
-
-Existing public archive reads remain public. Login, registration, confirmation,
-profiles and an admin-only category-aware content studio are implemented; provider setup and
-validation requirements are in [auth-and-admin.md](./auth-and-admin.md).
-Auth-changing Route Handlers must return private/no-store
-responses, and authenticated pages must not use shared caching.
-
-Reference: https://supabase.com/docs/guides/auth/server-side/creating-a-client
+Fresh initialization creates application schemas and reference data only. It
+preserves Supabase Auth and copies no old content, profiles, API keys or jobs.
+New administrator and machine-agent provisioning is a separate step.

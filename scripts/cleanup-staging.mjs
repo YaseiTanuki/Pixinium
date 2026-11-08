@@ -1,7 +1,10 @@
 import { S3Client, ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { r2Config, requirePrivateR2 } from '../lib/r2-config.ts'
 
-const storage = new S3Client({ forcePathStyle: true })
-const Bucket = process.env.S3_ASSETS_BUCKET || 'assets'
+const config = r2Config()
+requirePrivateR2(config)
+const storage = new S3Client(config.client)
+const Bucket = config.bucket
 const cutoff = Date.now() - 24 * 60 * 60 * 1000
 let removed = 0
 let retained = 0

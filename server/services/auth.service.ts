@@ -1,5 +1,5 @@
 import 'server-only'
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { hasPermission, type Permission } from '@/lib/auth/permissions'
@@ -12,7 +12,7 @@ export async function getAccount() {
   const { data, error } = await supabase.auth.getUser()
   if (error || !data.user || data.user.is_anonymous || !data.user.email_confirmed_at) return null
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required.')
-  const sql = neon(process.env.DATABASE_URL)
+  const sql = createDatabase(process.env.DATABASE_URL)
   const name = typeof data.user.user_metadata?.display_name === 'string'
     ? Array.from(data.user.user_metadata.display_name).slice(0, 100).join('') : ''
   const selectedUsername = usernameSchema.safeParse(data.user.user_metadata?.username)

@@ -1,55 +1,65 @@
-# Production preparation - 5 November 2026
+# Fresh Supabase schema and private R2 deployment
 
-## Git
+Target Auth/Postgres project: `bmwqepkgfcpodckitwbw`.
+Target R2 bucket: `pixinium`, account `56eb9249a6ffe1456901b2f4bb4cbc89`.
+This setup creates fresh application schemas. Existing content, profiles, keys,
+jobs and object bytes are not copied from the previous backend.
 
-- Backup: `backup/pre-production-20261105` at `3158ec9`.
-- Release preparation branch: `production`.
-- Local assistants, skills, MCP settings, Graphify, screenshots, browser profiles,
-  local backups and one-time development scripts are excluded from production
-  tracking. Skills and local artifacts remain on the workstation.
-- Application source, content policies, emails, migrations, regression tests and
-  operational migration/audit/staging-cleanup commands are retained.
+## Maintenance configuration
 
-## Neon
+Fill ignored `.env.supabase-r2.local` with `SUPABASE_PROJECT_REF`,
+`DATABASE_URL_UNPOOLED` (Supabase owner direct or Session pooler connection),
+`MIGRATION_TARGET_HOST`, `R2_ENDPOINT_URL`, `R2_BUCKET_NAME`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, and the verified `R2_BUCKET_PRIVATE` setting.
+The endpoint is the R2 account URL without `/pixinium`.
+Supabase's publishable Auth key is not a database password. Keep owner credentials
+outside Next.js runtime env files.
 
-Project: `solitary-sound-97794541`, database: `neondb`.
+Confirm the R2 bucket privacy settings in the dashboard. For an automated check,
+provide a local `CLOUDFLARE_API_TOKEN` with R2 read permission and run
+`pnpm storage:verify-private`; this management token is not needed by app runtime.
 
-- Production: `br-red-shadow-az49w76w`.
-- Pre-migration backup: `backup-production-20261105`
-  (`br-still-dream-azdesmdo`), created without compute.
-- Rehearsal: `production-migration-check-20261105`
-  (`br-polished-bread-azk6omny`), expires 6 November 2026 at 18:00 UTC.
-
-The 20 migration files retained by this application were rehearsed on a copy of
-production and then applied to production in one transaction. Checksums match
-the release files. The eight existing production archive items were preserved;
-no development items, profiles, collections, agent keys or job history were copied.
-The four active categories and three download-source defaults are present.
-Public catalog and sitemap queries were checked after migration, and RLS remains
-enabled on all catalog and automation tables.
-
-Development contains four additional historical migrations for retired Stories,
-support and editorial features. Those files are not part of the current application
-checkout, so those unused development structures were not copied into production.
-This release follows the retained application history, not a dump of the dev DB.
-
-## Deployment configuration
-
-Local `.env.local` still targets development. Production migration credentials
-are in ignored `.env.production-db.local`; it is not a Next.js runtime env file.
-To check/apply migrations explicitly from this workstation:
+## Review and initialize
 
 ```sh
-node --env-file=.env.production-db.local --import tsx scripts/migrate-database.ts
+pnpm db:prepare-supabase
+pnpm db:init-supabase
+pnpm db:init-supabase --apply
 ```
 
-Configure runtime environment variables from `.env.example` in the hosting secret
-manager. Set production database connections, Supabase Auth callbacks/email delivery,
-private storage credentials/CORS and canonical domain redirects explicitly.
-No production administrator profile or machine credential was copied or issued.
-The optional agent API remains inactive until its restricted login is configured.
+The first command writes `.tmp/supabase/fresh-schema.sql` without a network call.
+The second inspects the confirmed target read-only. The third applies the fresh
+schema and saves restricted login credentials to an ignored
+`.env.supabase-runtime.<timestamp>.local` file. Passwords never go to stdout.
 
-This preparation does not publish a website, push Git branches or change the local
-development DB connection. Before exposing preview deployments publicly, resolve
-the preview robots/noindex policy described in the SEO review and confirm sitemap
-refreshes for creation, deletion and file replacement as well as publication changes.
+Initialization refuses existing `catalog`/`automation` schemas, an app migration
+ledger/legacy archive or colliding app roles. It is transactional and preserves
+Supabase Auth/Storage schemas. Reference data has four categories and three
+download sources; user/content/job tables start empty.
+
+If using the generated SQL in Supabase SQL Editor instead, it creates NOLOGIN app
+roles; securely provision their login credentials separately. Do not put the
+`postgres` owner connection into application runtime variables.
+
+## Runtime
+
+- `DATABASE_URL`: restricted `pixinium_runtime` connection.
+- `CATALOG_ADMIN_DATABASE_URL`: restricted `pixinium_catalog_admin` connection.
+- `AGENT_DATABASE_URL`: broker-only `pixinium_agent_api` connection.
+- Preserve the existing Supabase Auth public URL/key and canonical site URL.
+- Set `R2_*` separately. Disable r2.dev and public custom-domain access before
+  confirming privacy. R2's S3 API cannot inspect these public-access settings.
+- Preserve Cloudflare Access and independent agent authentication.
+
+For Workers, Hyperdrive can offload database connection setup: bind separate
+configs as `DATABASE_POOL`, `CATALOG_ADMIN_POOL` and `AGENT_POOL` for the matching
+restricted roles. Disable query caching on all three configs because requests
+use RLS and transaction-local identity. The driver selects only the pool matching
+its configured runtime URL; maintenance/local commands keep their direct/pooler URL.
+Pool IDs must be provisioned and added to Wrangler before using this option.
+
+Initialize and verify the target, then configure hosting runtime secrets before
+releasing the migration branch. Validate catalog/auth, role restrictions, file
+streaming, private draft creation and idempotent replay. Fresh schema setup does
+not assign an administrator or copy previous machine credentials; provision those
+explicitly for the new target.

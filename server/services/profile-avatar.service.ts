@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { randomUUID } from 'node:crypto'
-import { neon } from '@neondatabase/serverless'
+import { createDatabase } from '@/lib/database'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { authDiagnostic } from '@/lib/auth/errors'
@@ -59,7 +59,7 @@ export async function saveAvatarForActor(account: ProfileAvatarActor, input: unk
       return { error: 'The uploaded image is invalid. Please choose another image.' }
     }
     if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required.')
-    const sql = neon(process.env.DATABASE_URL)
+    const sql = createDatabase(process.env.DATABASE_URL)
     const results = await sql.transaction([
       sql`SELECT set_config('app.user_id', ${account.id}, true)`,
       sql`SELECT avatar_path FROM catalog.profiles WHERE id = ${account.id}::uuid FOR UPDATE`,

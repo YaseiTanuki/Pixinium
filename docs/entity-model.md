@@ -1,9 +1,9 @@
 # Catalog entity model
 
-The catalog belongs in **Neon**. **Supabase** remains the authority for users,
-sessions, and authentication. Media can live in Supabase Storage or Cloudflare R2; Neon stores
+The catalog belongs in **Supabase Postgres**. Supabase Auth owns users, sessions
+and authentication. Media lives in private **Cloudflare R2**; Postgres stores
 its bucket/path reference. Existing externally hosted artwork remains supported.
-There is no second copy of passwords, sessions, or auth users in Neon.
+Application schemas do not duplicate passwords, sessions or Supabase Auth's users.
 
 The application reads the canonical catalog through `server/services/catalog.service.ts`.
 Home, search, `/api/catalog`, and item details use catalog entities. Item URLs are
@@ -118,19 +118,19 @@ Promote attributes to typed columns or a dedicated detail table when they need
 range filters, indexes, relationships, or stronger constraints. Do not build an
 untyped relationship model inside JSON. Intended uses belong in `tags` and `item_tags`.
 
-The frontend loads active categories from Neon and filters by category slug.
+The frontend loads active categories from Supabase Postgres and filters by category slug.
 Facts render their stored labels and values; accent colors and cover focal points
 are applied as styles. The generic detail layout supports new category rows.
 
 ## Hybrid ownership and access
 
 `catalog` is private to the app server. Do not expose it through Supabase's Data
-API or configure a browser to query Neon directly. No Supabase database migration
+API or configure a browser to query Supabase Postgres directly. A Supabase database initialization
 is required for this model.
 
 - `profiles.id` logically references Supabase `auth.users.id`; the cross-provider
   reference cannot be a foreign key. `collections.owner_user_id` now has a real
-  Neon FK to `profiles.id`, with cascade deletion of collections/memberships.
+  Supabase Postgres FK to `profiles.id`, with cascade deletion of collections/memberships.
 - Provision a profile only after verifying the Supabase identity. Use the verified
   UUID, default role `member`, and `ON CONFLICT (id) DO NOTHING` for retry-safe
   onboarding. Never import a role from user metadata. Existing collection owners
@@ -144,7 +144,7 @@ is required for this model.
 - The server must verify the Supabase session using `auth.getClaims()`, check the
   error and `data?.claims?.sub`, and use that verified UUID. Never trust an owner
   ID, JWT decoded without verification, or editable user metadata from a client.
-- On the **same connection and transaction** as a private Neon query, call
+- On the **same connection and transaction** as a private Supabase Postgres query, call
   `SELECT set_config('app.user_id', $1, true)` with the verified subject. The last
   argument makes the value transaction-local; it must not leak through pooling.
   Keep explicit owner predicates in write queries as well as RLS.
@@ -176,7 +176,7 @@ No runtime grants or login credentials are created automatically. Keep
 provisioned pooled runtime credential for catalog application queries.
 
 Account deletion needs an idempotent server-side cleanup workflow: revoke the
-Supabase sessions, delete the user's Neon profile (collections/memberships cascade), then
+Supabase sessions, delete the user's Supabase Postgres profile (collections/memberships cascade), then
 delete their Supabase identity. Track failures durably and retry; reconcile users
 deleted directly through the Supabase dashboard as well. Do not assume deleting
 an auth user invalidates already-issued access tokens. Strict revocation-sensitive
@@ -188,7 +188,7 @@ An asset has exactly one location: an external HTTPS URL **or** a bucket and
 object path under provider `supabase` or `r2`. The unique storage index includes
 `(provider, bucket, object_path)` so providers can share names without collision.
 One configured account per provider is assumed; keep account endpoints and keys
-in server configuration, not asset rows. Store neither file bytes nor expiring signed URLs in Neon.
+in server configuration, not asset rows. Store neither file bytes nor expiring signed URLs in Supabase Postgres.
 Generate signed URLs per request for private objects after authorization; public
 preview assets may use public buckets. Provider-specific URL resolvers, credentials,
 Storage policies/R2 permissions, and buckets remain separate work and must match
@@ -224,26 +224,10 @@ content is substituted. Private objects require a signed-URL resolver before use
 The local suite uses PGlite to execute real Postgres SQL and checks backfill,
 fresh installs, repeatability, rollback, constraints, new categories, private
 ownership, public sharing, hidden drafts/assets, and transaction-local identity.
-It does not substitute for testing Neon branch permissions or Supabase Storage.
+It does not substitute for testing live Supabase role grants and private R2 access.
 
-## Database audit (2026-10-22)
+## Fresh Supabase deployment
 
-A read-only inspection of the configured Neon database confirmed:
-
-- Only `public.archive_items` currently exists. No catalog or migration ledger
-  has been deployed, so the changes above remain staged.
-- The live table has a title primary key, a three-category CHECK, and only the
-  primary-key index. The new model addresses those identity/category limits.
-- The current connection uses `neondb_owner` with `BYPASSRLS`. Replace the runtime
-  credential with a restricted role before enabling private profiles/collections;
-  merely adding RLS policies while keeping that credential does not isolate users.
-- No private data tables or policies were present. The inspection queried system
-  catalogs only and did not modify data or inspect personal records.
-
-Repeat the schema/role inspection with `pnpm db:audit`. Deployment and credential
-provisioning have not been performed as part of this schema revision.
-
-Provider references:
-[Supabase server identity](https://supabase.com/docs/guides/auth/server-side/creating-a-client),
-[Neon serverless transactions](https://neon.com/docs/serverless/serverless-driver),
-[PGlite local Postgres](https://pglite.dev/docs/).
+Initialize a clean application schema using `pnpm db:prepare-supabase` and
+`pnpm db:init-supabase`. This includes reference categories/download sources and
+restricted role grants, with no existing content copied. See [production.md](production.md).

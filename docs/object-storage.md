@@ -5,16 +5,17 @@ storage through `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner` with
 `forcePathStyle: true`. Next.js loads `.env.local`; no dotenv import is needed
 inside the application.
 
-Set server-only `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
-`AWS_ENDPOINT_URL_S3`, `AWS_REGION`, and `S3_ASSETS_BUCKET` (default: `assets`).
-Keep the bucket private. `CATALOG_ADMIN_DATABASE_URL` must point to the same Neon
-database and allow the authenticated admin writer to save catalog rows. Apply
-migrations through 0008 to enable S3 assets with original-download and thumbnail roles.
+Set server-only `R2_ENDPOINT_URL`, `R2_BUCKET_NAME`, `R2_ACCESS_KEY_ID`, and
+`R2_SECRET_ACCESS_KEY`. Use the account endpoint without a bucket suffix; the SDK
+uses region `auto`. Keep both the r2.dev public development URL and public custom
+domains disabled. Set `R2_BUCKET_PRIVATE=true` only after checking those settings.
+`CATALOG_ADMIN_DATABASE_URL` points to the same Supabase project as `DATABASE_URL`.
 
-This development workspace uses `S3_ASSETS_BUCKET=pixinium`. Its catalog writer
-uses the existing migration connection configured locally; no new DB role was created.
-
-The server checks the current admin role, bucket ACL and bucket policy before issuing a five-minute signed PUT
+R2 does not support the S3 ACL or bucket-policy inspection APIs. Uploads fail
+closed until private configuration is explicitly confirmed, then HeadBucket
+checks authenticated bucket access. This confirmation is a deployment assertion,
+not continuous monitoring of later dashboard changes. The server checks the
+current application role before issuing a five-minute signed PUT
 for a random `staging/<user-id>/<uuid>.<extension>` key. The signature binds the
 content type and byte length. The browser uploads directly, with a 50 MiB limit.
 Before saving, the server checks ownership, actual size, content type and ETag,
@@ -35,16 +36,15 @@ the cover thumbnail, up to five WebP previews, and a generated ZIP. See [Asset p
 For a multi-file item, the first image supplies its single thumbnail; all originals
 remain downloadable. Publishing requires an image; agent submissions remain private drafts until admin review.
 
-Neon stores bucket/object keys, never expiring URLs. `/api/assets/<id>` checks
+Supabase Postgres stores bucket/object keys, never expiring URLs. `/api/assets/<id>` checks
 published status and active category before serving any data. Download originals
 stream unchanged; `?view=1` serves image originals inline for detail/SEO without
 counting a download. Generated Images thumbnails stream with noindex. Covers and
 previews in all categories also stream inline through the same stable API URLs;
 the public asset route never redirects to a signed storage URL.
-Server-side presigned storage reads request `cache: no-store` and reject
-redirects. OpenNext's Cloudflare runtime can strip the cache option; it must
-not be relied on to resolve intermittent provider signature errors. This does
-not change the browser-facing cache policy below.
+Server-side presigned storage reads use native Workers fetch with `cache: no-store`
+and reject redirects, independently of app-level fetch wrappers. This does not
+change the browser-facing cache policy below.
 Inline images use `private, no-cache` with ETag/Last-Modified validators. Matching
 If-None-Match requests return 304 after rechecking public visibility, without
 reading the object body. Shared CDN caching is disabled so archived content is
@@ -61,13 +61,13 @@ objects. Successful saves remove staging only after the database commit. Failed
 saves preserve staging for retry. Leaving the form sends a same-origin authenticated
 cleanup beacon; browser/network failure can prevent its delivery. Starting another
 upload also sweeps up to 1,000 of that admin's staging objects older than 24 hours.
-For a full periodic sweep, schedule `node --env-file=.env.local scripts/cleanup-staging.mjs`.
+For a full periodic sweep, schedule `node --env-file=.env.local --import tsx scripts/cleanup-staging.mjs`.
 This script only deletes `staging/` objects older than 24 hours. No scheduler is
 installed by this change. Final copies from failed DB saves need separate orphan
 maintenance; never delete referenced content. Do not assume storage lifecycle
 policies execute automatically.
 
-Reference: [Neon S3 compatibility](https://neon.com/docs/storage/s3-compatibility).
+Reference: [Cloudflare R2 S3 compatibility](https://developers.cloudflare.com/r2/api/s3/api/).
 
 ## Category storage layout
 
