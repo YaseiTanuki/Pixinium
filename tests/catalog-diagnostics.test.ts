@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { catalogDiagnostic, withCatalogDiagnostics } from '../lib/catalog-diagnostics'
 
-const connection = 'postgresql://runtime:private-password@private-host/neondb'
+const connection = 'postgresql://runtime:private-password@private-host/postgres'
 
 test('catalog diagnostics classify configuration without serializing credentials', () => {
   assert.equal(catalogDiagnostic(new Error('missing config'), undefined).configuration, 'missing')
