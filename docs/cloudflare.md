@@ -26,6 +26,9 @@ dashboard setting; changing Git branches or this workflow does not update it.
 `cf:build` runs both the Next.js build and the OpenNext conversion. Do not replace
 the package's `build` script with this command: OpenNext calls `build` internally.
 `cf:deploy` deploys an already built Worker and populates the incremental cache.
+Its wrapper supplies loopback fixture URLs only for OpenNext's local deployment
+proxy, which does not query Postgres. Production connections still use the three
+Hyperdrive bindings; local application development must provide real local URLs.
 For local verification after `cf:build`, run `pnpm cf:preview`.
 The sitemap reads the catalog at request time, so builds do not require a database
 credential or retain catalog data from a previous backend.
