@@ -1,0 +1,2 @@
+# Keep dependency patch bytes stable between Windows and Linux installs.
+patches/*.patch text eol=lf
