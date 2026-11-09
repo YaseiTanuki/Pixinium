@@ -14,6 +14,7 @@ Fill ignored `.env.supabase-r2.local` with `SUPABASE_PROJECT_REF`,
 The endpoint is the R2 account URL without `/pixinium`.
 Supabase's publishable Auth key is not a database password. Keep owner credentials
 outside Next.js runtime env files.
+`pnpm db:migrate` reads this maintenance file directly, rather than Next.js env.
 The PostgreSQL adapter includes Supabase's public database CA and verifies both
 the certificate chain and hostname. Maintenance URLs use `sslmode=verify-full`.
 Local/Hyperdrive connections retain their own TLS configuration.
