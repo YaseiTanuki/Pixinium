@@ -1,0 +1,121 @@
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index aeeba2bfd4a50b85e89f6a4abb6aaa918201d33e..de407efac593c26cafc00d47b702a5baede486a7 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -9,6 +9,8 @@ export declare class CloudflareSocket extends EventEmitter {
+     destroyed: boolean;
+     private _upgrading;
+     private _upgraded;
++    private _ending;
++    private _closed;
+     private _cfSocket;
+     private _cfWriter;
+     private _cfReader;
+diff --git a/dist/index.js b/dist/index.js
+index eb6bbf2d44d5ae85ae9e9b37dd245dd5c9903a0b..aba90d81b5f16cd8bfb5437989daa494fea327f4 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -13,6 +13,8 @@ class CloudflareSocket extends events_1.EventEmitter {
+         this.destroyed = false;
+         this._upgrading = false;
+         this._upgraded = false;
++        this._ending = false;
++        this._closed = false;
+         this._cfSocket = null;
+         this._cfWriter = null;
+         this._cfReader = null;
+@@ -61,7 +63,16 @@ class CloudflareSocket extends events_1.EventEmitter {
+         // eslint-disable-next-line no-constant-condition
+         while (true) {
+             log('awaiting receive from CF socket');
+-            const { done, value } = await this._cfReader.read();
++            let result;
++            try {
++                result = await this._cfReader.read();
++            }
++            catch (error) {
++                if (this._ending || this._closed)
++                    break;
++                throw error;
++            }
++            const { done, value } = result;
+             log('CF socket received:', done, value);
+             if (done) {
+                 log('done');
+@@ -96,6 +107,7 @@ class CloudflareSocket extends events_1.EventEmitter {
+     }
+     end(data = Buffer.alloc(0), encoding = 'utf8', callback = () => { }) {
+         log('ending CF socket');
++        this._ending = true;
+         this.write(data, encoding, (err) => {
+             const socket = this._cfSocket;
+             const closePromise = socket?.close();
+@@ -103,6 +115,7 @@ class CloudflareSocket extends events_1.EventEmitter {
+                 ?.then(() => {
+                 if (this._cfSocket === socket) {
+                     this._cfSocket = null;
++                    this._closed = true;
+                     this.emit('close');
+                 }
+             })
+@@ -140,6 +153,7 @@ class CloudflareSocket extends events_1.EventEmitter {
+                 log('CF socket closed');
+                 if (this._cfSocket === socket) {
+                     this._cfSocket = null;
++                    this._closed = true;
+                     this.emit('close');
+                 }
+             }
+diff --git a/src/index.ts b/src/index.ts
+index 527b433f524a0742fb51297cf22ef59db9d0f48c..7823575423721b9bd7954532bc6fe28558c4ae12 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -10,6 +10,8 @@ export class CloudflareSocket extends EventEmitter {
+ 
+   private _upgrading = false
+   private _upgraded = false
++  private _ending = false
++  private _closed = false
+   private _cfSocket: Socket | null = null
+   private _cfWriter: WritableStreamDefaultWriter | null = null
+   private _cfReader: ReadableStreamDefaultReader | null = null
+@@ -65,7 +67,14 @@ export class CloudflareSocket extends EventEmitter {
+     // eslint-disable-next-line no-constant-condition
+     while (true) {
+       log('awaiting receive from CF socket')
+-      const { done, value } = await this._cfReader!.read()
++      let result: ReadableStreamReadResult<Uint8Array>
++      try {
++        result = await this._cfReader!.read()
++      } catch (error) {
++        if (this._ending || this._closed) break
++        throw error
++      }
++      const { done, value } = result
+       log('CF socket received:', done, value)
+       if (done) {
+         log('done')
+@@ -110,6 +119,7 @@ export class CloudflareSocket extends EventEmitter {
+ 
+   end(data = Buffer.alloc(0), encoding: BufferEncoding = 'utf8', callback: (...args: unknown[]) => void = () => {}) {
+     log('ending CF socket')
++    this._ending = true
+     this.write(data, encoding, (err) => {
+       const socket = this._cfSocket
+       const closePromise = socket?.close()
+@@ -117,6 +127,7 @@ export class CloudflareSocket extends EventEmitter {
+         ?.then(() => {
+           if (this._cfSocket === socket) {
+             this._cfSocket = null
++            this._closed = true
+             this.emit('close')
+           }
+         })
+@@ -156,6 +167,7 @@ export class CloudflareSocket extends EventEmitter {
+           log('CF socket closed')
+           if (this._cfSocket === socket) {
+             this._cfSocket = null
++            this._closed = true
+             this.emit('close')
+           }
+         } else {
