@@ -60,3 +60,15 @@ test('guests can still open the archive', async () => {
   assert.ok(await page.visit())
   assert.equal(page.reads().catalogReads, 2)
 })
+
+test('OAuth failures returned to Site URL show login retry instead of the archive or code exchange', async () => {
+  const page = home({ username: null })
+  for (const params of [
+    { error: 'invalid_request', error_code: 'bad_oauth_state', error_description: 'private provider details' },
+    { error_code: 'bad_oauth_state' },
+    { error: 'access_denied', code: 'must-not-exchange' },
+  ]) {
+    await assert.rejects(page.visit(params), error => error.path === '/login?error=oauth')
+  }
+  assert.deepEqual(page.reads(), { accountReads: 0, catalogReads: 0 })
+})
