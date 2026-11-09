@@ -23,10 +23,9 @@ We process information to provide services you request, meet applicable legal ob
 
 Providers receive information needed for their role. The services used by this website include:
 
-- Supabase: account authentication, identity-provider connections, sessions and recovery flows.
-- Neon: application account records, profiles, saved collections and catalog data. The configured object-storage service stores uploaded files such as avatars and catalog assets.
+- Supabase: account authentication, identity-provider connections, sessions, recovery flows, application account records, profiles, saved collections and catalog data.
 - Vercel Web Analytics: website usage statistics in production when analytics is enabled. It uses request-derived visitor identifiers rather than third-party analytics cookies. See [Vercel's analytics privacy information](https://vercel.com/docs/analytics/privacy-policy).
-- Cloudflare, where configured for the deployment: domain delivery, security, caching or storage services may process network requests and related logs.
+- Cloudflare: website hosting, domain delivery, security and caching. Cloudflare R2 stores uploaded files such as avatars and catalog assets; these services may process network requests and related logs.
 - Brevo, where configured as the email delivery provider: recipient addresses, transactional email content and delivery diagnostics needed to send account messages.
 - Hosting and email providers: technical processing and correspondence needed to run the website and respond to requests.
 
