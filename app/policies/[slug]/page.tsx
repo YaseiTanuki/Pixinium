@@ -1,11 +1,10 @@
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PolicyContent } from '@/components/policy-content'
 import { POLICIES, POLICY_CONTACT, POLICY_RELEASE, findPolicy, policyHref } from '@/lib/policies'
 import { parsePolicyMarkdown } from '@/lib/policy-markdown'
 import { pageMetadata } from '@/lib/seo'
+import { POLICY_SOURCES } from '@/lib/generated/site-assets'
 
 export const dynamicParams = false
 
@@ -28,7 +27,7 @@ export default async function PolicyPage({ params }: { params: Promise<{ slug: s
   const { slug } = await params
   const policy = findPolicy(slug)
   if (!policy) notFound()
-  const source = await readFile(path.join(process.cwd(), 'content', 'policies', `${policy.slug}.md`), 'utf8')
+  const source = POLICY_SOURCES[policy.slug]
   const sections = parsePolicyMarkdown(source)
 
   return <>

@@ -10,10 +10,13 @@ import { redirect } from 'next/navigation'
 import { getAccount } from '@/server/services/auth.service'
 export const metadata: Metadata = { ...pageMetadata({ title: SITE_TITLE, description: SITE_DESCRIPTION, path: '/' }), title: { absolute: SITE_TITLE } }
 export const dynamic = 'force-dynamic'
-export default async function Page({ searchParams }: { searchParams: Promise<{ code?: string | string[] }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ code?: string | string[]; error?: string | string[]; error_code?: string | string[] }> }) {
  // Supabase can return to Site URL when the requested callback is not allowlisted.
  // Exchange the code before rendering the archive or checking the new session.
- const { code } = await searchParams
+ const { code, error, error_code } = await searchParams
+ // Auth also sends failed OAuth attempts to Site URL. Show the retry notice
+ // instead of silently rendering the archive, and discard provider error text.
+ if (error !== undefined || error_code !== undefined) redirect('/login?error=oauth')
  if (typeof code === 'string') redirect(`/auth/callback?${new URLSearchParams({ code })}`)
  const account = await getAccount()
  if (account && !account.username) redirect('/choose-username')
