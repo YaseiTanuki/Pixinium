@@ -1,4 +1,7 @@
 import { fileURLToPath } from 'node:url'
+import { generateSiteAssets } from './scripts/generate-site-assets.mjs'
+
+generateSiteAssets()
 
 const cloudflareBuild = process.env.PIXINIUM_CLOUDFLARE_BUILD === '1'
 const thumbnailModule = '@/server/services/image-thumbnail'

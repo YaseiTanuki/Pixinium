@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { PolicyContent } from '../components/policy-content'
 import { POLICIES, POLICY_CONTACT, findPolicy, policyHref } from '../lib/policies'
 import { parsePolicyMarkdown, policyLinkAllowed } from '../lib/policy-markdown'
+import { POLICY_SOURCES } from '../lib/generated/site-assets'
 
 test('policy lookup rejects unknown names rather than resolving arbitrary files', () => {
   for (const slug of ['../terms', '__proto__', 'constructor', 'missing']) {
@@ -30,6 +31,7 @@ test('every policy has readable source, working section anchors and resolvable p
   const documents = new Map<string, ReturnType<typeof parsePolicyMarkdown>>()
   for (const policy of POLICIES) {
     const source = await readFile(new URL(`../content/policies/${policy.slug}.md`, import.meta.url), 'utf8')
+    assert.equal(POLICY_SOURCES[policy.slug], source.replace(/\r\n/g, '\n'), `Stale bundled policy: ${policy.slug}`)
     const sections = parsePolicyMarkdown(source)
     assert.ok(sections.length > 0)
     assert.ok(sections.every(section => section.blocks.length > 0))
