@@ -10,7 +10,7 @@ test('R2 configuration rejects legacy/malformed endpoints and requires explicit 
   assert.equal(config.client.endpoint, env.R2_ENDPOINT_URL)
   assert.throws(() => requirePrivateR2(config), /public development URL/)
   assert.doesNotThrow(() => requirePrivateR2(r2Config({ ...env, R2_BUCKET_PRIVATE: 'true' })))
-  for (const endpoint of [env.R2_ENDPOINT_URL + '/pixinium', 'https://storage.neon.tech', env.R2_ENDPOINT_URL + '?other=1', env.R2_ENDPOINT_URL.replace('https:', 'http:')]) {
+  for (const endpoint of [env.R2_ENDPOINT_URL + '/pixinium', 'https://storage.example.invalid', env.R2_ENDPOINT_URL + '?other=1', env.R2_ENDPOINT_URL.replace('https:', 'http:')]) {
     assert.throws(() => r2Config({ ...env, R2_ENDPOINT_URL: endpoint }), /R2 account endpoint/)
   }
 })

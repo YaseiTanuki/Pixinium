@@ -1,5 +1,5 @@
 -- Additive migration: the current archive remains readable during rollout.
--- Run in Neon, never in Supabase. catalog is not a browser-facing Data API schema.
+-- catalog is private application data, not a browser-facing Data API schema.
 CREATE SCHEMA catalog;
 REVOKE ALL ON SCHEMA catalog FROM PUBLIC;
 
