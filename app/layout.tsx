@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Nunito } from 'next/font/google'
 import { MotionProvider } from '@/components/motion'
+import { CategoryNavigationProvider } from '@/components/category-navigation-state'
 import './globals.css'
 import { SITE_DESCRIPTION, SITE_TITLE, pageMetadata, siteOrigin } from '@/lib/seo'
 
@@ -46,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${contentFont.variable} ${headingFont.variable}`}>
       <body className="antialiased">
-        <MotionProvider>{children}</MotionProvider>
+        <MotionProvider><CategoryNavigationProvider>{children}</CategoryNavigationProvider></MotionProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

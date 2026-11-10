@@ -7,7 +7,7 @@ import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { useRouter } from 'next/navigation'
 import { ViewTransition } from 'react'
-import { ArrowDown, ArrowRight, ArrowUpRight, Heart, Moon, Music2, Search, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUpRight, Heart, Moon, Music2, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
 import { ArtworkImage } from '@/components/artwork-image'
 import { MasonryGrid } from '@/components/masonry-grid'
@@ -15,11 +15,14 @@ import { CATALOG_DISPLAY, categoryHref, itemHref } from '@/lib/catalog'
 import { contentKind } from '@/lib/content-types'
 import type { CatalogDetail, Category } from '@/lib/entities/catalog'
 import { categoryIcon } from '@/lib/category-icons'
-import { FloatingPixels, MotionLink, Reveal, fadeUp, popIn, stagger } from '@/components/motion'
+import { MotionLink, Reveal, fadeUp, popIn, stagger } from '@/components/motion'
+import { HomeIntro } from '@/components/home-intro'
+import { useRememberCategories } from '@/components/category-navigation-state'
 import { motion } from 'motion/react'
 
 export default function Home({ items, categories, spotlightId, musicId, initialQuery = '' }: { items: CatalogDetail[]; categories: Category[]; spotlightId: string | null; musicId: string | null; initialQuery?: string }) {
   const router = useRouter()
+  useRememberCategories(categories)
   const visible = items.filter((card) =>
     `${card.item.title} ${card.item.summary} ${card.category.name} ${card.tags.map(tag => tag.name).join(' ')}`.toLowerCase().includes(initialQuery.toLowerCase())).slice(0, CATALOG_DISPLAY.homeItems)
   const spotlight = items.find(card => card.item.id === spotlightId)
@@ -34,10 +37,7 @@ export default function Home({ items, categories, spotlightId, musicId, initialQ
     <SiteHeader />
 
     <main id="main" className="home-shell">
-      <section className="home-intro" aria-labelledby="home-title"><FloatingPixels />
-              <div className="intro-copy"><p className="eyebrow"><span className="status-dot" />YOUR LITTLE CORNER OF THE INTERNET</p><h1 id="home-title">Less scrolling.<br />More <span className="happy-underline">happy finds.</span></h1><p className="intro-description">A fresh screen. A good soundtrack. A tiny escape.<br className="desktop-break" /> Find something that feels a little more like you.              </p></div>
-                      <div className="intro-search"><span className="search-note"><Sparkles size={15} aria-hidden="true" /> What are you in the mood for?</span><form action="/search" method="get" role="search" className="home-search"><Search size={19} aria-hidden="true" /><label className="sr-only" htmlFor="home-query">Search wallpapers, music, and games</label><input id="home-query" name="q" type="search" autoComplete="off" placeholder="Find your next little favorite…" /><button type="submit" aria-label="Search archive"><ArrowRight size={19} /></button></form><div className="search-suggestions"><span>Try a little</span><Link href="/search?q=cozy">cozy</Link><Link href="/search?q=night">night</Link><Link href="/search?q=chaos">                      chaos ↗</Link></div></div>
-                            </section>
+      <HomeIntro />
 
                             <section className="feature-grid" aria-label="Discoveries">
                               <Link className="feature-main" href={spotlight ? itemHref(spotlight) : imageCategoryHref}>

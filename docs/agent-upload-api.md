@@ -101,6 +101,9 @@ localhost. Never include API keys in URLs or forward them to object storage.
 | DELETE | `/api/agent/uploads` | Discard only owned, unclaimed temporary files |
 | POST | `/api/agent/content` | Idempotent draft submission using staged files |
 
+For category-specific metadata examples and generation rules, see the
+[AI category metadata template](ai-category-metadata-template.md).
+
 Upload JSON is `{ "name": "sunset.png", "size": 12345 }`. PUT the actual bytes
 to the returned URL using its supplied headers. Staging paths have the form
 `agents/<agent-id>/<upload-id>.<ext>`, distinct from user/admin staging. Final
