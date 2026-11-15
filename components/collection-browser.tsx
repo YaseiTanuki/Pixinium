@@ -42,7 +42,7 @@ export function CollectionBrowser({ items, categories }: { items: SavedCatalogCa
       {visible.length ? <MasonryGrid className={styles.masonry}>{visible.map(item => {
         const category = categories.find(category => category.id === item.category.id)
         return <SavedEntry key={item.item.id} item={item} kind={contentKind(category?.metadataSchemaKey)} />
-      })}</MasonryGrid> : <div className={styles.empty}><Heart size={23} aria-hidden="true" /><h4>{filtered ? 'No saved finds match these filters.' : 'No saved finds yet.'}</h4><p>{filtered ? 'Try other tags or clear your filters to see your collection.' : 'Collect something you love and it will appear here.'}</p>{filtered ? <button type="button" onClick={() => setApplied(EMPTY_FILTERS)}>Clear filters</button> : <Link href="/search">Explore the archive <ArrowUpRight size={15} aria-hidden="true" /></Link>}</div>}
+      })}</MasonryGrid> : <div className={styles.empty}><Heart size={23} aria-hidden="true" /><h4>{filtered ? 'No saved finds match these filters.' : 'No saved finds yet.'}</h4><p>{filtered ? 'Try other tags or clear your filters to see your collection.' : 'Collect something you love and it will appear here.'}</p>{filtered ? <button type="button" onClick={() => setApplied(EMPTY_FILTERS)}>Clear filters</button> : <Link href="/search">Explore the Mine <ArrowUpRight size={15} aria-hidden="true" /></Link>}</div>}
     </div>
   </div>
 }

@@ -17,10 +17,10 @@ export function ProfileCollection({ items, categories: availableCategories, unav
       <div><Layers3 size={18} aria-hidden="true" /><strong>{hydrated && !unavailable ? categories : '—'}</strong><span>Categories collected</span></div>
       <div><Monitor size={18} aria-hidden="true" /><strong>Your account</strong><span>Saved across devices</span></div>
     </div>
-    <div className="profile-section-heading"><div><h2 id="collection-title">Your collection</h2><p>Good finds, kept close.</p></div></div>
+    <div className="profile-section-heading"><div><h2 id="collection-title">My Finds</h2><p>Good finds, kept close.</p></div></div>
     {!hydrated ? <p className="profile-collection-placeholder" role="status">Loading your collection…</p>
-      : unavailable || error ? <div className="profile-empty"><Heart size={25} aria-hidden="true" /><h3>Your saved finds are still here.</h3><p>We couldn’t load the archive right now. Try opening your collection again.</p><a className="account-button" href="/profile#collection">Try again <ArrowRight size={15} aria-hidden="true" /></a></div>
-      : <><CollectionBrowser items={collection} categories={availableCategories} />{ids.length > collection.length && <p className="account-help">Some saved items are no longer available in the archive.</p>}</>}
+      : unavailable || error ? <div className="profile-empty"><Heart size={25} aria-hidden="true" /><h3>Your saved finds are still here.</h3><p>We couldn’t load the Mine right now. Try opening your collection again.</p><a className="account-button" href="/profile#collection">Try again <ArrowRight size={15} aria-hidden="true" /></a></div>
+      : <><CollectionBrowser items={collection} categories={availableCategories} />{ids.length > collection.length && <p className="account-help">Some saved items are no longer available in the Mine.</p>}</>}
     <p className="profile-device-note"><Monitor size={13} aria-hidden="true" /> Saved to your account, available across devices.</p>
   </section>
 }

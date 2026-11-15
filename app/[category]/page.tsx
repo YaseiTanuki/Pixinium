@@ -42,7 +42,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const { query, tag, sort, tagMatch, requestedPage } = categoryFilters(search)
   const { page } = await loadCategoryArchive(slug, query, tag, sort, tagMatch, requestedPage)
   const filtered = [search.q, search.tag, search.sort].some(value => Array.isArray(value) ? value.some(entry => entry.trim()) : value?.trim())
-  return pageMetadata({ title: `${category.name}${page > 1 ? ` — Page ${page}` : ''}`, description: category.description || `Explore curated ${category.name.toLowerCase()} in the Pixinium archive.`, path: categoryHref(slug, { page }), index: !filtered })
+  return pageMetadata({ title: `${category.name}${page > 1 ? ` — Page ${page}` : ''}`, description: category.description || `Explore curated ${category.name.toLowerCase()} in the Pixinium Mine.`, path: categoryHref(slug, { page }), index: !filtered })
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {
@@ -81,7 +81,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         </form>
       </div>
       </CatalogFilters>
-      {items.length ? <CategoryResults items={items} schemaKey={category.metadataSchemaKey} /> : <div className="archive-empty"><SearchX size={30} aria-hidden="true" /><h2>{filtered ? 'No finds match these filters.' : 'Good things are on their way.'}</h2><p>{filtered ? 'Try another search or clear the filters in this collection.' : 'Check back for new additions to this collection.'}</p><Link href={filtered ? categoryHref(slug) : '/search'}>{filtered ? `Browse all ${category.name.toLowerCase()}` : 'Explore all finds'}<ArrowRight size={16} aria-hidden="true" /></Link></div>}
+      {items.length ? <CategoryResults items={items} schemaKey={category.metadataSchemaKey} /> : <div className="archive-empty"><SearchX size={30} aria-hidden="true" /><h2>{filtered ? 'Nothing unearthed yet.' : 'Good things are on their way.'}</h2><p>{filtered ? 'Try another search or clear the filters in this collection.' : 'Check back for new additions to this collection.'}</p><Link href={filtered ? categoryHref(slug) : '/search'}>{filtered ? `Browse all ${category.name.toLowerCase()}` : 'Explore all finds'}<ArrowRight size={16} aria-hidden="true" /></Link></div>}
       {totalPages > 1 && <nav className="archive-pagination" aria-label={`${category.name} pages`}>
         <p className="archive-pagination-summary">Page <strong>{page}</strong> of <strong>{totalPages}</strong></p>
         <div className="archive-pagination-controls">

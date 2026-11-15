@@ -31,10 +31,10 @@ export function SiteHeader({ query, onQueryChange, searchTag, searchCategory, se
         {searchSort && <input type="hidden" name="sort" value={searchSort} />}
         {searchTag && searchTagMatch === 'any' && <input type="hidden" name="match" value="any" />}
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a29a95]" size={16} aria-hidden="true" />
-        <input value={query} onChange={onQueryChange ? (event) => onQueryChange(event.target.value) : undefined} aria-label="Search the archive" name="q" type="search" placeholder="Search wallpapers, music, games?" className="h-11 min-w-0 w-full rounded-xl border border-[#e4dad4] bg-white pl-10 pr-4 text-base outline-none placeholder:text-[#b2aaa5] focus:border-[#b9a79a] md:text-sm" />
+        <input value={query} onChange={onQueryChange ? (event) => onQueryChange(event.target.value) : undefined} aria-label="Search the Mine" name="q" type="search" placeholder="Search wallpapers, music, games?" className="h-11 min-w-0 w-full rounded-xl border border-[#e4dad4] bg-white pl-10 pr-4 text-base outline-none placeholder:text-[#b2aaa5] focus:border-[#b9a79a] md:text-sm" />
       </form>
       <Link href="/profile#collection" className="col-start-2 row-start-1 flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#e4dad4] px-3 py-2.5 text-xs font-bold text-[#766d68] hover:bg-white md:col-start-3" title="Saved to your account">
-        <Heart size={16} aria-hidden="true" /><span className="sr-only sm:not-sr-only">My collection</span><span>{saved.length}</span>
+        <Heart size={16} aria-hidden="true" /><span className="sr-only sm:not-sr-only">My Finds</span><span>{saved.length}</span>
       </Link>
       <Link href={loaded && !userId ? '/login' : '/profile'} aria-label="Account" title="Account" className="col-start-3 row-start-1 flex size-11 items-center justify-center rounded-full border border-[#e4dad4] hover:bg-white md:col-start-4">
         {userId && <img key={userId} src="/api/profile/avatar" alt="" className={`${hasAvatar ? 'block' : 'hidden'} size-full rounded-full object-cover`} onLoad={() => setAvatarUserId(userId)} onError={() => setAvatarUserId(null)} />}

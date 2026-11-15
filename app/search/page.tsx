@@ -3,7 +3,7 @@ import './search.css'
 import { searchTags, searchSort, searchCategories } from '@/lib/search-filters'
 import { listArchivePage, listArchiveTags, listCategories } from '@/server/services/catalog.service'
 import { pageMetadata } from '@/lib/seo'
-export const metadata = pageMetadata({ title: 'Search the archive', description: 'Search Pixinium by content type and tags to find wallpapers, music, games and creative assets.', path: '/search', index: false })
+export const metadata = pageMetadata({ title: 'Search the Mine', description: 'Search Pixinium by content type and tags to find wallpapers, music, games and creative assets.', path: '/search', index: false })
 export const dynamic = 'force-dynamic'
 export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string | string[]; tag?: string | string[]; category?: string | string[]; page?: string | string[]; sort?: string | string[]; match?: string | string[] }> }) {
  const params = await searchParams
