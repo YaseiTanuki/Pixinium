@@ -52,7 +52,7 @@ export function AssetUploadFields({ attachments, ready, upload, remove, editLabe
       </section>
       <section className="workspace-panel" aria-labelledby="asset-preview-title">
         <h2 id="asset-preview-title">Preview images</h2>
-        <p className="workspace-muted">Only images uploaded here appear in the page preview. They are separate from the ZIP download.</p>
+        <p className="workspace-muted">Only images uploaded here appear in the page preview. GIF animations are supported. These files are separate from the ZIP download.</p>
         <label className="studio-file-picker">
           <ImagePlus size={20} aria-hidden="true" /> Upload preview images
           <input className="account-input" type="file" multiple accept={acceptedFileTypes('image')}

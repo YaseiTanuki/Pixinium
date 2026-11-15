@@ -39,7 +39,7 @@ export async function createAssetPack(attachments: InspectedPackFile[], director
           byteSize: asset.byteSize, altText: asset.altText || 'Download asset pack (ZIP)', focalX: 50, focalY: 50 })
         continue
       }
-      const thumbnail = await createImageThumbnail(await storage.read(asset))
+      const thumbnail = await createImageThumbnail(await storage.read(asset), asset.role === 'preview')
       const path = asset.role === 'cover' ? `${directory}/thumbnail.webp` : `${directory}/previews/${++previewIndex}.webp`
       written.push(path)
       await storage.putImage(path, thumbnail.data)
