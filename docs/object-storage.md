@@ -56,6 +56,24 @@ malware scanning; supported file extensions are defined in `lib/admin/content.ts
 Configure bucket CORS for the exact production origin before enabling browser uploads.
 Verify that anonymous object reads are denied and authenticated uploads succeed.
 
+### Browser upload CORS
+
+Both profile avatars and admin attachments upload directly to R2 using signed PUT
+URLs. In Cloudflare, open **R2 Object Storage > pixinium > Settings > CORS Policy**
+and add the rule in [r2-upload-cors.json](r2-upload-cors.json) using the JSON editor.
+If the bucket already has rules, append this rule while preserving those rules.
+It permits PUT from `https://pixinium.com` with the browser's `Content-Type`
+header and exposes `ETag` for attachment verification. Keep public bucket access
+disabled; CORS does not replace signed URL authentication.
+
+Allow up to 30 seconds for propagation, then retry from the profile editor to get
+a fresh five-minute upload URL. A successful preflight must include
+`Access-Control-Allow-Origin: https://pixinium.com` and allow PUT and Content-Type.
+A failed preflight can appear as `Failed to fetch` in the uploader. Application
+response headers cannot fix CORS on the separate R2 endpoint.
+
+Reference: [Cloudflare R2 CORS](https://developers.cloudflare.com/r2/buckets/cors/).
+
 Removing an attachment or discarding uploads deletes the current admin's staging
 objects. Successful saves remove staging only after the database commit. Failed
 saves preserve staging for retry. Leaving the form sends a same-origin authenticated

@@ -147,7 +147,12 @@ the same processing pipeline as Admin Studio:
 
 - Images: originals are downloads; the first image generates a cover thumbnail.
 - Music: one artwork image plus audio tracks; artwork becomes a thumbnail.
-- Games: one artwork image and one ZIP package.
+- Games: one artwork image and one ZIP package or SWF file. SWFs are stored as
+  originals for direct playback and wrapped in a ZIP stream only when downloaded.
+  Add `{ "slug": "play-able", "name": "play able" }` to `tags` to enable the
+  SWF player in place of the detail thumbnail. Uploaded ZIPs are download only,
+  including ZIPs containing HTML or SWF files. Flash playback uses Ruffle and
+  may vary by game.
 - Asset packs: one `cover` image plus up to 50 `download` images. Supply
   `fileName` for original ZIP entry names. Server-generated previews cannot be
   submitted as inputs. See [asset-packs.md](asset-packs.md).

@@ -2,6 +2,8 @@ import { createDatabase } from '@/lib/database'
 import { NextResponse } from 'next/server'
 import { adminStorage, inspectStoredFile, readStoredStream } from '@/server/services/storage.service'
 import { CONTENT_SCHEMAS } from '@/lib/content-types'
+import { SWF_MIME } from '@/lib/game-swf'
+import { gameDownloadZip } from '@/lib/game-download'
 
 type Context = { params: Promise<{ id: string }> }
 
@@ -21,7 +23,8 @@ async function serveAsset(request: Request, { params }: Context, head: boolean) 
     if (!process.env.DATABASE_URL) throw new Error('Catalog unavailable')
     const sql = createDatabase(process.env.DATABASE_URL)
     const rows = await sql`SELECT a.bucket, a.object_path, a.media_type, a.mime_type, bool_or(ia.role = 'download') AS download,
-      bool_and(c.metadata_schema_key = ${CONTENT_SCHEMAS.image}) AS image_only
+      bool_and(c.metadata_schema_key = ${CONTENT_SCHEMAS.image}) AS image_only,
+      bool_and(c.metadata_schema_key = ${CONTENT_SCHEMAS.game}) AS game_only
       FROM catalog.assets a JOIN catalog.item_assets ia ON ia.asset_id = a.id
       JOIN catalog.items i ON i.id = ia.item_id JOIN catalog.categories c ON c.id = i.category_id
       WHERE a.id = ${id}::bigint AND a.provider = 's3' AND i.status = 'published' AND c.is_active
@@ -33,9 +36,11 @@ async function serveAsset(request: Request, { params }: Context, head: boolean) 
     const view = new URL(request.url).searchParams.get('view') === '1'
     if (play && (rows[0].media_type !== 'audio' || !rows[0].download)) return new NextResponse(null, { status: 404, headers })
     if (view && (!rows[0].download || rows[0].media_type !== 'image')) return new NextResponse(null, { status: 404, headers })
+    const gameZip = rows[0].game_only && rows[0].download && rows[0].mime_type === SWF_MIME
     const imageThumbnail = rows[0].image_only && rows[0].media_type === 'image' && !rows[0].download
     const inline = !rows[0].download || play || view
-    const range = head ? undefined : request.headers.get('range') ?? undefined
+    // A generated ZIP has different byte offsets from the stored SWF. Ignore Range and send the full archive.
+    const range = head || gameZip ? undefined : request.headers.get('range') ?? undefined
     const cacheImage = inline && rows[0].media_type === 'image' && !range
     const responseHeaders = {
       ...headers,
@@ -62,12 +67,13 @@ async function serveAsset(request: Request, { params }: Context, head: boolean) 
         SELECT item_id FROM catalog.item_assets WHERE asset_id = ${id}::bigint AND role = 'download')`
     }
     const contentRange = 'ContentRange' in file ? file.ContentRange : undefined
-    return new Response(body ? body.transformToWebStream() : null, {
+    const stream = body ? body.transformToWebStream() : null
+    return new Response(stream && gameZip ? gameDownloadZip(stream, `game-${id}.swf`) : stream, {
       status: contentRange ? 206 : 200,
-      headers: { ...responseHeaders, ...validators(file), 'Content-Type': String(rows[0].mime_type || 'application/octet-stream'),
-        'Content-Disposition': inline ? 'inline' : rows[0].mime_type === 'application/zip' ? `attachment; filename="asset-pack-${id}.zip"` : 'attachment',
-        'Accept-Ranges': 'bytes', 'X-Content-Type-Options': 'nosniff',
-        ...(file.ContentLength !== undefined ? { 'Content-Length': String(file.ContentLength) } : {}),
+      headers: { ...responseHeaders, ...(gameZip ? {} : validators(file)), 'Content-Type': gameZip ? 'application/zip' : String(rows[0].mime_type || 'application/octet-stream'),
+        'Content-Disposition': gameZip ? `attachment; filename="game-${id}.zip"` : inline ? 'inline' : rows[0].mime_type === 'application/zip' ? `attachment; filename="asset-pack-${id}.zip"` : 'attachment',
+        'Accept-Ranges': gameZip ? 'none' : 'bytes', 'X-Content-Type-Options': 'nosniff',
+        ...(!gameZip && file.ContentLength !== undefined ? { 'Content-Length': String(file.ContentLength) } : {}),
         ...(contentRange ? { 'Content-Range': contentRange } : {}),
       },
     })
