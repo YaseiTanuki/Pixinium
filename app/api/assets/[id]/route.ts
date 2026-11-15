@@ -23,6 +23,7 @@ async function serveAsset(request: Request, { params }: Context, head: boolean) 
     if (!process.env.DATABASE_URL) throw new Error('Catalog unavailable')
     const sql = createDatabase(process.env.DATABASE_URL)
     const rows = await sql`SELECT a.bucket, a.object_path, a.media_type, a.mime_type, bool_or(ia.role = 'download') AS download,
+      bool_or(ia.role = 'download' AND NOT i.no_direct_download) AS direct_download_allowed,
       bool_and(c.metadata_schema_key = ${CONTENT_SCHEMAS.image}) AS image_only,
       bool_and(c.metadata_schema_key = ${CONTENT_SCHEMAS.game}) AS game_only
       FROM catalog.assets a JOIN catalog.item_assets ia ON ia.asset_id = a.id
@@ -34,6 +35,7 @@ async function serveAsset(request: Request, { params }: Context, head: boolean) 
     if (rows[0].bucket !== bucket) return new NextResponse(null, { status: 404, headers })
     const play = new URL(request.url).searchParams.get('play') === '1'
     const view = new URL(request.url).searchParams.get('view') === '1'
+    if (rows[0].download && rows[0].direct_download_allowed === false && !play && !view) return new NextResponse(null, { status: 403, headers })
     if (play && (rows[0].media_type !== 'audio' || !rows[0].download)) return new NextResponse(null, { status: 404, headers })
     if (view && (!rows[0].download || rows[0].media_type !== 'image')) return new NextResponse(null, { status: 404, headers })
     const gameZip = rows[0].game_only && rows[0].download && rows[0].mime_type === SWF_MIME

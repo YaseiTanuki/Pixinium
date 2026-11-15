@@ -14,6 +14,7 @@ test('fresh Supabase setup preserves Auth, seeds only references and restricts r
   assert.equal(await count('catalog.download_sources'), 3)
   for (const table of ['catalog.items', 'catalog.profiles', 'automation.agents', 'automation.jobs', 'automation.api_keys']) assert.equal(await count(table), 0)
   await db.exec('SET ROLE pixinium_runtime')
+  await assert.rejects(db.query('UPDATE catalog.items SET no_direct_download=true'), /permission denied/)
   await assert.rejects(db.exec("INSERT INTO catalog.profiles(id,role) VALUES ('00000000-0000-4000-8000-000000000001','admin')"))
   await db.exec("BEGIN; SELECT set_config('app.user_id','00000000-0000-4000-8000-000000000001',true); INSERT INTO catalog.profiles(id,role) VALUES ('00000000-0000-4000-8000-000000000001','member')")
   assert.equal(await count('catalog.profiles'), 1)

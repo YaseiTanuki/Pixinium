@@ -19,6 +19,7 @@ import { requirePrivateStorage, deleteStagingUploads, deleteStoredContent, delet
 import type { ContentActor } from './content-upload.service'
 
 export type EditableContent = {
+  noDirectDownload: boolean
   downloadSources?: ExternalDownloadSource[]
   id: string; title: string; summary: string; description: string; status: string; slug: string; category: string
   schemaKey: string; tags: string[]; facts: Array<{ key: string; label: string; value: string }>
@@ -33,7 +34,7 @@ export async function getEditableContentForActor(account: ContentActor | null, i
   if (!row) return null
   return { id: String(row.id), title: String(row.title), summary: String(row.summary), description: String(row.description),
     slug: String(row.slug), status: String(row.status), category: String(row.category), schemaKey: String(row.metadata_schema_key),
-    downloadSources: readDownloadSources(row.download_sources),
+    downloadSources: readDownloadSources(row.download_sources), noDirectDownload: Boolean(row.no_direct_download),
     tags: row.tags as string[], facts: row.facts as EditableContent['facts'], files: row.files as EditableContent['files'] }
 }
 
@@ -76,6 +77,7 @@ export async function updateContentForActor(account: ContentActor | null, input:
     const results = await sql.transaction(txn => updateContentStatements({
       actor: account.id, id: value.id, editFacts: !usesAutomaticFacts(schemaKey), files,
       text: { title: value.title, summary: value.summary, description: value.description, tags: value.tags, facts: value.facts,
+        ...(value.noDirectDownload !== undefined ? { noDirectDownload: value.noDirectDownload } : {}),
         ...(value.downloadSources !== undefined ? { downloadSources: value.downloadSources } : {}) },
     }).map(([text, values]) => txn.query(text, values)))
     const [row] = results[results.length - 1] as Array<Record<string, unknown>>

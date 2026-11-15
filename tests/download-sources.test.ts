@@ -31,6 +31,14 @@ test('configured priorities choose the primary, including Pixinium, and disabled
   assert.deepEqual(order([...providers, custom], [{ provider: 'custom', url: 'https://example.org/file' }]), ['custom', 'pixinium'])
 })
 
+test('no direct download removes only internal sources and keeps external priority', () => {
+  const external = resolveDownloadSources([archive, github], providers, true, true)
+  assert.deepEqual(external.map(s => s.provider), ['github', 'internet_archive'])
+  assert.deepEqual(resolveDownloadSources([], providers, true, true), [])
+  assert.deepEqual(resolveDownloadSources([github], providers.map(p => p.kind === 'external' ? { ...p, isActive: false } : p), true, true), [])
+  assert.ok(resolveDownloadSources([], providers, true).some(s => s.provider === 'pixinium'))
+})
+
 test('source URL validation is generic, enforces registry domains and retains unchanged disabled links', () => {
   for (const url of ['javascript:alert(1)', 'invalid', 'http://github.com/a/b', 'https://user:pass@github.com/a/b', 'https://github.com:1234/a/b']) {
     assert.equal(downloadSourcesSchema.safeParse([{ ...github, url }]).success, false)
@@ -57,9 +65,12 @@ test('registry CRUD, relational links, authorization and public visibility round
     await db.query(`INSERT INTO catalog.profiles(id,role) VALUES($1,'admin'),($2,'member')`, [admin, member])
     const category = (await db.query<{ id: string; slug: string; metadata_schema_key: string }>('SELECT id::text,slug,metadata_schema_key FROM catalog.categories ORDER BY id LIMIT 1')).rows[0]
     const text = { title: 'Sources', summary: 'Summary', description: '', facts: [], tags: [] }
-    const doc = { ...text, slug: 'sources', status: 'published', accentColor: '#ffffff', attachments: [], metadata: {}, downloadSources: [archive, github] }
+    const doc = { ...text, slug: 'sources', status: 'published', accentColor: '#ffffff', attachments: [], metadata: {}, downloadSources: [archive, github], noDirectDownload: true }
     const { id } = (await db.query<{ id: string }>(createContentQuery, [admin, category.id, category.metadata_schema_key, JSON.stringify(doc), 'assets'])).rows[0]
     const links = async () => readDownloadSources((await db.query<{ download_sources: unknown }>(editableContentQuery, [id])).rows[0].download_sources)
+    const policy = async () => (await db.query<{ no_direct_download: boolean }>(editableContentQuery, [id])).rows[0].no_direct_download
+    assert.equal(await policy(), true)
+    assert.equal((await db.query<{ no_direct_download: boolean }>(cardsQuery, [category.slug, 'sources', null])).rows[0].no_direct_download, true)
     assert.deepEqual(await links(), [github, archive])
     assert.deepEqual(readDownloadSources((await db.query<{ download_sources: unknown }>(cardsQuery, [category.slug, 'sources', null])).rows[0].download_sources), [github, archive])
     assert.equal((await db.query(createDownloadProviderQuery, [member, 'other', 'Other', 'example.org', 0, true])).rows.length, 0)
@@ -69,6 +80,9 @@ test('registry CRUD, relational links, authorization and public visibility round
         ...(metadata ? { files: { oldAssetIds: [], attachments: [], bucket: 'assets', metadata } } : {}) })) await tx.query(sql, values)
     })
     await edit({}, {}); assert.deepEqual(await links(), [github, archive])
+    assert.equal(await policy(), true) // omitted flag survives edits and file replacement
+    await edit({ noDirectDownload: false }); assert.equal(await policy(), false)
+    await edit({ noDirectDownload: true }); assert.equal(await policy(), true)
     await edit({ downloadSources: [{ provider: 'other', url: 'https://example.org/file' }, github] })
     await assert.rejects(db.query(deleteDownloadProviderQuery, [admin, 'other']), /foreign key/)
     await assert.rejects(db.query(updateDownloadProviderQuery, [admin, 'other', 'Other', 'new.example.org', 0, true]), /Domain cannot change/)

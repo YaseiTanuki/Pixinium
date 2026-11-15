@@ -38,6 +38,7 @@ export const contentSchema = z.object({
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#f1e5dd'),
   metadata: z.record(z.string(), z.unknown()),
   downloadSources: downloadSourcesSchema.default([]),
+  noDirectDownload: z.boolean().default(false),
   tags: z.array(z.object({ slug, name: z.string().trim().min(1).max(60) })).max(40),
   facts: z.array(z.object({ key: z.string().regex(/^[a-z][a-z0-9_]*$/).max(CONTENT_LIMITS.factKey),
     label: z.string().trim().min(1).max(CONTENT_LIMITS.factLabel), value: z.string().trim().min(1).max(CONTENT_LIMITS.factValue) })).max(CONTENT_LIMITS.facts),
@@ -60,6 +61,7 @@ export const contentUpdateSchema = z.object({
   title: contentSchema.shape.title, summary: contentSchema.shape.summary, description: contentSchema.shape.description,
   tags: contentSchema.shape.tags, facts: contentSchema.shape.facts,
   downloadSources: downloadSourcesSchema.optional(),
+  noDirectDownload: z.boolean().optional(),
   // When present, this set replaces every existing file of the item.
   attachments: z.array(attachmentSchema).max(MAX_ATTACHMENT_COUNT).optional(),
 }).superRefine((value, ctx) => {

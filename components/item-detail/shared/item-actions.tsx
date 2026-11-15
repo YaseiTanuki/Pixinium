@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { ChevronDown, Download, ExternalLink, Globe } from 'lucide-react'
+import { ChevronDown, Download, ExternalLink, Globe, LockKeyhole } from 'lucide-react'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 import type { DownloadOption } from '@/lib/download-sources'
 import { SaveItemButton } from './save-item-button'
@@ -52,9 +52,12 @@ function DownloadAction({ source, downloads, mirror = false, zipSwf = false }: {
 export function ItemActions({ item }: { item: CatalogDetail }) {
   const downloads = item.media.filter(asset => asset.role === 'download')
   const zipSwf = item.category.metadataSchemaKey === CONTENT_SCHEMAS.game
-  const [primary, ...mirrors] = [...(item.downloadSources ?? [])].sort((a, b) => a.priority - b.priority || a.provider.localeCompare(b.provider))
+  const [primary, ...mirrors] = [...(item.downloadSources ?? [])]
+    .filter(source => !item.noDirectDownload || source.kind !== 'internal')
+    .sort((a, b) => a.priority - b.priority || a.provider.localeCompare(b.provider))
   return <div className="detail-actions">
-    {primary && <DownloadAction source={primary} downloads={downloads} zipSwf={zipSwf} />}
+    {primary ? <DownloadAction source={primary} downloads={downloads} zipSwf={zipSwf} />
+      : <button type="button" className="detail-download-button" disabled><LockKeyhole size={19} aria-hidden="true" /> Download not available</button>}
     <SaveItemButton itemId={item.item.id} />
     {mirrors.length > 0 && <div className="detail-mirrors" aria-label="Other download sources">
       <span className="detail-mirrors-label">or download from other source</span>

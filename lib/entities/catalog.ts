@@ -122,6 +122,7 @@ export interface CatalogCard {
 }
 
 export interface CatalogDetail extends CatalogCard {
+  noDirectDownload?: boolean
   downloadSources?: import('../download-sources').DownloadOption[]
   category: CatalogCard['category'] & Pick<Category, 'metadataSchemaKey'>
   description: string

@@ -1,7 +1,7 @@
 import { agentEndpoint, agentJson, readAgentJson, AgentApiError } from '@/server/services/agent-api'
 import { createContentForActor } from '@/server/services/content-upload.service'
 import { contentSchema } from '@/lib/admin/content'
-import { agentPayloadHash } from '@/lib/agent-identity'
+import { agentContentPayloadHash } from '@/lib/agent-identity'
 import { agentCall } from '@/server/services/agent-store'
 import { authDiagnostic } from '@/lib/auth/errors'
 import { setUploadTraceContext } from '@/lib/upload-tracing'
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     // affects idempotency only; the handler, service and broker still write drafts.
     const requestedStatus = (input as Record<string, unknown>).status === 'draft' ? 'draft' : 'published'
     const reservation = await agentCall<{ state: string; result?: unknown; id?: string; leaseToken?: string; itemId?: string }>(actor,
-      'start_job', [requestKey, agentPayloadHash({ ...parsed.data, status: requestedStatus }), parsed.data.categoryId])
+      'start_job', [requestKey, agentContentPayloadHash({ ...parsed.data, status: requestedStatus }), parsed.data.categoryId])
     if (reservation.state === 'succeeded') {
       const response = agentJson(reservation.result, 201)
       response.headers.set('Idempotency-Replayed', 'true')

@@ -1,10 +1,12 @@
 import type { DownloadProvider, ExternalDownloadSource } from '@/lib/download-sources'
 
-export function DownloadSourceFields({ providers, sources = [] }: { providers: DownloadProvider[]; sources?: ExternalDownloadSource[] }) {
+export function DownloadSourceFields({ providers, sources = [], noDirectDownload = false }: { providers: DownloadProvider[]; sources?: ExternalDownloadSource[]; noDirectDownload?: boolean }) {
   const external = providers.filter(provider => provider.kind === 'external' && (provider.isActive || sources.some(source => source.provider === provider.slug)))
   return <section className="workspace-panel">
     <h2>Download links</h2>
     <p className="workspace-muted">Add optional links for this item. The enabled source with the lowest priority number becomes the main download; others appear as mirrors.</p>
+    <label className="download-policy-toggle"><input type="checkbox" name="noDirectDownload" defaultChecked={noDirectDownload} /> No direct download</label>
+    <p className="account-help">Only external sources will be offered. Without an available external source, the download button is locked.</p>
     <div className="studio-grid">
       {external.map(provider => <label key={provider.slug}>{provider.name}{!provider.isActive && ' (disabled)'}
         <input className="account-input" type="url" name={`download_${provider.slug}`} maxLength={2048} placeholder={`https://${provider.hostname}/...`} defaultValue={sources.find(source => source.provider === provider.slug)?.url ?? ''} />

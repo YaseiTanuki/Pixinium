@@ -72,6 +72,7 @@ export async function listArchivePage(filters: { category?: string; tag?: string
 }
 
 type CatalogRow = {
+  no_direct_download: boolean
   download_sources?: unknown
   collect_count: number; view_count: number; download_count: number
   item: CatalogDetail['item']; category: CatalogDetail['category']; assets: Media[]
@@ -90,7 +91,8 @@ function presentCatalogRows(rows: CatalogRow[], providers: DownloadProvider[]): 
     const storedFacts = row.facts as CatalogDetail['facts']
     const facts = catalogFacts(row.metadata_schema_key, row.item.id, media, storedFacts)
     return { item: row.item, collectCount: row.collect_count, viewCount: row.view_count, downloadCount: row.download_count, category: { ...row.category, metadataSchemaKey: row.metadata_schema_key }, facts, description: row.description,
-      downloadSources: resolveDownloadSources(row.download_sources, providers, media.some(asset => asset.role === 'download')),
+      noDirectDownload: row.no_direct_download,
+      downloadSources: resolveDownloadSources(row.download_sources, providers, media.some(asset => asset.role === 'download'), row.no_direct_download),
       tags: row.tags, media, cover: cover ? { url: cover.url, altText: cover.altText,
         focalX: cover.focalX, focalY: cover.focalY, width: cover.width, height: cover.height } : null } as CatalogDetail
   })

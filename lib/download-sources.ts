@@ -42,11 +42,11 @@ export function validateSourceLinks(links: ExternalDownloadSource[], providers: 
   return null
 }
 
-export function resolveDownloadSources(input: unknown, providers: DownloadProvider[], hasFiles: boolean): DownloadOption[] {
+export function resolveDownloadSources(input: unknown, providers: DownloadProvider[], hasFiles: boolean, noDirectDownload = false): DownloadOption[] {
   const links = readDownloadSources(input)
   return providers.filter(provider => provider.isActive).flatMap(provider => {
     const link = links.find(link => link.provider === provider.slug)
-    if (provider.kind === 'internal' ? !hasFiles : !link || new URL(link.url).hostname !== provider.hostname) return []
+    if (provider.kind === 'internal' ? !hasFiles || noDirectDownload : !link || new URL(link.url).hostname !== provider.hostname) return []
     return [{ provider: provider.slug, name: provider.name, kind: provider.kind, priority: provider.priority, ...(link ? { url: link.url } : {}) }]
   }).sort((a, b) => a.priority - b.priority || a.provider.localeCompare(b.provider))
 }
