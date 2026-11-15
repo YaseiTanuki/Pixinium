@@ -14,7 +14,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
     </header>
     <main id="account-main" className="account-shell">
       <aside className="account-intro" aria-label="Your little mine">
-        <p className="eyebrow"><span className="status-dot" /> A LITTLE MINE. A LOT TO DISCOVER.</p>
+        <p className="eyebrow"><span className="status-dot" /> Mine now. Regret later.</p>
         <p className="account-intro-title">Your own<br />little <span className="happy-underline">corner.</span></p>
         <p className="account-intro-copy">A fresh screen. A good soundtrack. A tiny escape.<br />A place for the things that feel like you.</p>
         <div className="account-keepsakes" aria-hidden="true">
