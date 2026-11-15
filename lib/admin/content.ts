@@ -11,6 +11,7 @@ export const fileTypes: Record<string, { mime: string; mediaType: 'image' | 'aud
   ogg: { mime: 'audio/ogg', mediaType: 'audio' }, aac: { mime: 'audio/aac', mediaType: 'audio' },
   mp4: { mime: 'video/mp4', mediaType: 'video' }, webm: { mime: 'video/webm', mediaType: 'video' },
   zip: { mime: 'application/zip', mediaType: 'file' }, pdf: { mime: 'application/pdf', mediaType: 'file' },
+  swf: { mime: 'application/x-shockwave-flash', mediaType: 'file' },
 }
 export function fileType(name: string) {
   const extension = name.split('.').pop()?.toLowerCase() ?? ''

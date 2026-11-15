@@ -4,6 +4,7 @@ import { Trash2, Upload } from 'lucide-react'
 import { fileType, acceptedFileTypes, type AttachmentInput } from '@/lib/admin/content'
 
 import { CONTENT_LIMITS } from '@/lib/admin/limits'
+import { isGamePackage } from '@/lib/admin/game'
 
 type Props = {
   attachments: AttachmentInput[]
@@ -15,14 +16,14 @@ type Props = {
 
 export function GameUploadFields({ attachments, ready, upload, remove, editLabel }: Props) {
   const artwork = attachments.filter(asset => fileType(asset.path)?.mediaType === 'image')
-  const packages = attachments.filter(asset => fileType(asset.path)?.extension === 'zip')
+  const packages = attachments.filter(asset => isGamePackage(asset.path))
   const unsupported = attachments.filter(asset => !artwork.includes(asset) && !packages.includes(asset))
   const sections = [
     { kind: 'image' as const, title: 'Game thumbnail', label: 'Thumbnail description', assets: artwork,
       help: 'Upload one image. Only the reduced thumbnail is kept.',
       accept: acceptedFileTypes('image') },
     { kind: 'game' as const, title: 'Game file', label: 'Game download label', assets: packages,
-      help: 'Upload one ZIP package containing the game files. The original package is kept for download.', accept: '.zip' },
+      help: 'Upload one SWF for browser play, or a ZIP for download only. SWFs are stored as originals and packaged as ZIP when downloaded.', accept: '.zip,.swf' },
   ]
   return <>
     {sections.map(section => <section className="workspace-panel" key={section.kind} aria-labelledby={`game-${section.kind}-title`}>

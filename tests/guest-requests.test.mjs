@@ -96,3 +96,30 @@ test('header only includes an avatar request for a signed-in user', () => {
   userId = 'alice'
   assert.ok(renderToStaticMarkup(require('react').createElement(SiteHeader)).includes('/api/profile/avatar'))
 })
+
+test('avatar endpoint redirects missing avatars to the default image and preserves uploaded avatars', async () => {
+  let account = { avatarPath: null }
+  let signatures = 0
+  const { GET } = loadClientModule('../app/api/profile/avatar/route.ts', {
+    'next/server': { NextResponse: Response },
+    '@/server/services/auth.service': { getAccount: async () => account },
+    '@/server/services/storage.service': { signDownload: async path => {
+      signatures++
+      assert.equal(path, 'profile/avatar/alice.png')
+      return 'https://storage.example/avatar.png'
+    } },
+  })
+  for (const value of [null, { avatarPath: null }]) {
+    account = value
+    const response = await GET()
+    assert.equal(response.status, 307)
+    assert.equal(response.headers.get('location'), '/images/default-avatar.png')
+    assert.equal(response.headers.get('cache-control'), 'private, no-store')
+  }
+  assert.equal(signatures, 0)
+  account = { avatarPath: 'profile/avatar/alice.png' }
+  const response = await GET()
+  assert.equal(response.status, 307)
+  assert.equal(response.headers.get('location'), 'https://storage.example/avatar.png')
+  assert.equal(signatures, 1)
+})

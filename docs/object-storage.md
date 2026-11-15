@@ -53,8 +53,34 @@ HEAD returns object headers without reading bytes or incrementing download count
 Archived items have no public application asset route. Uploaded MIME metadata is not
 malware scanning; supported file extensions are defined in `lib/admin/content.ts`.
 
+Deleting an item removes its exclusive stored files before committing the database
+deletion. The transaction locks the item and its assets while checking shared
+references; files shared with another item are retained. If R2 deletion fails, the
+request returns an error and keeps the item and asset records for retry. Some files
+may already have been removed; retrying deletion of those keys is safe. A database
+failure after storage deletion also keeps the records, but cannot restore R2 bytes.
+This flow does not sweep files left untracked by earlier uploads or deletions.
+
 Configure bucket CORS for the exact production origin before enabling browser uploads.
 Verify that anonymous object reads are denied and authenticated uploads succeed.
+
+### Browser upload CORS
+
+Both profile avatars and admin attachments upload directly to R2 using signed PUT
+URLs. In Cloudflare, open **R2 Object Storage > pixinium > Settings > CORS Policy**
+and add the rule in [r2-upload-cors.json](r2-upload-cors.json) using the JSON editor.
+If the bucket already has rules, append this rule while preserving those rules.
+It permits PUT from `https://pixinium.com` with the browser's `Content-Type`
+header and exposes `ETag` for attachment verification. Keep public bucket access
+disabled; CORS does not replace signed URL authentication.
+
+Allow up to 30 seconds for propagation, then retry from the profile editor to get
+a fresh five-minute upload URL. A successful preflight must include
+`Access-Control-Allow-Origin: https://pixinium.com` and allow PUT and Content-Type.
+A failed preflight can appear as `Failed to fetch` in the uploader. Application
+response headers cannot fix CORS on the separate R2 endpoint.
+
+Reference: [Cloudflare R2 CORS](https://developers.cloudflare.com/r2/buckets/cors/).
 
 Removing an attachment or discarding uploads deletes the current admin's staging
 objects. Successful saves remove staging only after the database commit. Failed
@@ -73,13 +99,14 @@ Reference: [Cloudflare R2 S3 compatibility](https://developers.cloudflare.com/r2
 
 ```text
 pixinium/
-  image/<item-id>/originals/<file-id>.<ext>
-  image/<item-id>/thumbnail.webp
-  audio/<item-id>/originals/<file-id>.<ext>
-  audio/<item-id>/thumbnail.webp
-  game/<item-id>/originals/<file-id>.<ext>
-  game/<item-id>/thumbnail.webp
+  image/<item-id>/v-<uuid>/originals/<file-id>.<ext>
+  image/<item-id>/v-<uuid>/thumbnail.webp
+  audio/<item-id>/v-<uuid>/originals/<file-id>.<ext>
+  audio/<item-id>/v-<uuid>/thumbnail.webp
+  game/<item-id>/v-<uuid>/originals/<file-id>.<ext>
+  game/<item-id>/v-<uuid>/thumbnail.webp
   staging/<admin-id>/<upload-id>.<ext>
+  staging/agents/<agent-id>/<upload-id>.<ext>
   profile/avatar/<user-id>.<ext>
 ```
 
@@ -87,6 +114,9 @@ Categories `images`, `music`, and `games` map to `image`, `audio`, and `game`.
 Future category slugs use their own root. The server reserves an item ID before
 copying uploads and commits that same ID with its asset records. Failed saves can
 leave harmless sequence gaps. Uses and title-based public URLs do not affect keys.
+Admin and agent uploads share this layout. Each attempt uses a separate version
+directory; agent versions are bound to the active job lease. Existing unversioned
+admin keys remain readable. Agent attribution is stored in the database.
 Only items with an uploaded image have a generated thumbnail.
 
 ## Music uploads

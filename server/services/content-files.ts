@@ -10,6 +10,7 @@ import { CONTENT_LIMITS } from '@/lib/admin/limits'
 import { inspectUpload, finalizeUpload, storeImageThumbnail, readStoredBytes, storeGeneratedImage, storeGeneratedZip, deleteGeneratedPackFiles } from '@/server/services/storage.service'
 import { readAudioMetadata } from '@/server/services/audio-metadata'
 import { createAssetPack } from '@/server/services/asset-pack'
+import { validateSwf } from '@/lib/game-swf'
 
 /** Category rules shared by creating content and replacing its files. */
 export function validateContentFiles(schemaKey: string, attachments: AttachmentInput[]) {
@@ -61,6 +62,9 @@ export async function finalizeContentFiles(schemaKey: string, attachments: Inspe
     pack = { directory, paths: generated.map(asset => asset.path) }
     finalized.push(...generated)
   } else for (const asset of attachments) {
+    if (isGame && asset.extension === 'swf') {
+      validateSwf(await readStoredBytes(`staging/${asset.path}`, asset.byteSize, asset.etag))
+    }
     if ((isMusic || isGame) && asset.mediaType === 'image') {
       // Artwork is temporary input: retain only its generated thumbnail.
       const thumbnail = await storeImageThumbnail(`staging/${asset.path}`, asset.byteSize, directory, asset.etag)

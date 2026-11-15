@@ -30,7 +30,7 @@ export async function prepareContentUploadForActor(account: ContentActor | null,
     if (!account || (!isAgentActor(account) && !hasPermission(account.role, 'assets:upload'))) return { error: 'Upload access is required.' }
     const { name, size } = z.object({ name: z.string().max(255), size: z.number().int().positive().max(MAX_CONTENT_FILE_BYTES) }).parse(input)
     const type = fileType(name)
-    if (!type) return { error: 'Choose an image, audio, video, PDF or ZIP file from the supported formats.' }
+    if (!type) return { error: 'Choose an image, audio, video, PDF, ZIP or SWF file from the supported formats.' }
     const owner = stagingOwner(account)
     const path = `${owner}/${randomUUID()}.${type.extension}`
     if (isAgentActor(account)) await agentCall(account, 'reserve_upload', [path, size])
@@ -108,9 +108,8 @@ export async function createContentForActor(account: ContentActor | null, input:
     const [reservation] = isAgentActor(account) ? [{ id: account.job!.itemId }]
       : await sql!`SELECT nextval(pg_get_serial_sequence('catalog.items', 'id'))::text AS id`
     const reservedItemId = String(reservation.id)
-    const directory = isAgentActor(account)
-      ? `agents/${account.id}/items/${reservedItemId}/${account.job!.leaseToken}`
-      : itemStorageDirectory(String(categories[0].slug), reservedItemId)
+    const directory = itemStorageDirectory(String(categories[0].slug), reservedItemId,
+      isAgentActor(account) ? account.job!.leaseToken : randomUUID())
     setStage('finalize_files')
     const { finalized, pack, musicMetadata } = await finalizeContentFiles(schemaKey, attachments, directory)
     pendingPack = pack
