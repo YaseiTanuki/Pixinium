@@ -34,7 +34,6 @@ test('Workers thumbnails preserve originals and use transformed dimensions', asy
 test('Workers thumbnails reject active formats, missing dimensions and oversized rasters before transformation', async () => {
   for (const info of [
     { format: 'image/svg+xml', width: 10, height: 10 },
-    { format: 'image/gif', width: 10, height: 10 },
     { format: 'image/png' },
     { format: 'image/png', width: 8001, height: 8000 },
   ]) {
@@ -56,4 +55,22 @@ test('Workers thumbnails propagate decoder and transformation failures', async (
   images.info = async () => ({ format: 'image/png', width: 100, height: 60 })
   images.input = () => ({ transform: () => ({ output: async () => ({ response: () => new Response(null, { status: 500 }) }) }) })
   await assert.rejects(createCloudflareImageThumbnail(new Uint8Array(), images), /transformation failed/)
+})
+
+test('Workers preserve GIF preview animation and keep cover thumbnails still', async () => {
+  for (const preserveAnimation of [false, true]) {
+    let reads = 0
+    const images: ThumbnailImagesBinding = {
+      info: async () => ({ format: reads++ === 0 ? 'image/gif' : 'image/webp', width: 100, height: 60 }),
+      input: () => ({ transform: () => ({ output: async options => {
+        assert.equal(options.anim, preserveAnimation)
+        assert.equal(options.format, 'image/webp')
+        return { response: () => new Response(Uint8Array.from([1, 2])) }
+      } }) }),
+    }
+    const result = await createCloudflareImageThumbnail(new Uint8Array(), images, preserveAnimation)
+    assert.equal(result.originalMime, 'image/gif')
+    assert.equal(result.width, 100)
+    assert.equal(result.height, 60)
+  }
 })
