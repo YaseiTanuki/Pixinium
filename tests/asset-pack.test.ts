@@ -6,6 +6,7 @@ import { createAssetPack, type InspectedPackFile } from '../server/services/asse
 import { validateAssetPackFiles } from '../lib/admin/asset-pack'
 import { ASSET_PACK_LIMITS } from '../lib/admin/limits'
 import { parseCategoryMetadata } from '../lib/entities/metadata'
+import { acceptedFileTypes, fileType } from '../lib/admin/content'
 
 function attachment(index: number, role: 'cover' | 'preview' | 'download'): InspectedPackFile {
   return { path: `00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-${String(index).padStart(12, '0')}.${role === 'download' ? 'zip' : 'png'}`,
@@ -54,6 +55,46 @@ test('ZIP with no preview inputs does not generate previews', async () => {
     read: async () => image, putImage: async () => {}, copyZip: async () => 'assets/2/originals/archive.zip', remove: async () => {},
   })
   assert.deepEqual(result.map(a => a.role), ['cover', 'download'])
+})
+
+test('GIF previews retain frames, timing and per-frame dimensions while covers stay still', async () => {
+  const pixels = Buffer.concat([Buffer.alloc(20 * 12 * 3, 0), Buffer.alloc(20 * 12 * 3, 255)])
+  const gif = await sharp(pixels, { raw: { width: 20, height: 24, channels: 3, pageHeight: 12 } })
+    .gif({ delay: [120, 240], loop: 0 }).toBuffer()
+  const gifFile = (index: number, role: 'cover' | 'preview') => ({ ...attachment(index, role),
+    path: attachment(index, role).path.replace('.png', '.gif'), fileName: 'animation.gif', byteSize: gif.length })
+  const inputs = [gifFile(0, 'cover'), attachment(1, 'download'), gifFile(2, 'preview')]
+  assert.equal(fileType('animation.GIF')?.mime, 'image/gif')
+  assert.ok(acceptedFileTypes('image').split(',').includes('.gif'))
+  assert.equal(validateAssetPackFiles(inputs), undefined)
+  const stored = new Map<string, Uint8Array>()
+  const result = await createAssetPack(inputs, 'assets/5', {
+    read: async () => gif,
+    putImage: async (path, bytes) => { stored.set(path, bytes) },
+    copyZip: async () => 'assets/5/originals/archive.zip', remove: async () => assert.fail('Must succeed'),
+  })
+  const preview = result.find(a => a.role === 'preview')!
+  const cover = result.find(a => a.role === 'cover')!
+  const metadata = await sharp(stored.get(preview.path), { animated: true }).metadata()
+  assert.equal(metadata.format, 'webp')
+  assert.equal(metadata.pages, 2)
+  assert.deepEqual(metadata.delay, [120, 240])
+  assert.equal(metadata.loop, 0)
+  assert.equal(preview.width, 20)
+  assert.equal(preview.height, 12)
+  assert.equal(preview.mime, 'image/webp')
+  assert.equal((await sharp(stored.get(cover.path), { animated: true }).metadata()).pages ?? 1, 1)
+})
+
+test('invalid GIF preview bytes fail and clean finalized files', async () => {
+  const image = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#fff' } }).png().toBuffer()
+  const preview = { ...attachment(2, 'preview'), path: attachment(2, 'preview').path.replace('.png', '.gif') }
+  let removed: string[] = []
+  await assert.rejects(createAssetPack([attachment(0, 'cover'), attachment(1, 'download'), preview], 'assets/6', {
+    read: async asset => asset.role === 'preview' ? Buffer.from('GIF89a broken') : image,
+    putImage: async () => {}, copyZip: async () => 'assets/6/originals/archive.zip', remove: async paths => { removed = paths },
+  }))
+  assert.deepEqual(removed, ['assets/6/thumbnail.webp', 'assets/6/originals/archive.zip'])
 })
 
 test('corrupt preview cleans the copied ZIP and earlier display files', async () => {
