@@ -15,6 +15,9 @@ validated staged ZIP into the item's version directory. All finalized paths are
 tracked for cleanup on failure. Original staging uploads are deleted after commit.
 Existing saved packs remain readable until their files are replaced.
 
+GIF uploads are supported. Preview animations are preserved as animated WebP;
+cover thumbnails use a still frame. Preview dimensions describe one frame.
+
 ## Database
 
 The existing `assets.v1` category and item/asset tables support this workflow;
