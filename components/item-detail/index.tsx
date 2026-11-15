@@ -41,7 +41,7 @@ export default function ItemDetail({ item, related }: ItemDetailProps) {
       <SiteHeader />
       <main id="item-main" className="home-shell">
         <MotionNav className="detail-breadcrumb" aria-label="Breadcrumb" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45 }}>
-          <Link href="/search"><ArrowLeft size={14} aria-hidden="true" /> The archive</Link>
+          <Link href="/search"><ArrowLeft size={14} aria-hidden="true" /> The Mine</Link>
           <ChevronRight size={12} aria-hidden="true" />
           <Link href={categoryHref(item.category.slug)}>{item.category.name}</Link>
           <ChevronRight size={12} aria-hidden="true" />

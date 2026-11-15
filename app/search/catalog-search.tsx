@@ -51,16 +51,16 @@ export default function CatalogSearch({ items, categories, tags, total, page, to
       <CategoryNavigation categories={categories} current="all" />
       <div className="search-content">
         <CatalogFilters categories={categories} tags={tags} applied={{ category: initialCategory, tag: initialTag, sort: initialSort, tagMatch: initialTagMatch }} pending={pending} onApply={changeFilters}>
-          <h1>Explore the archive</h1>
+          <h1>Explore the Mine</h1>
         </CatalogFilters>
         <div aria-busy={pending}>
           <div className="archive-results-heading">
-            <p role="status">{pending ? 'Finding your next favorite…' : items.length ? <><span className="archive-result-dot" aria-hidden="true" /> Showing <strong>{first}–{first + items.length - 1}</strong> of {total} finds</> : 'No treasures found'}</p>
+            <p role="status">{pending ? 'Finding your next favorite…' : items.length ? <><span className="archive-result-dot" aria-hidden="true" /> Showing <strong>{first}–{first + items.length - 1}</strong> of {total} finds</> : 'Nothing unearthed yet'}</p>
             {items.length > 0 && <span>Page <strong>{page}</strong> of {totalPages}</span>}
           </div>
           <MasonryGrid className="discovery-grid search-all-grid">{items.map(item => <CatalogCard key={item.item.id} item={item} variant="detailed" />)}</MasonryGrid>
-          {!items.length && !pending && <div className="archive-empty"><SearchX size={30} aria-hidden="true" /><h2>No finds on this shelf.</h2><p>Try another search or take a look through the whole archive.</p><Link href="/search">Show all finds <ArrowRight size={16} aria-hidden="true" /></Link></div>}
-          {totalPages > 1 && <nav className="archive-pagination" aria-label="Archive pages">
+          {!items.length && !pending && <div className="archive-empty"><SearchX size={30} aria-hidden="true" /><h2>Nothing unearthed yet.</h2><p>Try another search or take a look through the Mine.</p><Link href="/search">Show all finds <ArrowRight size={16} aria-hidden="true" /></Link></div>}
+          {totalPages > 1 && <nav className="archive-pagination" aria-label="Mine pages">
             <p className="archive-pagination-summary">Page <strong>{page}</strong> of <strong>{totalPages}</strong></p>
             <div className="archive-pagination-controls">
             {page > 1 ? <Link className="archive-page-step" prefetch={false} href={searchHref({ category: initialCategory, tag: initialTag, sort: initialSort, tagMatch: initialTagMatch, query: initialQuery, page: page - 1 })} aria-label="Previous page"><ArrowLeft size={17} aria-hidden="true" /> <span>Previous</span></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Previous page"><ArrowLeft size={17} aria-hidden="true" /> <span>Previous</span></span>}
