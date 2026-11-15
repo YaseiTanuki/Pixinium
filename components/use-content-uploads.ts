@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ASSET_PACK_LIMITS, CONTENT_LIMITS } from '@/lib/admin/limits'
 import { fileType, MAX_CONTENT_FILE_BYTES, type AttachmentInput, type ContentResult } from '@/lib/admin/content'
 import { prepareContentUpload, discardContentUploads } from '@/app/actions/content'
+import { isGamePackage } from '@/lib/admin/game'
 
 export type UploadKind = 'image' | 'audio' | 'game' | 'cover' | 'pack-image'
 type Flags = { isMusic: boolean; isGame: boolean; isAssetPack: boolean }
@@ -44,8 +45,8 @@ export function useContentUploads({ isMusic, isGame, isAssetPack }: Flags, setRe
   async function upload(files: FileList | null, kind?: UploadKind) {
     if (!files?.length) return
     const mediaKind = kind === 'cover' || kind === 'pack-image' ? 'image' : kind
-    if (mediaKind && Array.from(files).some(file => mediaKind === 'game' ? fileType(file.name)?.extension !== 'zip' : fileType(file.name)?.mediaType !== mediaKind)) {
-      setResult({ error: kind === 'game' ? 'Choose a ZIP game package.' : mediaKind === 'image' ? 'Choose a supported image.' : 'Choose supported audio tracks.' }); return
+    if (mediaKind && Array.from(files).some(file => mediaKind === 'game' ? !isGamePackage(file.name) : fileType(file.name)?.mediaType !== mediaKind)) {
+      setResult({ error: kind === 'game' ? 'Choose a ZIP or SWF game file.' : mediaKind === 'image' ? 'Choose a supported image.' : 'Choose supported audio tracks.' }); return
     }
     if (kind === 'cover' && (files.length !== 1 || attachments.some(asset => asset.role === 'cover'))) {
       setResult({ error: 'Remove the current thumbnail before uploading its replacement.' }); return
@@ -56,7 +57,7 @@ export function useContentUploads({ isMusic, isGame, isAssetPack }: Flags, setRe
     if ((isMusic || isGame) && kind === 'image' && (files.length !== 1 || attachments.some(asset => fileType(asset.path)?.mediaType === 'image'))) {
       setResult({ error: 'Remove the current artwork before uploading its replacement.' }); return
     }
-    if (isGame && kind === 'game' && (files.length !== 1 || attachments.some(asset => fileType(asset.path)?.extension === 'zip'))) {
+    if (isGame && kind === 'game' && (files.length !== 1 || attachments.some(asset => isGamePackage(asset.path)))) {
       setResult({ error: 'Remove the current game package before uploading its replacement.' }); return
     }
     const fileLimit = isAssetPack ? ASSET_PACK_LIMITS.images + 1 : CONTENT_LIMITS.files

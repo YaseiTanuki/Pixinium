@@ -147,7 +147,12 @@ the same processing pipeline as Admin Studio:
 
 - Images: originals are downloads; the first image generates a cover thumbnail.
 - Music: one artwork image plus audio tracks; artwork becomes a thumbnail.
-- Games: one artwork image and one ZIP package.
+- Games: one artwork image and one ZIP package or SWF file. SWFs are stored as
+  originals for direct playback and wrapped in a ZIP stream only when downloaded.
+  Add `{ "slug": "play-able", "name": "play able" }` to `tags` to enable the
+  SWF player in place of the detail thumbnail. Uploaded ZIPs are download only,
+  including ZIPs containing HTML or SWF files. Flash playback uses Ruffle and
+  may vary by game.
 - Asset packs: one `cover` image plus up to 50 `download` images. Supply
   `fileName` for original ZIP entry names. Server-generated previews cannot be
   submitted as inputs. See [asset-packs.md](asset-packs.md).
@@ -203,6 +208,15 @@ retry an uncertain publication. Checkpoints do not contain the bearer token or
 signed upload URLs. Polling a 202 response retains the same body and key.
 
 ## Audit and maintenance
+
+Final files use the same category/item/version layout as studio uploads, for
+example `game/<item-id>/v-<uuid>/originals/<file-id>.zip`. Final keys contain no
+agent ID or `agents/` directory. The version UUID is the active job lease, so an
+expired attempt cannot overwrite the files of its retry. Temporary signed uploads
+still use `staging/agents/<agent-id>/...` for ownership checks and are removed after
+the draft is saved. Agent provenance stays in the database, independently of keys.
+Apply migration `0024_unify_agent_storage_paths.sql` before using the updated
+upload service. Existing objects retain their keys until explicitly migrated.
 
 `automation.item_origins` links an item to its agent, key and job. Append-only
 runtime audit events record key management, upload reservations, jobs and final

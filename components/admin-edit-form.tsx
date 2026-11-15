@@ -13,6 +13,7 @@ import { updateContent } from '@/app/actions/content'
 import { CONTENT_SCHEMAS, contentKind } from '@/lib/content-types'
 import { ContentFileFields } from '@/components/content-file-fields'
 import { useContentUploads } from '@/components/use-content-uploads'
+import { GameTagsField } from './game-tags-field'
 
 type Props = { content: EditableContent; factsEditable: boolean; downloadProviders: DownloadProvider[] }
 
@@ -64,7 +65,7 @@ export function AdminEditForm({ content, factsEditable, downloadProviders }: Pro
           <label>Title<input className="account-input" name="title" required defaultValue={content.title} maxLength={CONTENT_LIMITS.title} /></label>
           <label className="studio-full">Summary<textarea className="account-input" name="summary" rows={2} defaultValue={content.summary} maxLength={CONTENT_LIMITS.summary} /></label>
           <label className="studio-full">Description<textarea className="account-input" name="description" rows={6} defaultValue={content.description} maxLength={CONTENT_LIMITS.description} /></label>
-          <label className="studio-full">Tags<input className="account-input" name="tags" defaultValue={content.tags.join(', ')} maxLength={1000} /><span className="account-help">Separate tags with commas, for example: cozy, night, pixel art.</span></label>
+          {isGame ? <GameTagsField tags={content.tags} /> : <label className="studio-full">Tags<input className="account-input" name="tags" defaultValue={content.tags.join(', ')} maxLength={1000} /><span className="account-help">Separate tags with commas, for example: cozy, night, pixel art.</span></label>}
         </div>
       </section>
       <DownloadSourceFields providers={downloadProviders} sources={content.downloadSources} />

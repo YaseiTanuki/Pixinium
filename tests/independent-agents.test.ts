@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { PGlite } from '@electric-sql/pglite'
 import { migrate } from '../scripts/migrations'
 import { agentPayloadHash, newAgentCredential, parseAgentCredential } from '../lib/agent-identity'
+import { itemStorageDirectory } from '../lib/admin/storage-paths'
 import { cardsQuery } from '../server/repositories/catalog.queries'
 import { setContentStatusQuery } from '../server/repositories/content-edit'
 import { adminCatalogCountQuery, adminCatalogPageQuery } from '../server/repositories/admin-catalog.queries'
@@ -21,7 +22,7 @@ test('agent secrets are opaque, independently identified and hashed; payload has
 async function fixture(limits: { bytes?: number; jobs?: number; concurrent?: number } = {}) {
   const db = new PGlite()
   await migrate({ query: async (sql, values) => values ? db.query(sql, values) : (await db.exec(sql)).at(-1) })
-  const categories = (await db.query<{ id: string }>('SELECT id::text FROM catalog.categories ORDER BY id')).rows
+  const categories = (await db.query<{ id: string; slug: string }>('SELECT id::text,slug FROM catalog.categories ORDER BY id')).rows
   const category = categories[0].id
   const otherCategory = categories[1].id
   const agent = randomUUID()
@@ -44,7 +45,7 @@ async function fixture(limits: { bytes?: number; jobs?: number; concurrent?: num
   }
   const document = (job: { itemId: string; leaseToken: string }, filename = 'cover.png') => ({
     slug: `fixture-${job.itemId}`, title: 'Fixture', summary: '', description: '', metadata: {}, facts: [], tags: [],
-    accentColor: '#f1e5dd', attachments: [{ path: `agents/${agent}/items/${job.itemId}/${job.leaseToken}/${filename}`,
+    accentColor: '#f1e5dd', attachments: [{ path: `${itemStorageDirectory(categories[0].slug, job.itemId, job.leaseToken)}/${filename}`,
       mediaType: 'image', mime: 'image/png', byteSize: 32, width: 1, height: 1, role: 'cover', altText: 'Fixture', focalX: 50, focalY: 50 }],
   })
   return { db, agent, key, category, otherCategory, call, start, upload, document }
@@ -131,7 +132,16 @@ test('agent submission stays private despite published input, replays a draft re
     const catalog = await f.call<{ downloadSources: Array<{ slug: string; priority: number }> }>('catalog')
     assert.equal(catalog.downloadSources.find(source => source.slug === 'github')?.priority, 1)
     const schema = (await f.call<{ metadata_schema_key: string }>('category', [f.category])).metadata_schema_key
-    await assert.rejects(f.call('publish_job', [job.id, job.leaseToken, schema, JSON.stringify({ ...doc, attachments: [{ ...doc.attachments[0], path: 'profile/avatar/other.png' }] }), 'assets']), (e: { code: string }) => e.code === 'P0403')
+    for (const path of [
+      'profile/avatar/other.png',
+      `agents/${f.agent}/items/${job.itemId}/${job.leaseToken}/cover.png`,
+      doc.attachments[0].path.replace(/^[^/]+/, 'wrong-category'),
+      doc.attachments[0].path.replace(`/${job.itemId}/`, '/999999/'),
+      doc.attachments[0].path.replace(job.leaseToken, randomUUID()),
+      doc.attachments[0].path.replace('/cover.png', '/../other.png'),
+    ]) {
+      await assert.rejects(f.call('publish_job', [job.id, job.leaseToken, schema, JSON.stringify({ ...doc, attachments: [{ ...doc.attachments[0], path }] }), 'assets']), (e: { code: string }) => e.code === 'P0403')
+    }
     const result = await f.call<{ id: string; status: string; href?: string }>('publish_job', [job.id, job.leaseToken, schema, JSON.stringify(doc), 'assets'])
     assert.equal(result.id, job.itemId)
     assert.equal(result.status, 'draft')
@@ -165,6 +175,31 @@ test('agent submission stays private despite published input, replays a draft re
   } finally { await f.db.close() }
 })
 
+test('agent final paths follow the same category roots for images, music, games and assets', async () => {
+  const f = await fixture()
+  try {
+    await f.db.exec('RESET ROLE')
+    const categories = (await f.db.query<{ id: string; slug: string; metadata_schema_key: string }>(
+      "SELECT id::text,slug,metadata_schema_key FROM catalog.categories WHERE slug IN ('images','music','games','assets') ORDER BY id")).rows
+    assert.equal(categories.length, 4)
+    await f.db.query('UPDATE automation.agents SET allowed_categories=$1 WHERE id=$2', [categories.map(c => c.id), f.agent])
+    await f.db.exec('SET ROLE pixinium_agent')
+    for (const category of categories) {
+      const job = await f.start(randomUUID(), undefined, category.id)
+      const doc = f.document(job)
+      doc.attachments[0].path = `${itemStorageDirectory(category.slug, job.itemId, job.leaseToken)}/cover.png`
+      const result = await f.call<{ id: string; status: string }>('publish_job', [job.id, job.leaseToken,
+        category.metadata_schema_key, JSON.stringify(doc), 'assets'])
+      assert.equal(result.id, job.itemId)
+      assert.equal(result.status, 'draft')
+    }
+    await f.db.exec('RESET ROLE')
+    const paths = (await f.db.query<{ object_path: string }>('SELECT object_path FROM catalog.assets ORDER BY id')).rows
+    assert.deepEqual(paths.map(a => a.object_path.split('/')[0]), ['image', 'audio', 'game', 'assets'])
+    assert.ok(paths.every(a => !a.object_path.startsWith('agents/')))
+  } finally { await f.db.close() }
+})
+
 test('expired attempts are fenced and revocation is checked again at final publication', async () => {
   const f = await fixture()
   try {
@@ -178,6 +213,7 @@ test('expired attempts are fenced and revocation is checked again at final publi
     assert.notEqual(retry.leaseToken, first.leaseToken)
     const schema = (await f.call<{ metadata_schema_key: string }>('category', [f.category])).metadata_schema_key
     await assert.rejects(f.call('publish_job', [first.id, first.leaseToken, schema, JSON.stringify(f.document(first)), 'assets']), (e: { code: string }) => e.code === 'P0409')
+    await assert.rejects(f.call('publish_job', [retry.id, retry.leaseToken, schema, JSON.stringify(f.document(first)), 'assets']), (e: { code: string }) => e.code === 'P0403')
     await f.db.exec('RESET ROLE')
     await f.db.query('UPDATE automation.api_keys SET revoked_at=now() WHERE id=$1', [f.key.keyId])
     await f.db.exec('SET ROLE pixinium_agent')

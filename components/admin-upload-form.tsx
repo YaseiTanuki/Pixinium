@@ -13,6 +13,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import type { Category } from '@/lib/entities/catalog'
 import type { ContentResult } from '@/lib/admin/content'
 import { createContent } from '@/app/actions/content'
+import { GameTagsField } from './game-tags-field'
 
 type Props = { categories: Pick<Category, 'id' | 'name' | 'metadataSchemaKey'>[]; ready: boolean; downloadProviders: DownloadProvider[] }
 
@@ -58,7 +59,7 @@ export function AdminUploadForm({ categories, ready, downloadProviders }: Props)
           <label>Title<input className="account-input" name="title" required maxLength={CONTENT_LIMITS.title} /></label>
           <label className="studio-full">Summary<textarea className="account-input" name="summary" rows={2} maxLength={CONTENT_LIMITS.summary} /></label>
           <label className="studio-full">Description<textarea className="account-input" name="description" rows={6} maxLength={CONTENT_LIMITS.description} /></label>
-          <label className="studio-full">Tags<input className="account-input" name="tags" maxLength={1000} /><span className="account-help">Separate tags with commas, for example: cozy, night, pixel art.</span></label>
+          {isGame ? <GameTagsField key={String(result.message)} /> : <label className="studio-full">Tags<input className="account-input" name="tags" maxLength={1000} /><span className="account-help">Separate tags with commas, for example: cozy, night, pixel art.</span></label>}
         </div>
       </section>
       <ContentFileFields kind={{ isMusic, isGame, isAssetPack }} attachments={attachments} ready={ready} upload={upload} remove={removeUploads} editLabel={editLabel} />

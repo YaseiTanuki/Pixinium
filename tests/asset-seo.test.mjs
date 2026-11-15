@@ -3,6 +3,13 @@ import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import test from 'node:test'
 import ts from 'typescript'
+import { Zip, ZipPassThrough, unzipSync } from 'fflate'
+
+const zipExports = {}
+runInNewContext(ts.transpileModule(readFileSync(new URL('../lib/game-download.ts', import.meta.url), 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: zipExports, ReadableStream, Uint8Array,
+  require(name) { if (name === 'fflate') return { Zip, ZipPassThrough }; throw new Error(name) } })
 
 const source = ts.transpileModule(readFileSync(new URL('../app/api/assets/[id]/route.ts', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -20,7 +27,9 @@ function fixture(row = { bucket: 'assets', object_path: 'original.png', media_ty
     require(name) {
       if (name === '@/lib/database') return { createDatabase: () => sql }
       if (name === 'next/server') return { NextResponse: Response }
-      if (name === '@/lib/content-types') return { CONTENT_SCHEMAS: { image: 'images.v1' } }
+      if (name === '@/lib/content-types') return { CONTENT_SCHEMAS: { image: 'images.v1', game: 'games.v1' } }
+      if (name === '@/lib/game-swf') return { SWF_MIME: 'application/x-shockwave-flash' }
+      if (name === '@/lib/game-download') return zipExports
       if (name === '@/server/services/storage.service') return {
         adminStorage: () => ({ bucket: 'assets' }),
         signDownload: async () => { counts.redirects++; return 'https://storage.invalid/signed' },
@@ -130,4 +139,35 @@ test('HEAD checks public access and returns file headers without reading bytes o
   assert.equal(f.counts.downloads, 0)
   assert.equal((await f.head('?view=1', { 'if-none-match': '"original-v1"' })).status, 304)
   assert.equal((await fixture(null).head()).status, 404)
+})
+
+test('stored game SWFs download as generated ZIPs with unchanged original bytes', async () => {
+  const row = { bucket: 'assets', object_path: 'original.swf', media_type: 'file', mime_type: 'application/x-shockwave-flash', download: true, game_only: true }
+  const f = fixture(row)
+  const response = await f.get('', { range: 'bytes=0-7' })
+  assert.equal(response.status, 200)
+  assert.equal(response.headers.get('content-type'), 'application/zip')
+  assert.equal(response.headers.get('content-disposition'), 'attachment; filename="game-1.zip"')
+  assert.equal(response.headers.get('accept-ranges'), 'none')
+  assert.equal(response.headers.get('content-range'), null)
+  assert.equal(response.headers.get('content-length'), null)
+  assert.equal(response.headers.get('etag'), null)
+  const entries = unzipSync(new Uint8Array(await response.arrayBuffer()))
+  assert.deepEqual(Object.keys(entries), ['game-1.swf'])
+  assert.deepEqual(entries['game-1.swf'], f.bytes)
+  assert.equal(f.counts.downloads, 1)
+  const head = await f.head()
+  assert.equal(head.headers.get('content-type'), 'application/zip')
+  assert.equal(head.headers.get('content-length'), null)
+  assert.equal((await head.arrayBuffer()).byteLength, 0)
+  assert.equal(f.counts.streams, 1)
+  assert.equal(f.counts.downloads, 1)
+})
+
+test('uploaded game ZIPs remain original downloads', async () => {
+  const f = fixture({ bucket: 'assets', object_path: 'original.zip', media_type: 'file', mime_type: 'application/zip', download: true, game_only: true })
+  const response = await f.get()
+  assert.equal(response.headers.get('content-type'), 'application/zip')
+  assert.deepEqual(new Uint8Array(await response.arrayBuffer()), f.bytes)
+  assert.equal((await f.get('?play=1')).status, 404)
 })

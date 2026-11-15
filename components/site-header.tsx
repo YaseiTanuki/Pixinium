@@ -38,7 +38,7 @@ export function SiteHeader({ query, onQueryChange, searchTag, searchCategory, se
       </Link>
       <Link href={loaded && !userId ? '/login' : '/profile'} aria-label="Account" title="Account" className="col-start-3 row-start-1 flex size-11 items-center justify-center rounded-full border border-[#e4dad4] hover:bg-white md:col-start-4">
         {userId && <img key={userId} src="/api/profile/avatar" alt="" className={`${hasAvatar ? 'block' : 'hidden'} size-full rounded-full object-cover`} onLoad={() => setAvatarUserId(userId)} onError={() => setAvatarUserId(null)} />}
-        {!hasAvatar && <CircleUserRound size={20} aria-hidden="true" />}
+        {!hasAvatar && (userId ? <img src="/images/default-avatar.png" alt="" className="size-full rounded-full object-cover" /> : <CircleUserRound size={20} aria-hidden="true" />)}
       </Link>
       {error && <p role="alert" className="col-span-full text-sm text-red-700">{error}</p>}
     </header>
