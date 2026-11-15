@@ -4,7 +4,7 @@ import { categoryHref, itemHref } from './catalog'
 import { itemSeoImage } from './item-image'
 
 export const SITE_NAME = 'Pixinium'
-export const SITE_TITLE = 'Pixinium — Your little mine'
+export const SITE_TITLE = 'Pixinium — Mine now. Regret later.'
 export const SITE_DESCRIPTION = 'Unearth curated wallpapers, music, games and creative assets. Find something to save, enjoy and make your own.'
 
 export function siteOrigin(): URL {
