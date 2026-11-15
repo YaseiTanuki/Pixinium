@@ -27,7 +27,7 @@ const slug = z.string().min(1).max(120).regex(/^[a-z0-9]+(-[a-z0-9]+)*$/)
 export const attachmentSchema = z.object({
   path: z.string().max(200).regex(/^(?:agents\/)?[0-9a-f-]{36}\/[0-9a-f-]{36}\.[a-z0-9]+$/),
   altText: z.string().trim().max(CONTENT_LIMITS.attachmentLabel),
-  role: z.enum(['cover', 'download']).default('download'),
+  role: z.enum(['cover', 'preview', 'download']).default('download'),
   fileName: z.string().trim().min(1).max(255).optional(),
   focalX: z.number().min(0).max(100).default(50), focalY: z.number().min(0).max(100).default(50),
 })

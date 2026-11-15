@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { DownloadSourceFields } from './download-source-fields'
 import { downloadSourcesFromForm, type DownloadProvider } from '@/lib/download-sources'
-import { ASSET_PACK_LIMITS, CONTENT_LIMITS } from '@/lib/admin/limits'
+import { CONTENT_LIMITS } from '@/lib/admin/limits'
 import { CONTENT_SCHEMAS, contentKind } from '@/lib/content-types'
 import { ContentFileFields } from '@/components/content-file-fields'
 import { useContentUploads } from '@/components/use-content-uploads'
@@ -30,7 +30,7 @@ export function AdminUploadForm({ categories, ready, downloadProviders }: Props)
   const isMusic = kind === 'music'
   const isGame = kind === 'game'
   const isAssetPack = category?.metadataSchemaKey === CONTENT_SCHEMAS.asset
-  const { attachments, setAttachments, uploading, removing, progress, setProgress, pendingUploads, saveInProgress, upload, removeUploads, editLabel, reset } =
+  const { attachments, uploading, removing, progress, setProgress, pendingUploads, saveInProgress, upload, removeUploads, editLabel, reset } =
     useContentUploads({ isMusic, isGame, isAssetPack }, setResult)
   const busy = uploading || saving || removing
 

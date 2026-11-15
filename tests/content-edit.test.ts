@@ -82,7 +82,7 @@ test('content update diffs relations atomically and rechecks the admin role', { 
     const run = (actor: string) => db.transaction(async tx => {
       const results = []
       for (const [text, values] of updateContentStatements({ actor, id: replaceable.id, text: edit, editFacts: false,
-        files: { oldAssetIds: ids, attachments: fresh, bucket: 'private-uploads', metadata: { image_count: 1 } } })) results.push((await tx.query<Record<string, unknown>>(text, values)).rows)
+        files: { oldAssetIds: ids, attachments: fresh, bucket: 'private-uploads', metadata: {} } })) results.push((await tx.query<Record<string, unknown>>(text, values)).rows)
       return results
     })
     const denied = await run(member)
@@ -95,6 +95,6 @@ test('content update diffs relations atomically and rechecks the admin role', { 
     assert.deepEqual(links.map(l => [l.role, l.object_path]), fresh.map(f => [f.role, f.path]))
     assert.equal((await db.query(`SELECT 1 FROM catalog.assets WHERE object_path LIKE 'image/1/originals/%' OR object_path = 'image/1/thumbnail.webp'`)).rows.length, 0)
     assert.equal((await db.query(`SELECT 1 FROM catalog.item_assets WHERE item_id = $1`, [sibling.id])).rows.length, 1)
-    assert.deepEqual((await db.query<{ metadata: unknown }>(`SELECT metadata FROM catalog.items WHERE id = $1`, [replaceable.id])).rows[0].metadata, { image_count: 1 })
+    assert.deepEqual((await db.query<{ metadata: unknown }>(`SELECT metadata FROM catalog.items WHERE id = $1`, [replaceable.id])).rows[0].metadata, {})
   } finally { await db.close() }
 })

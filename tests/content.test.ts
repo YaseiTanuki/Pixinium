@@ -35,10 +35,11 @@ test('content validation rejects invalid publication, facts, roles and category 
   assert.equal(contentSchema.safeParse({ ...valid, tags: [...item.tags, ...item.tags] }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, attachments: [] }).success, false)
   assert.equal(contentSchema.safeParse({ ...valid, status: 'published', attachments: [{ path: `${admin}/${member}.png`, role: 'download', altText: 'Original sunset' }] }).success, true)
-  for (const role of ['gallery', 'preview']) {
+  for (const role of ['gallery']) {
     assert.equal(contentSchema.safeParse({ ...valid, attachments: [{ path: `${admin}/${member}.png`, role, altText: 'Original image' }] }).success, false)
   }
   assert.equal(attachmentSchema.parse({ path: `${admin}/${member}.png`, role: 'cover', altText: 'Thumbnail' }).role, 'cover')
+  assert.equal(attachmentSchema.parse({ path: `${admin}/${member}.png`, role: 'preview', altText: 'Preview image' }).role, 'preview')
   assert.equal(contentSchema.safeParse({ ...valid, facts: [...item.facts, ...item.facts] }).success, false)
   assert.equal(Object.hasOwn(contentSchema.parse({ ...valid, slug: '../escape' }), 'slug'), false)
   const { slug: _slug, ...withoutSlug } = valid

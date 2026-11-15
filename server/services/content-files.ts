@@ -7,7 +7,7 @@ import { validateMusicFiles } from '@/lib/admin/music'
 import { validateGameFiles } from '@/lib/admin/game'
 import { validateAssetPackFiles } from '@/lib/admin/asset-pack'
 import { CONTENT_LIMITS } from '@/lib/admin/limits'
-import { inspectUpload, finalizeUpload, storeImageThumbnail, readStoredBytes, storeGeneratedImage, storeGeneratedZip, deleteGeneratedPackFiles } from '@/server/services/storage.service'
+import { inspectUpload, finalizeUpload, storeImageThumbnail, readStoredBytes, storeGeneratedImage, deleteGeneratedPackFiles } from '@/server/services/storage.service'
 import { readAudioMetadata } from '@/server/services/audio-metadata'
 import { createAssetPack } from '@/server/services/asset-pack'
 import { validateSwf } from '@/lib/game-swf'
@@ -20,7 +20,7 @@ export function validateContentFiles(schemaKey: string, attachments: AttachmentI
     const error = validateAssetPackFiles(attachments)
     if (error) return error
   } else if (attachments.some(asset => asset.role !== 'download')) {
-    return 'Separate thumbnails are only supported for asset packs.'
+    return 'Separate thumbnails and preview uploads are only supported for asset packs.'
   }
   if (schemaKey === CONTENT_SCHEMAS.game) return validateGameFiles(attachments, true)
   if (schemaKey === CONTENT_SCHEMAS.music) return validateMusicFiles(attachments, true)
@@ -44,22 +44,20 @@ export async function inspectContentFiles(accountId: string, attachments: Attach
 
 type InspectedFile = Extract<Awaited<ReturnType<typeof inspectContentFiles>>, { attachments: unknown }>['attachments'][number]
 
-/** Copy staged uploads into `directory`; `pack` lists generated files that need cleanup if the save fails. */
+/** Copy staged uploads into `directory` and return the final asset records. */
 export async function finalizeContentFiles(schemaKey: string, attachments: InspectedFile[], directory: string) {
   const isMusic = schemaKey === CONTENT_SCHEMAS.music
   const isGame = schemaKey === CONTENT_SCHEMAS.game
   const finalized = []
-  let pack: { directory: string; paths: string[] } | undefined
   let hasThumbnail = false
   const tracks: Awaited<ReturnType<typeof readAudioMetadata>>[] = []
   if (schemaKey === CONTENT_SCHEMAS.asset) {
     const generated = await createAssetPack(attachments, directory, {
       read: asset => readStoredBytes(`staging/${asset.path}`, asset.byteSize, asset.etag),
       putImage: storeGeneratedImage,
-      putZip: storeGeneratedZip,
+      copyZip: asset => finalizeUpload(asset.path, asset.etag, 'application/zip', asset.byteSize, directory),
       remove: paths => deleteGeneratedPackFiles(directory, paths),
     })
-    pack = { directory, paths: generated.map(asset => asset.path) }
     finalized.push(...generated)
   } else for (const asset of attachments) {
     if (isGame && asset.extension === 'swf') {
@@ -86,5 +84,5 @@ export async function finalizeContentFiles(schemaKey: string, attachments: Inspe
     track_count: tracks.length, duration_seconds: Math.round(tracks.reduce((sum, track) => sum + track.durationSeconds, 0)),
     formats: [...new Set(tracks.map(track => track.format))],
   } : {}) : undefined
-  return { finalized, pack, musicMetadata }
+  return { finalized, musicMetadata }
 }

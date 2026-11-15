@@ -75,7 +75,7 @@ type CatalogRow = {
   download_sources?: unknown
   collect_count: number; view_count: number; download_count: number
   item: CatalogDetail['item']; category: CatalogDetail['category']; assets: Media[]
-  facts: CatalogDetail['facts']; metadata_schema_key: string; image_count: number
+  facts: CatalogDetail['facts']; metadata_schema_key: string
   music_metadata: Record<string, unknown>
   description: string; tags: CatalogDetail['tags']
 }

@@ -82,7 +82,8 @@ Defaults per agent account (shared by all of its keys and app instances):
 Quota reservations are conservative: failed or cancelled uploads do not refund
 reserved daily bytes, and failed jobs still count toward the daily job budget.
 This avoids using failures/cancellation to bypass limits. Per-file limits are
-still 50 MiB; normal content allows 12 files and asset packs up to 51 inputs.
+still 50 MiB; normal content allows 12 files and asset packs up to 7 inputs
+(one cover, one ZIP and five preview images).
 Operators may adjust bounded limits on `automation.agents`. Failed/invalid
 credentials still require a database lookup; use deployment-level request/IP
 protection for anonymous traffic. Application quotas protect authenticated work,
@@ -142,7 +143,7 @@ For publication, send `Idempotency-Key: <stable-job-key>` and a body such as:
 ```
 
 Get real category IDs from the catalog endpoint. Original image ratios, file
-validation, thumbnail generation, audio metadata and asset-pack generation use
+validation, thumbnail generation, audio metadata and asset-pack processing use
 the same processing pipeline as Admin Studio:
 
 - Images: originals are downloads; the first image generates a cover thumbnail.
@@ -153,9 +154,10 @@ the same processing pipeline as Admin Studio:
   SWF player in place of the detail thumbnail. Uploaded ZIPs are download only,
   including ZIPs containing HTML or SWF files. Flash playback uses Ruffle and
   may vary by game.
-- Asset packs: one `cover` image plus up to 50 `download` images. Supply
-  `fileName` for original ZIP entry names. Server-generated previews cannot be
-  submitted as inputs. See [asset-packs.md](asset-packs.md).
+- Asset packs: one `cover` image, one ZIP with `role: "download"`, and up to five
+  optional images with `role: "preview"`. The ZIP is preserved unchanged; cover
+  and previews are display-only and never added to it. Send `metadata: {}`.
+  See [asset-packs.md](asset-packs.md).
 
 Success is HTTP 201 with the item ID, slug, category, `status: "draft"` and a
 review-pending message. No public `href` is returned for a new draft. A completed retry
