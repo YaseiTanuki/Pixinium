@@ -20,5 +20,5 @@ export default async function AdminEditPage({ params }: { params: Promise<{ id: 
       <a className="account-text-link" href={`/api/admin/assets/${file.assetId}?download=1`}>{file.label || 'Download file'} · {file.role}</a>
     </div>)}</div></section>
     <AdminEditForm content={content} factsEditable={factsEditable} downloadProviders={await listManagedDownloadProviders()} />
-    <section className="workspace-panel studio-review-publish"><h2>Publication</h2><p className="workspace-muted">{content.status === 'draft' ? 'Only the saved version will be published. Unsaved edits are not included.' : 'Move this item to drafts to remove it from the public archive.'}</p><AdminPublicationAction id={content.id} status={content.status} label={content.status === 'draft' ? 'Publish saved draft' : undefined} /></section></div>
+    <section className="workspace-panel studio-review-publish"><h2>Publication</h2><p className="workspace-muted">{content.status === 'draft' ? 'Only the saved version will be published. Unsaved edits are not included.' : 'Move this item to drafts to remove it from the public Mine.'}</p><AdminPublicationAction id={content.id} status={content.status} label={content.status === 'draft' ? 'Publish saved draft' : undefined} /></section></div>
 }

@@ -26,7 +26,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     <header className="profile-identity">
       <div className="profile-avatar-control"><ProfileAvatar name={name} avatarPath={account.avatarPath} /><ProfileAvatarUpload /></div>
       <div className="profile-identity-copy"><h1>{name}</h1><p className="profile-email"><Mail size={15} aria-hidden="true" /><span>{account.email}</span></p><span className="profile-verified"><BadgeCheck size={14} aria-hidden="true" /> Email verified</span></div>
-      <Link className="profile-browse" href="/search">Explore the archive <ArrowUpRight size={16} aria-hidden="true" /></Link>
+      <Link className="profile-browse" href="/search">Explore the Mine <ArrowUpRight size={16} aria-hidden="true" /></Link>
     </header>
     <div className="profile-content-grid">
       <ProfileCollection items={catalog.items.map(({ item, category, cover, facts, tags, viewCount, collectCount, downloadCount }) => ({ item, category, cover, facts, tags, viewCount, collectCount, downloadCount }))} categories={catalog.categories.map(({ id, name, iconKey, metadataSchemaKey, slug }) => ({ id, name, iconKey, metadataSchemaKey, slug }))} unavailable={catalog.unavailable} />
@@ -36,7 +36,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <div><dt><Mail size={14} aria-hidden="true" /> Email address</dt><dd>{account.email}</dd></div>
           {joinedLabel && <div><dt><CalendarDays size={14} aria-hidden="true" /> Joined Pixinium</dt><dd><time dateTime={account.joinedAt}>{joinedLabel}</time></dd></div>}
         </dl><form action={logout}><button className="profile-signout"><LogOut size={15} aria-hidden="true" /> Sign out</button></form></section>
-        {hasPermission(account.role, 'admin:access') && <section className="profile-studio-card"><span className="profile-studio-icon"><Upload size={19} aria-hidden="true" /></span><h2>Add to the archive</h2><p>Upload a new find, prepare its details and share it with everyone.</p><Link href="/admin">Open admin studio <ArrowUpRight size={16} aria-hidden="true" /></Link></section>}
+        {hasPermission(account.role, 'admin:access') && <section className="profile-studio-card"><span className="profile-studio-icon"><Upload size={19} aria-hidden="true" /></span><h2>Contribute to the Mine</h2><p>Upload a new find, prepare its details and share it with everyone.</p><Link href="/admin">Open admin studio <ArrowUpRight size={16} aria-hidden="true" /></Link></section>}
         <section className="profile-note"><h2>A collection that feels like you.</h2><p>Fresh screens, good sounds and tiny escapes. Keep the ones you want to come back to.</p></section>
       </aside>
     </div>

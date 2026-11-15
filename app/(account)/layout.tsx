@@ -10,11 +10,11 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
     <a className="skip-home" href="#account-main">Skip to content</a>
     <header className="account-header page-shell">
       <BrandLogo />
-      <Link href="/" className="account-back"><ArrowLeft size={15} aria-hidden="true" /> Back to the archive</Link>
+      <Link href="/" className="account-back"><ArrowLeft size={15} aria-hidden="true" /> Back to the Mine</Link>
     </header>
     <main id="account-main" className="account-shell">
-      <aside className="account-intro" aria-label="Your little archive">
-        <p className="eyebrow"><span className="status-dot" /> A LITTLE ARCHIVE. A LOT TO LOVE.</p>
+      <aside className="account-intro" aria-label="Your little mine">
+        <p className="eyebrow"><span className="status-dot" /> A LITTLE MINE. A LOT TO DISCOVER.</p>
         <p className="account-intro-title">Your own<br />little <span className="happy-underline">corner.</span></p>
         <p className="account-intro-copy">A fresh screen. A good soundtrack. A tiny escape.<br />A place for the things that feel like you.</p>
         <div className="account-keepsakes" aria-hidden="true">
