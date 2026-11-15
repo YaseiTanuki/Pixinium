@@ -13,10 +13,10 @@ export function RelatedItems({ items, schemaKey }: { items: CatalogDetail[]; sch
       <div className="section-heading">
         <div>
           <p className="eyebrow">KEEP THE GOOD THINGS COMING</p>
-          <h2 id="related-title">A few more little favorites<span>.</span></h2>
+          <h2 id="related-title">Nearby Finds<span>.</span></h2>
         </div>
         <Link href="/search" className="archive-link">
-          Explore the archive <ArrowUpRight size={16} aria-hidden="true" />
+          Explore the Mine <ArrowUpRight size={16} aria-hidden="true" />
         </Link>
       </div>
       <div className="detail-related-results">
