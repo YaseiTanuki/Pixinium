@@ -1,7 +1,6 @@
 import { MAX_CONTENT_FILE_BYTES } from '../../lib/admin/limits'
 import 'server-only'
 import { randomUUID } from 'node:crypto'
-import { createReadStream } from 'node:fs'
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, CopyObjectCommand, DeleteObjectCommand, HeadBucketCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createImageThumbnail } from '@/server/services/image-thumbnail'
@@ -165,16 +164,6 @@ export async function storeGeneratedImage(path: string, bytes: Uint8Array) {
   const { storage, bucket } = adminStorage()
   await storage.send(new PutObjectCommand({ Bucket: bucket, Key: path,
     Body: bytes, ContentLength: bytes.length, ContentType: 'image/webp' }))
-}
-
-export async function storeGeneratedZip(path: string, localFile: string, size: number) {
-  const { storage, bucket } = adminStorage()
-  const body = createReadStream(localFile)
-  try {
-    await storage.send(new PutObjectCommand({ Bucket: bucket, Key: path,
-      Body: body, ContentLength: size, ContentType: 'application/zip',
-      ContentDisposition: 'attachment; filename="asset-pack.zip"' }))
-  } finally { body.destroy() }
 }
 
 /** Only server-generated paths in the newly reserved item directory are accepted. */

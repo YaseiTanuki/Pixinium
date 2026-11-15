@@ -15,8 +15,8 @@ export const CONTENT_LIMITS = {
 export const MAX_CONTENT_FILE_BYTES = CONTENT_LIMITS.fileMegabytes * 1024 * 1024
 
 export const ASSET_PACK_LIMITS = {
-  images: 50,
+  files: 1,
   previews: 5,
 } as const
 
-export const MAX_ATTACHMENT_COUNT = Math.max(CONTENT_LIMITS.files, ASSET_PACK_LIMITS.images + 1)
+export const MAX_ATTACHMENT_COUNT = Math.max(CONTENT_LIMITS.files, ASSET_PACK_LIMITS.files + ASSET_PACK_LIMITS.previews + 1)

@@ -68,7 +68,7 @@ test('registry CRUD, relational links, authorization and public visibility round
       for (const [sql, values] of updateContentStatements({ actor: admin, id, text: { ...text, ...changes }, editFacts: true,
         ...(metadata ? { files: { oldAssetIds: [], attachments: [], bucket: 'assets', metadata } } : {}) })) await tx.query(sql, values)
     })
-    await edit({}, { image_count: 2 }); assert.deepEqual(await links(), [github, archive])
+    await edit({}, {}); assert.deepEqual(await links(), [github, archive])
     await edit({ downloadSources: [{ provider: 'other', url: 'https://example.org/file' }, github] })
     await assert.rejects(db.query(deleteDownloadProviderQuery, [admin, 'other']), /foreign key/)
     await assert.rejects(db.query(updateDownloadProviderQuery, [admin, 'other', 'Other', 'new.example.org', 0, true]), /Domain cannot change/)

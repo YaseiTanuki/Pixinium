@@ -28,11 +28,12 @@ cover from the first image: a WebP thumbnail up to 800px on its longest side,
 quality 80, preserving aspect ratio and avoiding upscaling. Sharp applies EXIF
 orientation to the thumbnail and leaves original bytes untouched. Input decoding
 is limited to 64 million pixels. Thumbnail dimensions and file size are persisted
-separately from the original. Admins no longer choose cover/gallery/preview roles.
+separately from the original. Ordinary uploads generate their display roles automatically.
 For image, music and game items, the stored roles are `cover` (generated display
 thumbnail) and `download`. Asset packs also use the `preview` role introduced in
-migration 0011. They accept an explicit separate cover and pack images, then store
-the cover thumbnail, up to five WebP previews, and a generated ZIP. See [Asset packs](asset-packs.md).
+migration 0011. They accept a separate cover, one uploaded ZIP and up to five
+explicit preview images. The ZIP is copied unchanged; thumbnail and preview images
+are stored separately and never added to the ZIP. See [Asset packs](asset-packs.md).
 For a multi-file item, the first image supplies its single thumbnail; all originals
 remain downloadable. Publishing requires an image; agent submissions remain private drafts until admin review.
 
