@@ -6,7 +6,7 @@ import { migrate, type MigrationConnection } from '../scripts/migrations'
 import { results } from './fixtures/legacy-archive'
 import { parseCategoryMetadata } from '../lib/entities/metadata'
 import { updateItemMetadata } from '../server/services/catalog-metadata'
-import { cardsQuery, categoriesQuery } from '../server/repositories/catalog.queries'
+import { cardsQuery } from '../server/repositories/catalog.queries'
 import { itemHref } from '../lib/catalog'
 import type { CatalogCard } from '../lib/entities/catalog'
 

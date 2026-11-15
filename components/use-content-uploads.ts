@@ -6,7 +6,7 @@ import { fileType, MAX_CONTENT_FILE_BYTES, type AttachmentInput, type ContentRes
 import { prepareContentUpload, discardContentUploads } from '@/app/actions/content'
 import { isGamePackage } from '@/lib/admin/game'
 
-export type UploadKind = 'image' | 'audio' | 'game' | 'cover' | 'pack-image'
+export type UploadKind = 'image' | 'audio' | 'game' | 'cover' | 'pack-zip' | 'pack-preview'
 type Flags = { isMusic: boolean; isGame: boolean; isAssetPack: boolean }
 
 /** Staging uploads shared by the create and edit forms; leftovers are discarded when the page is left. */
@@ -44,15 +44,19 @@ export function useContentUploads({ isMusic, isGame, isAssetPack }: Flags, setRe
 
   async function upload(files: FileList | null, kind?: UploadKind) {
     if (!files?.length) return
-    const mediaKind = kind === 'cover' || kind === 'pack-image' ? 'image' : kind
+    if (kind === 'pack-zip') {
+      if (files.length !== 1 || fileType(files[0].name)?.extension !== 'zip') { setResult({ error: 'Choose one ZIP file.' }); return }
+      if (attachments.some(asset => asset.role === 'download')) { setResult({ error: 'Remove the current ZIP before uploading its replacement.' }); return }
+    }
+    const mediaKind = kind === 'cover' || kind === 'pack-preview' ? 'image' : kind === 'pack-zip' ? undefined : kind
     if (mediaKind && Array.from(files).some(file => mediaKind === 'game' ? !isGamePackage(file.name) : fileType(file.name)?.mediaType !== mediaKind)) {
       setResult({ error: kind === 'game' ? 'Choose a ZIP or SWF game file.' : mediaKind === 'image' ? 'Choose a supported image.' : 'Choose supported audio tracks.' }); return
     }
     if (kind === 'cover' && (files.length !== 1 || attachments.some(asset => asset.role === 'cover'))) {
       setResult({ error: 'Remove the current thumbnail before uploading its replacement.' }); return
     }
-    if (kind === 'pack-image' && attachments.filter(asset => asset.role === 'download').length + files.length > ASSET_PACK_LIMITS.images) {
-      setResult({ error: `Upload up to ${ASSET_PACK_LIMITS.images} pack images.` }); return
+    if (kind === 'pack-preview' && attachments.filter(asset => asset.role === 'preview').length + files.length > ASSET_PACK_LIMITS.previews) {
+      setResult({ error: `Upload up to ${ASSET_PACK_LIMITS.previews} preview images.` }); return
     }
     if ((isMusic || isGame) && kind === 'image' && (files.length !== 1 || attachments.some(asset => fileType(asset.path)?.mediaType === 'image'))) {
       setResult({ error: 'Remove the current artwork before uploading its replacement.' }); return
@@ -60,7 +64,7 @@ export function useContentUploads({ isMusic, isGame, isAssetPack }: Flags, setRe
     if (isGame && kind === 'game' && (files.length !== 1 || attachments.some(asset => isGamePackage(asset.path)))) {
       setResult({ error: 'Remove the current game package before uploading its replacement.' }); return
     }
-    const fileLimit = isAssetPack ? ASSET_PACK_LIMITS.images + 1 : CONTENT_LIMITS.files
+    const fileLimit = isAssetPack ? ASSET_PACK_LIMITS.previews + ASSET_PACK_LIMITS.files + 1 : CONTENT_LIMITS.files
     if (attachments.length + files.length > fileLimit) { setResult({ error: `Attach up to ${fileLimit} files per item.` }); return }
     setUploading(true)
     setResult({})
@@ -79,10 +83,10 @@ export function useContentUploads({ isMusic, isGame, isAssetPack }: Flags, setRe
           if (!cleanup.error) pendingUploads.current.delete(prepared.path)
           throw error
         }
-        setAttachments(current => [...current, { path: prepared.path!, role: kind === 'cover' ? 'cover' : 'download',
+        setAttachments(current => [...current, { path: prepared.path!, role: kind === 'cover' ? 'cover' : kind === 'pack-preview' ? 'preview' : 'download',
           fileName: file.name, altText: file.name, focalX: 50, focalY: 50 }])
       }
-      setProgress(isAssetPack ? 'Images uploaded. The ZIP and previews will be generated when you publish.' : isGame ? kind === 'image' ? 'Artwork uploaded. Its thumbnail will be generated when you save.' : 'Game package uploaded.' : isMusic
+      setProgress(isAssetPack ? kind === 'pack-zip' ? 'ZIP uploaded. Its contents will be kept unchanged.' : 'Images uploaded for display only.' : isGame ? kind === 'image' ? 'Artwork uploaded. Its thumbnail will be generated when you save.' : 'Game package uploaded.' : isMusic
         ? kind === 'image' ? 'Artwork uploaded. Its thumbnail will be generated when you save.' : 'Tracks uploaded. Audio properties will be detected when you save.'
         : 'Originals uploaded. A smaller thumbnail will be generated when you save.')
     } catch (error) { setResult({ error: error instanceof Error ? error.message : 'Upload failed.' }); setProgress('') }

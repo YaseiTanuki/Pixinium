@@ -6,9 +6,7 @@ const nonnegativeInteger = z.number().int().nonnegative().max(Number.MAX_SAFE_IN
 
 export const metadataSchemas = {
   'generic.v1': z.strictObject({}),
-  [CONTENT_SCHEMAS.asset]: z.strictObject({
-    image_count: positiveInteger,
-  }),
+  [CONTENT_SCHEMAS.asset]: z.strictObject({}),
   // Image dimensions/formats live on assets; display facts are derived from them.
   [CONTENT_SCHEMAS.image]: z.strictObject({}),
   [CONTENT_SCHEMAS.music]: z.strictObject({

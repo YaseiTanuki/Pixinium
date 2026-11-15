@@ -88,12 +88,11 @@ export async function createContentForActor(account: ContentActor | null, input:
     if (!categories[0]) return { error: 'Choose an active category.' }
     const schemaKey = String(categories[0].metadata_schema_key)
     const isMusic = schemaKey === CONTENT_SCHEMAS.music
-    const isGame = schemaKey === CONTENT_SCHEMAS.game
     const isAssetPack = schemaKey === CONTENT_SCHEMAS.asset
     const fileError = validateContentFiles(schemaKey, value.attachments)
     if (fileError) return { error: fileError }
     let metadata = parseCategoryMetadata(schemaKey, isAssetPack
-      ? { image_count: value.attachments.filter(asset => asset.role === 'download').length }
+      ? {}
       : isMusic ? {} : value.metadata)
     setStage('storage_policy')
     const { bucket } = await requirePrivateStorage()
@@ -111,8 +110,8 @@ export async function createContentForActor(account: ContentActor | null, input:
     const directory = itemStorageDirectory(String(categories[0].slug), reservedItemId,
       isAgentActor(account) ? account.job!.leaseToken : randomUUID())
     setStage('finalize_files')
-    const { finalized, pack, musicMetadata } = await finalizeContentFiles(schemaKey, attachments, directory)
-    pendingPack = pack
+    const { finalized, musicMetadata } = await finalizeContentFiles(schemaKey, attachments, directory)
+    if (isAssetPack) pendingPack = { directory, paths: finalized.map(asset => asset.path) }
     if (musicMetadata) metadata = musicMetadata
     setStage('facts')
     let facts = value.facts

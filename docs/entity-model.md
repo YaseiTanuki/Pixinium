@@ -34,7 +34,7 @@ erDiagram
 | --- | --- | --- |
 | `categories` | Slug, display name, description, icon key, artwork style, display order, active flag | Category doors, search filters, breadcrumbs |
 | `items` | Stable ID, slug, title, summary, description, category, publication state | Archive cards, detail heading and about section |
-| `item_facts` | Ordered custom key/label/value facts and creator attribution | Image resolution/format and pack quantity/format are computed on read, not stored again |
+| `item_facts` | Ordered custom key/label/value facts and creator attribution | Image resolution/format are computed on read; other categories retain manual display facts |
 | `assets` | Reusable external, S3, Supabase Storage, or R2 reference; dimensions, duration, byte size | Artwork, download sizes, audio track durations |
 | `item_assets` | Media role, alt text, crop focal point, display order | One cover per item, preview and download attachments |
 | `tags`, `item_tags` | Many-to-many labels and intended uses across categories | Cozy, night, wallpaper, background and avatar without duplicate uploads |
@@ -87,7 +87,7 @@ schemas selected by the category's persisted `metadata_schema_key`:
 | `images.v1` | No custom metadata; dimensions and MIME type come from the original asset |
 | `music.v1` | `track_count`, `duration_seconds`, audio `formats` |
 | `games.v1` | No custom metadata; file size comes from the download, platforms/version use display facts |
-| `assets.v1` | Required server-derived `image_count`, displayed as pack quantity |
+| `assets.v1` | Empty metadata; one uploaded ZIP with separate cover and preview images |
 | `generic.v1` | No custom fields; safe default for a new category |
 
 Unknown schema keys/fields, wrong types, negative counts, fractional counts,

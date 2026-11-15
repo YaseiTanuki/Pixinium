@@ -66,11 +66,10 @@ export async function updateContentForActor(account: ContentActor | null, input:
       const [existing] = await sql.query(currentAssetIdsQuery, [value.id])
       // Each replacement gets its own folder so generated names (thumbnail, pack.zip) never collide with the old files.
       const directory = itemStorageDirectory(String(current.category), value.id, randomUUID())
-      const { finalized, pack, musicMetadata } = await finalizeContentFiles(schemaKey, inspected.attachments, directory)
+      const { finalized, musicMetadata } = await finalizeContentFiles(schemaKey, inspected.attachments, directory)
       pendingFiles = { directory, paths: finalized.map(asset => asset.path) }
-      if (pack) pendingFiles.paths.push(...pack.paths)
       const metadata = schemaKey === CONTENT_SCHEMAS.asset
-        ? parseCategoryMetadata(schemaKey, { image_count: value.attachments.filter(asset => asset.role === 'download').length })
+        ? parseCategoryMetadata(schemaKey, {})
         : musicMetadata
       files = { oldAssetIds: existing.ids as string[], attachments: finalized, bucket, metadata }
     }

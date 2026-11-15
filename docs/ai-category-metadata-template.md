@@ -35,7 +35,7 @@ the catalog API.
 | Wallpapers | `images.v1` | `{}` | Original image dimensions and format are detected from the uploaded file. Do not add them to `metadata`. |
 | Music | `music.v1` | `{"track_count": 3, "duration_seconds": 245, "formats": ["mp3"]}` | Include only values confirmed by the audio files. All fields are optional; supported formats are `mp3`, `flac`, `wav`, `ogg`, and `aac`. |
 | Games | `games.v1` | `{}` | Put known platform and version information in display `facts`. The package size is derived from the download. |
-| Assets | `assets.v1` | `{}` on submission | The server calculates and stores `image_count`; do not supply or guess it. Describe the pack using display `facts` as needed. |
+| Assets | `assets.v1` | `{}` | Upload one ZIP with separate cover and optional preview images. Describe the pack using display `facts` as needed. |
 | Other categories | `generic.v1` | `{}` | No custom metadata fields are accepted unless the category uses another documented schema. |
 
 The music example is illustrative, not a value to copy. Omit unknown values
@@ -55,8 +55,9 @@ only a confirmed format can use:
 - `track_count` must be a positive whole number. `duration_seconds` must be a
   non-negative whole number. Both must be safe integers.
 - `formats` must be a non-empty array of supported audio format names.
-- Image dimensions, image formats, game package size, and asset-pack image count
-  are derived by the server; do not generate those values in metadata.
+- Image dimensions, image formats and game package size are derived by the server;
+  do not generate those values in metadata. Asset ZIP contents are not inspected
+  to infer a file count.
 - A new category without a dedicated schema should use `generic.v1` and an
   empty metadata object.
 
