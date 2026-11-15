@@ -108,9 +108,8 @@ export async function createContentForActor(account: ContentActor | null, input:
     const [reservation] = isAgentActor(account) ? [{ id: account.job!.itemId }]
       : await sql!`SELECT nextval(pg_get_serial_sequence('catalog.items', 'id'))::text AS id`
     const reservedItemId = String(reservation.id)
-    const directory = isAgentActor(account)
-      ? `agents/${account.id}/items/${reservedItemId}/${account.job!.leaseToken}`
-      : itemStorageDirectory(String(categories[0].slug), reservedItemId)
+    const directory = itemStorageDirectory(String(categories[0].slug), reservedItemId,
+      isAgentActor(account) ? account.job!.leaseToken : randomUUID())
     setStage('finalize_files')
     const { finalized, pack, musicMetadata } = await finalizeContentFiles(schemaKey, attachments, directory)
     pendingPack = pack

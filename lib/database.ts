@@ -32,6 +32,7 @@ class Statement<T extends QueryResultRow = QueryResultRow> implements Promise<T[
 }
 
 export interface Database {
+  withTransaction<T>(operation: (client: Pick<DatabaseClient, 'query'>) => Promise<T>): Promise<T>
   <T extends QueryResultRow = QueryResultRow>(parts: TemplateStringsArray, ...values: unknown[]): Statement<T>
   query<T extends QueryResultRow = QueryResultRow>(text: string, values?: unknown[]): Statement<T>
   transaction(statements: Statement[] | ((sql: Database) => Statement[]), options?: {
@@ -56,6 +57,18 @@ export function createDatabase(connectionString: string, createClient: () => Dat
   sql.query = <T extends QueryResultRow>(text: string, values: unknown[] = []) =>
     new Statement<T>(owner, text, [...values], statement => withClient(async client =>
       (await client.query(statement.text, statement.values)).rows as T[]))
+  // Keep row locks while an external operation completes; throw to roll back database changes.
+  sql.withTransaction = operation => withClient(async client => {
+    await client.query('BEGIN', [])
+    try {
+      const result = await operation(client)
+      await client.query('COMMIT', [])
+      return result
+    } catch (error) {
+      await client.query('ROLLBACK', []).catch(() => {})
+      throw error
+    }
+  })
   sql.transaction = async (input, options = {}) => {
     const statements = typeof input === 'function' ? input(sql) : input
     if (statements.some(statement => !(statement instanceof Statement) || statement.owner !== owner || statement.started)) {

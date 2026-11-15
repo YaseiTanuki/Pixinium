@@ -209,6 +209,15 @@ signed upload URLs. Polling a 202 response retains the same body and key.
 
 ## Audit and maintenance
 
+Final files use the same category/item/version layout as studio uploads, for
+example `game/<item-id>/v-<uuid>/originals/<file-id>.zip`. Final keys contain no
+agent ID or `agents/` directory. The version UUID is the active job lease, so an
+expired attempt cannot overwrite the files of its retry. Temporary signed uploads
+still use `staging/agents/<agent-id>/...` for ownership checks and are removed after
+the draft is saved. Agent provenance stays in the database, independently of keys.
+Apply migration `0024_unify_agent_storage_paths.sql` before using the updated
+upload service. Existing objects retain their keys until explicitly migrated.
+
 `automation.item_origins` links an item to its agent, key and job. Append-only
 runtime audit events record key management, upload reservations, jobs and final
 publication without raw tokens or private request bodies. The runtime cannot
