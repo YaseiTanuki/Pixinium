@@ -3,7 +3,7 @@ import test from 'node:test'
 import { randomUUID } from 'node:crypto'
 import { PGlite } from '@electric-sql/pglite'
 import { migrate } from '../scripts/migrations'
-import { agentPayloadHash, newAgentCredential, parseAgentCredential } from '../lib/agent-identity'
+import { agentPayloadHash, agentContentPayloadHash, newAgentCredential, parseAgentCredential } from '../lib/agent-identity'
 import { itemStorageDirectory } from '../lib/admin/storage-paths'
 import { cardsQuery } from '../server/repositories/catalog.queries'
 import { setContentStatusQuery } from '../server/repositories/content-edit'
@@ -17,6 +17,10 @@ test('agent secrets are opaque, independently identified and hashed; payload has
   assert.equal(parseAgentCredential(`Bearer ${'x'.repeat(43)}`), null)
   assert.equal(parseAgentCredential(`Bearer ${key.token}\n`), null)
   assert.equal(agentPayloadHash({ b: 2, a: { y: 1, x: 0 } }), agentPayloadHash({ a: { x: 0, y: 1 }, b: 2 }))
+  const oldRequest = { title: 'Existing upload', status: 'published' }
+  assert.equal(agentContentPayloadHash(oldRequest), agentPayloadHash(oldRequest))
+  assert.equal(agentContentPayloadHash({ ...oldRequest, noDirectDownload: false }), agentPayloadHash(oldRequest))
+  assert.notEqual(agentContentPayloadHash({ ...oldRequest, noDirectDownload: true }), agentPayloadHash(oldRequest))
 })
 
 async function fixture(limits: { bytes?: number; jobs?: number; concurrent?: number } = {}) {
@@ -128,7 +132,7 @@ test('agent submission stays private despite published input, replays a draft re
     await assert.rejects(f.start(request, agentPayloadHash({ different: true })), (e: { code: string }) => e.code === 'P0409')
     const uploaded = await f.upload()
     await f.call('claim_uploads', [job.id, job.leaseToken, [uploaded]])
-    const doc = { ...f.document(job), status: 'published', downloadSources: [{ provider: 'github', url: 'https://github.com/pixinium/archive' }] }
+    const doc = { ...f.document(job), status: 'published', noDirectDownload: true, downloadSources: [{ provider: 'github', url: 'https://github.com/pixinium/archive' }] }
     const catalog = await f.call<{ downloadSources: Array<{ slug: string; priority: number }> }>('catalog')
     assert.equal(catalog.downloadSources.find(source => source.slug === 'github')?.priority, 1)
     const schema = (await f.call<{ metadata_schema_key: string }>('category', [f.category])).metadata_schema_key
@@ -145,6 +149,9 @@ test('agent submission stays private despite published input, replays a draft re
     const result = await f.call<{ id: string; status: string; href?: string }>('publish_job', [job.id, job.leaseToken, schema, JSON.stringify(doc), 'assets'])
     assert.equal(result.id, job.itemId)
     assert.equal(result.status, 'draft')
+    await f.db.exec('RESET ROLE')
+    assert.equal((await f.db.query<{ no_direct_download: boolean }>('SELECT no_direct_download FROM catalog.items WHERE id=$1', [job.itemId])).rows[0].no_direct_download, true)
+    await f.db.exec('SET ROLE pixinium_agent')
     assert.equal(result.href, undefined)
     assert.equal((await f.start(request)).result?.id, job.itemId)
     await f.db.exec('RESET ROLE')

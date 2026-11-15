@@ -1,5 +1,5 @@
 export const editableContentQuery = `
-SELECT i.id::text, i.title, i.summary, i.description, i.status, i.slug, c.slug AS category, c.metadata_schema_key,
+SELECT i.id::text, i.title, i.summary, i.description, i.status, i.slug, i.no_direct_download, c.slug AS category, c.metadata_schema_key,
   coalesce((SELECT jsonb_agg(jsonb_build_object('provider',source_slug,'url',url) ORDER BY source_slug)
     FROM catalog.item_download_sources WHERE item_id=i.id),'[]'::jsonb) AS download_sources,
   coalesce((SELECT jsonb_agg(t.name ORDER BY t.name) FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id WHERE it.item_id = i.id), '[]'::jsonb) AS tags,
@@ -63,7 +63,8 @@ WITH actor AS MATERIALIZED (
 ), input AS (SELECT $3::jsonb AS doc), item AS (
   UPDATE catalog.items i SET title = doc->>'title', summary = doc->>'summary',
     description = coalesce(nullif(doc->>'description', doc->>'summary'), ''),
-    metadata = coalesce($5::jsonb, i.metadata)
+    metadata = coalesce($5::jsonb, i.metadata),
+    no_direct_download = coalesce((doc->>'noDirectDownload')::boolean, i.no_direct_download)
   FROM input CROSS JOIN actor
   WHERE i.id = $2::bigint RETURNING i.id, i.slug, i.category_id, i.status
 ), removed_sources AS (

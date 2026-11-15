@@ -12,6 +12,12 @@ export function isAgentActor(actor: ContentActor): actor is AgentActor {
   return actor.kind === 'agent'
 }
 
+/** New default-false fields must not change hashes of existing upload checkpoints. */
+export function agentContentPayloadHash(input: Record<string, unknown>) {
+  const { noDirectDownload, ...previousFields } = input
+  return agentPayloadHash(noDirectDownload === true ? { ...previousFields, noDirectDownload: true } : previousFields)
+}
+
 export function stagingOwner(actor: ContentActor) {
   return isAgentActor(actor) ? `agents/${actor.id}` : actor.id
 }

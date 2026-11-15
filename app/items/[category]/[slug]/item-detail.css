@@ -48,6 +48,7 @@
 .detail-download-button { border-color: #ac343f; background: #ac343f; color: white; list-style: none; box-shadow: 0 4px 12px #ac343f18; }
 .detail-download-button::-webkit-details-marker { display: none; }
 .detail-download-button:hover { background: #902b35; border-color: #902b35; }
+.detail-download-button:disabled, .detail-download-button:disabled:hover { background: #e5ded8; border-color: #d4c9c0; color: #786d64; box-shadow: none; cursor: not-allowed; }
 .detail-save:disabled { opacity: .55; cursor: wait; }
 .detail-actions svg { flex-shrink: 0; }
 .detail-actions :is(a, button, summary):focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }

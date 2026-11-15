@@ -43,7 +43,7 @@ export function AdminUploadForm({ categories, ready, downloadProviders }: Props)
     saveInProgress.current = true
     setResult({})
     try {
-      const response = await createContent({ categoryId, title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', metadata, downloadSources: downloadSourcesFromForm(form), tags, facts: isImage ? [] : facts, attachments })
+      const response = await createContent({ categoryId, title: form.get('title'), summary: form.get('summary'), description: form.get('description'), status: 'published', metadata, downloadSources: downloadSourcesFromForm(form), noDirectDownload: form.get('noDirectDownload') === 'on', tags, facts: isImage ? [] : facts, attachments })
       setResult(response)
       if (response.message) { pendingUploads.current.clear(); router.refresh() }
     } catch { setResult({ error: 'Could not save content. Your entries are preserved; please retry.' }) }

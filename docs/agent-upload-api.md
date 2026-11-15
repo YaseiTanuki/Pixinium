@@ -159,6 +159,12 @@ the same processing pipeline as Admin Studio:
   and previews are display-only and never added to it. Send `metadata: {}`.
   See [asset-packs.md](asset-packs.md).
 
+Set the optional `noDirectDownload: true` field to disable Pixinium's direct
+download action for the item. Only configured, active external sources are offered;
+if none are available, the detail page shows a disabled "Download not available"
+button. The default is false. Existing idempotency checkpoints that omit this field
+retain their original request hashes. Image viewing and playback remain available.
+
 Success is HTTP 201 with the item ID, slug, category, `status: "draft"` and a
 review-pending message. No public `href` is returned for a new draft. A completed retry
 returns the same stored result with `Idempotency-Replayed: true`. A concurrent

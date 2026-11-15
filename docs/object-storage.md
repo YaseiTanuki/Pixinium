@@ -54,6 +54,15 @@ HEAD returns object headers without reading bytes or incrementing download count
 Archived items have no public application asset route. Uploaded MIME metadata is not
 malware scanning; supported file extensions are defined in `lib/admin/content.ts`.
 
+Items can disable direct downloads with **No direct download** beside their source
+links. The UI then offers only active external sources, or a locked download button
+when none are available. The asset API rejects attachment GET/HEAD/range downloads
+with 403 when no published item referencing the asset permits direct downloads.
+Cover/preview images, inline original-image views and playback remain available.
+Shared assets remain downloadable if another published item still permits it.
+Migration `0025_no_direct_download.sql` adds the default-false policy and updates
+the agent broker; apply it before deploying the updated read/write code.
+
 Deleting an item removes its exclusive stored files before committing the database
 deletion. The transaction locks the item and its assets while checking shared
 references; files shared with another item are retained. If R2 deletion fails, the

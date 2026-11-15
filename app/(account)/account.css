@@ -272,3 +272,5 @@
 .studio-review-file { min-width: 0; overflow-wrap: anywhere; }
 .studio-review-file img { display: block; width: 100%; max-height: 240px; object-fit: contain; border-radius: 8px; background: #f8f5f1; }
 .studio-review-file audio { width: 100%; max-width: 100%; }
+.studio-form .download-policy-toggle { display: flex; align-items: center; gap: 10px; margin-block: 16px 4px; cursor: pointer; }
+.download-policy-toggle input { width: 18px; height: 18px; flex: 0 0 18px; margin: 0; accent-color: #ac343f; }

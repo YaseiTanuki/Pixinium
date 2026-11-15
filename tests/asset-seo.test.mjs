@@ -62,6 +62,26 @@ test('original image view streams unchanged bytes inline, is indexable and does 
   assert.equal(partial.headers.get('x-robots-tag'), null)
 })
 
+test('no direct download rejects attachment GET and HEAD without storage access or counters', async () => {
+  const f = fixture({ bucket: 'assets', object_path: 'pack.zip', media_type: 'file', mime_type: 'application/zip', download: true, direct_download_allowed: false })
+  for (const response of [await f.get(), await f.head(), await f.get('', { range: 'bytes=0-7' })]) assert.equal(response.status, 403)
+  assert.equal(f.counts.streams, 0)
+  assert.equal(f.counts.inspections, 0)
+  assert.equal(f.counts.downloads, 0)
+  assert.equal((await f.get('?view=1')).status, 404)
+  assert.equal((await f.get('?play=1')).status, 404)
+})
+
+test('no direct download retains legitimate image viewing and audio playback', async () => {
+  const image = fixture({ bucket: 'assets', object_path: 'image.png', media_type: 'image', mime_type: 'image/png', download: true, image_only: true, direct_download_allowed: false })
+  assert.equal((await image.get('?view=1')).status, 200)
+  assert.equal(image.counts.downloads, 0)
+  const audio = fixture({ bucket: 'assets', object_path: 'track.mp3', media_type: 'audio', mime_type: 'audio/mpeg', download: true, direct_download_allowed: false })
+  assert.equal((await audio.get('?play=1')).status, 200)
+  assert.equal((await audio.get()).status, 403)
+  assert.equal(audio.counts.downloads, 0)
+})
+
 test('ordinary original download remains an attachment and counts the download', async () => {
   const f = fixture()
   const response = await f.get()
