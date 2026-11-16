@@ -116,3 +116,18 @@ test('ZIP copy failure stops saving and cleans generated display files', async (
   }), /Storage unavailable/)
   assert.deepEqual(removed, ['assets/4/thumbnail.webp'])
 })
+
+test('partial pack processing writes only the requested file group', async () => {
+  const image = await sharp({ create: { width: 20, height: 12, channels: 3, background: '#0f0' } }).png().toBuffer()
+  for (const role of ['cover', 'download', 'preview'] as const) {
+    const written: string[] = []
+    const result = await createAssetPack([attachment(0, role)], `assets/partial-${role}`, {
+      read: async () => image,
+      putImage: async path => { written.push(path) },
+      copyZip: async () => { const path = `assets/partial-${role}/originals/archive.zip`; written.push(path); return path },
+      remove: async () => assert.fail('Successful replacement must not be removed'),
+    }, true)
+    assert.deepEqual(result.map(asset => asset.role), [role])
+    assert.equal(written.length, 1)
+  }
+})

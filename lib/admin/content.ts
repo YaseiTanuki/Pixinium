@@ -56,14 +56,14 @@ export const contentSchema = z.object({
     if (type?.mediaType === 'image' && !asset.altText) issue('Describe each uploaded image.')
   }
 })
-// Text-level edits plus an optional full replacement of the item's files; category and URL slug are fixed.
+// Text edits and optional uploads replacing only the supplied file groups; category and URL slug are fixed.
 export const contentUpdateSchema = z.object({
   id: z.string().regex(/^[1-9][0-9]{0,18}$/),
   title: contentSchema.shape.title, summary: contentSchema.shape.summary, description: contentSchema.shape.description,
   tags: contentSchema.shape.tags, facts: contentSchema.shape.facts,
   downloadSources: downloadSourcesSchema.optional(),
   noDirectDownload: z.boolean().optional(),
-  // When present, this set replaces every existing file of the item.
+  // Omitted file groups retain their current files.
   attachments: z.array(attachmentSchema).max(MAX_ATTACHMENT_COUNT).optional(),
 }).superRefine((value, ctx) => {
   const issue = (message: string) => ctx.addIssue({ code: 'custom', message })
@@ -71,7 +71,6 @@ export const contentUpdateSchema = z.object({
   if (new Set(value.tags.map(x => x.slug)).size !== value.tags.length) issue('Tags must be unique.')
   if (value.attachments) {
     if (new Set(value.attachments.map(x => x.path)).size !== value.attachments.length) issue('Each file can be attached once.')
-    if (!value.attachments.some(x => fileType(x.path)?.mediaType === 'image')) issue('Upload an image to generate a thumbnail before publishing.')
     for (const asset of value.attachments) {
       const type = fileType(asset.path)
       if (!type) issue('Unsupported file type.')

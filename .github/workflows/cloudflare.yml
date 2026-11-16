@@ -36,7 +36,7 @@ jobs:
       - name: Verify thumbnails and safe runtime diagnostics
         run: node --import tsx --test --test-concurrency=1 tests/image-thumbnail.test.ts tests/cloudflare-thumbnail.test.ts tests/catalog-diagnostics.test.ts tests/content-diagnostics.test.ts tests/storage-inspection.test.ts tests/upload-tracing.test.ts tests/storage-read-transport.test.ts tests/storage-fetch-binding.test.ts tests/database.test.ts tests/database-tls.test.ts tests/database-connection.test.ts tests/supabase-schema.test.ts tests/supabase-target.test.ts tests/saved-items.test.mjs tests/archive-pagination.test.mjs tests/r2-config.test.ts
       - name: Verify games, agent uploads and storage lifecycle
-        run: node --import tsx --test --test-concurrency=1 tests/independent-agents.test.ts tests/catalog-schema.test.ts tests/storage-paths.test.ts tests/content-delete.test.mjs tests/content.test.ts tests/content-edit.test.ts tests/game-upload.test.ts tests/asset-pack-database.test.ts tests/asset-pack.test.ts tests/asset-seo.test.mjs tests/guest-requests.test.mjs tests/download-sources.test.ts tests/no-direct-download.test.mjs
+        run: node --import tsx --test --test-concurrency=1 tests/independent-agents.test.ts tests/catalog-schema.test.ts tests/storage-paths.test.ts tests/content-delete.test.mjs tests/content.test.ts tests/content-edit.test.ts tests/content-replacement.test.ts tests/game-upload.test.ts tests/asset-pack-database.test.ts tests/asset-pack.test.ts tests/asset-seo.test.mjs tests/guest-requests.test.mjs tests/download-sources.test.ts tests/no-direct-download.test.mjs
       - run: pnpm cf:build
       - name: Verify bundled site content
         run: node --import tsx --test --test-concurrency=1 tests/policies.test.ts tests/bundled-site-assets.test.ts
