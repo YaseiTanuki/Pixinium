@@ -5,7 +5,7 @@ SELECT i.id::text, i.title, i.summary, i.description, i.status, i.slug, c.slug A
   coalesce((SELECT jsonb_agg(t.name ORDER BY t.name) FROM catalog.item_tags it JOIN catalog.tags t ON t.id = it.tag_id WHERE it.item_id = i.id), '[]'::jsonb) AS tags,
   coalesce((SELECT jsonb_agg(jsonb_build_object('key', f.key, 'label', f.label, 'value', f.value) ORDER BY f.sort_order, f.key)
     FROM catalog.item_facts f WHERE f.item_id = i.id), '[]'::jsonb) AS facts,
-  coalesce((SELECT jsonb_agg(jsonb_build_object('assetId', a.id::text, 'label', ia.alt_text, 'role', ia.role, 'mediaType', a.media_type) ORDER BY ia.sort_order, ia.id)
+  coalesce((SELECT jsonb_agg(jsonb_build_object('assetId', a.id::text, 'label', ia.alt_text, 'role', ia.role, 'mediaType', a.media_type, 'mimeType', a.mime_type) ORDER BY ia.sort_order, ia.id)
     FROM catalog.item_assets ia JOIN catalog.assets a ON a.id = ia.asset_id WHERE ia.item_id = i.id), '[]'::jsonb) AS files
 FROM catalog.items i JOIN catalog.categories c ON c.id = i.category_id
 WHERE i.id = $1::bigint`
@@ -19,7 +19,7 @@ SELECT coalesce(jsonb_agg(ia.asset_id::text), '[]'::jsonb) AS ids FROM catalog.i
 // File replacement runs as ordered statements in one transaction: a single statement cannot
 // swap the unique cover link, and the old links must be gone before orphaned assets are removed.
 const adminActor = `EXISTS (SELECT 1 FROM catalog.profiles WHERE id = $1::uuid AND role = 'admin')`
-const unlinkAssetsQuery = `DELETE FROM catalog.item_assets WHERE item_id = $2::bigint AND ${adminActor}`
+const unlinkAssetsQuery = `DELETE FROM catalog.item_assets WHERE item_id = $2::bigint AND role = ANY($3::text[]) AND ${adminActor}`
 // Only assets this item referenced, and no other item still shares, are returned for storage cleanup.
 const removeOrphanAssetsQuery = `DELETE FROM catalog.assets a WHERE a.id = ANY($3::bigint[]) AND ${adminActor} AND $2::bigint > 0
   AND NOT EXISTS (SELECT 1 FROM catalog.item_assets o WHERE o.asset_id = a.id)
@@ -40,7 +40,7 @@ JOIN assets ON assets.object_path = a->>'path'`
 
 export type ContentEdit = {
   actor: string; id: string; text: unknown; editFacts: boolean
-  files?: { oldAssetIds: string[]; attachments: unknown[]; bucket: string; metadata: unknown }
+  files?: { oldAssetIds: string[]; replacedRoles: string[]; attachments: unknown[]; bucket: string; metadata: unknown }
 }
 
 /** Statements to run, in order, inside one transaction. The text update is always last and returns the saved row. */
@@ -48,9 +48,9 @@ export function updateContentStatements(edit: ContentEdit): Array<[string, unkno
   const update: [string, unknown[]] = [updateContentQuery, [edit.actor, edit.id, JSON.stringify(edit.text), edit.editFacts,
     edit.files?.metadata != null ? JSON.stringify(edit.files.metadata) : null]]
   if (!edit.files) return [update]
-  const { oldAssetIds, attachments, bucket } = edit.files
+  const { oldAssetIds, replacedRoles, attachments, bucket } = edit.files
   return [
-    [unlinkAssetsQuery, [edit.actor, edit.id]],
+    [unlinkAssetsQuery, [edit.actor, edit.id, replacedRoles]],
     [removeOrphanAssetsQuery, [edit.actor, edit.id, oldAssetIds]],
     [attachAssetsQuery, [edit.actor, edit.id, JSON.stringify(attachments), bucket]],
     update,

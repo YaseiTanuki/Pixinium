@@ -66,7 +66,7 @@ test('registry CRUD, relational links, authorization and public visibility round
     await db.query(createDownloadProviderQuery, [admin, 'other', 'Other', 'example.org', 0, true])
     const edit = async (changes: object, metadata?: object) => db.transaction(async tx => {
       for (const [sql, values] of updateContentStatements({ actor: admin, id, text: { ...text, ...changes }, editFacts: true,
-        ...(metadata ? { files: { oldAssetIds: [], attachments: [], bucket: 'assets', metadata } } : {}) })) await tx.query(sql, values)
+        ...(metadata ? { files: { oldAssetIds: [], replacedRoles: [], attachments: [], bucket: 'assets', metadata } } : {}) })) await tx.query(sql, values)
     })
     await edit({}, {}); assert.deepEqual(await links(), [github, archive])
     await edit({ downloadSources: [{ provider: 'other', url: 'https://example.org/file' }, github] })
