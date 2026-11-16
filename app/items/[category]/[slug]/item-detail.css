@@ -4,7 +4,8 @@
 .asset-pack-preview + .detail-about { margin-top: 0; border-top: 0; }
 .asset-pack-preview-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 1fr); gap: 16px; margin-top: 16px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
 .asset-pack-preview-row:focus-visible { outline: 2px solid var(--red); outline-offset: 4px; }
-.asset-pack-preview-row img { display: block; width: 100%; min-width: 0; height: clamp(180px, 20vw, 250px); object-fit: contain; scroll-snap-align: start; }
+.asset-pack-preview-row > .artwork-media { position: relative; inset: auto; min-width: 0; height: clamp(180px, 20vw, 250px); scroll-snap-align: start; }
+.asset-pack-preview-row img { object-fit: contain; }
 .detail-breadcrumb a { display: inline-flex; align-items: center; gap: 8px; padding-block: 5px; }
 .detail-breadcrumb a:hover { color: var(--red); }
 .detail-breadcrumb [aria-current] { color: var(--ink); overflow-wrap: anywhere; }

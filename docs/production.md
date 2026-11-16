@@ -47,6 +47,12 @@ roles; securely provision their login credentials separately. Do not put the
 
 ## Runtime
 
+Apply migration `0026_public_collect_count.sql` before releasing the catalog query
+that calls `catalog.public_collect_count`. It exposes the total for published
+items in active categories while keeping saved collection entries private. The
+migration grants execution to existing runtime roles; fresh initialization grants
+it through `db/runtime-roles.sql`.
+
 - `DATABASE_URL`: restricted `pixinium_runtime` connection.
 - `CATALOG_ADMIN_DATABASE_URL`: restricted `pixinium_catalog_admin` connection.
 - `AGENT_DATABASE_URL`: broker-only `pixinium_agent_api` connection.
