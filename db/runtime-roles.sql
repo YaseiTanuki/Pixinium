@@ -11,6 +11,7 @@ DO $$ BEGIN
   END IF;
 END $$;
 GRANT USAGE ON SCHEMA catalog TO pixinium_runtime,pixinium_catalog_admin;
+GRANT EXECUTE ON FUNCTION catalog.public_collect_count(bigint) TO pixinium_runtime;
 GRANT SELECT ON ALL TABLES IN SCHEMA catalog TO pixinium_runtime;
 GRANT INSERT,UPDATE ON catalog.profiles TO pixinium_runtime;
 GRANT INSERT,UPDATE,DELETE ON catalog.collections,catalog.collection_items TO pixinium_runtime;
