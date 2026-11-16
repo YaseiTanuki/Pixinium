@@ -4,6 +4,11 @@ Choose **Assets** in Admin Studio. Upload exactly one ZIP package, one separate
 thumbnail, and optionally up to five images in **Preview images**. Every file may
 be up to 50 MB. The same controls are used when replacing an existing pack's files.
 
+When editing, upload only the groups you want to replace: thumbnail, ZIP, or
+preview images. Groups without new uploads keep their existing files. Uploading
+new previews replaces the preview group; replacing the ZIP keeps the thumbnail
+and previews. Saving without new uploads keeps all existing files.
+
 The uploaded ZIP is the download. Its bytes, filenames and folder structure remain
 unchanged; the server does not extract, rebuild or add images to it. Assets inside
 the ZIP may include any file types. Thumbnail and preview uploads are display-only.

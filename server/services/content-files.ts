@@ -45,7 +45,7 @@ export async function inspectContentFiles(accountId: string, attachments: Attach
 type InspectedFile = Extract<Awaited<ReturnType<typeof inspectContentFiles>>, { attachments: unknown }>['attachments'][number]
 
 /** Copy staged uploads into `directory` and return the final asset records. */
-export async function finalizeContentFiles(schemaKey: string, attachments: InspectedFile[], directory: string) {
+export async function finalizeContentFiles(schemaKey: string, attachments: InspectedFile[], directory: string, partial = false) {
   const isMusic = schemaKey === CONTENT_SCHEMAS.music
   const isGame = schemaKey === CONTENT_SCHEMAS.game
   const finalized = []
@@ -57,7 +57,7 @@ export async function finalizeContentFiles(schemaKey: string, attachments: Inspe
       putImage: storeGeneratedImage,
       copyZip: asset => finalizeUpload(asset.path, asset.etag, 'application/zip', asset.byteSize, directory),
       remove: paths => deleteGeneratedPackFiles(directory, paths),
-    })
+    }, partial)
     finalized.push(...generated)
   } else for (const asset of attachments) {
     if (isGame && asset.extension === 'swf') {
@@ -80,7 +80,7 @@ export async function finalizeContentFiles(schemaKey: string, attachments: Inspe
       hasThumbnail = true
     } else finalized.push({ ...original, ...(audio ? { durationSeconds: audio.durationSeconds } : {}) })
   }
-  const musicMetadata = isMusic ? parseCategoryMetadata(schemaKey, tracks.length ? {
+  const musicMetadata = isMusic && (!partial || tracks.length) ? parseCategoryMetadata(schemaKey, tracks.length ? {
     track_count: tracks.length, duration_seconds: Math.round(tracks.reduce((sum, track) => sum + track.durationSeconds, 0)),
     formats: [...new Set(tracks.map(track => track.format))],
   } : {}) : undefined
