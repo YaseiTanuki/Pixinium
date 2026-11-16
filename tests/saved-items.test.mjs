@@ -16,6 +16,7 @@ test('collect persists once per account, isolates owners, and supports uncollect
       SELECT id, 'collect-test', 'Collect test', 'published', now() FROM catalog.categories LIMIT 1 RETURNING id::text`)
     await db.exec(`CREATE ROLE collect_runtime NOSUPERUSER NOBYPASSRLS;
       GRANT USAGE ON SCHEMA catalog TO collect_runtime;
+      GRANT EXECUTE ON FUNCTION catalog.public_collect_count(bigint) TO collect_runtime;
       GRANT SELECT ON ALL TABLES IN SCHEMA catalog TO collect_runtime;
       GRANT INSERT, UPDATE, DELETE ON catalog.collections, catalog.collection_items TO collect_runtime;
       GRANT USAGE ON SEQUENCE catalog.collections_id_seq TO collect_runtime;
@@ -46,9 +47,23 @@ test('collect persists once per account, isolates owners, and supports uncollect
     assert.equal(publicCard.collect_count, 2)
     assert.ok(!JSON.stringify(publicCard).includes(alice))
     assert.ok(!JSON.stringify(publicCard).includes(bob))
+    await db.exec('SET ROLE collect_runtime')
+    await identity('')
+    const guestCard = (await db.query(cardsQuery, [null, 'collect-test', null])).rows[0]
+    assert.equal(guestCard.collect_count, 2, 'guests see the total across private saved collections')
+    assert.equal((await db.query('SELECT * FROM catalog.collection_items')).rows.length, 0,
+      'the public count must not expose private collection entries')
+    for (const owner of [alice, bob]) {
+      await identity(owner)
+      assert.equal((await db.query(cardsQuery, [null, 'collect-test', null])).rows[0].collect_count, 2,
+        'signed-in accounts also see the full aggregate')
+    }
+    await db.exec('RESET ROLE')
     await db.query("UPDATE catalog.items SET status = 'archived' WHERE id = $1", [item.id])
     await db.exec('SET ROLE collect_runtime')
     await identity(alice)
+    assert.equal((await db.query('SELECT catalog.public_collect_count($1) AS total', [item.id])).rows[0].total, 0,
+      'archived items must not expose counts through the function')
     assert.deepEqual(await list(alice), [])
     await db.query(collectItemQuery, [alice, '9223372036854775807'])
     await identity('')
@@ -62,6 +77,8 @@ test('collect persists once per account, isolates owners, and supports uncollect
     await db.query(uncollectItemQuery, [alice, item.id])
     await db.query(uncollectItemQuery, [alice, item.id])
     assert.deepEqual(await list(alice), [])
+    assert.equal((await db.query(cardsQuery, [null, 'collect-test', null])).rows[0].collect_count, 1,
+      'uncollect updates the public aggregate')
     await identity(bob)
     assert.deepEqual(await list(bob), [item.id])
   } finally { await db.close() }
