@@ -10,11 +10,12 @@ import { hasPermission } from '@/lib/auth/permissions'
 import { isAgentActor } from '@/lib/agent-identity'
 import { authDiagnostic } from '@/lib/auth/errors'
 import { contentUpdateSchema, type ContentResult } from '@/lib/admin/content'
+import { replacementRoles, validateContentReplacement, type ExistingContentFile } from '@/lib/admin/content-replacement'
 import { CONTENT_SCHEMAS, usesAutomaticFacts } from '@/lib/content-types'
 import { parseCategoryMetadata } from '@/lib/entities/metadata'
 import { itemStorageDirectory } from '@/lib/admin/storage-paths'
-import { currentAssetIdsQuery, editableContentQuery, updateContentStatements, setContentStatusQuery } from '@/server/repositories/content-edit'
-import { validateContentFiles, inspectContentFiles, finalizeContentFiles } from './content-files'
+import { editableContentQuery, updateContentStatements, setContentStatusQuery } from '@/server/repositories/content-edit'
+import { inspectContentFiles, finalizeContentFiles } from './content-files'
 import { requirePrivateStorage, deleteStagingUploads, deleteStoredContent, deleteGeneratedPackFiles } from './storage.service'
 import type { ContentActor } from './content-upload.service'
 
@@ -23,7 +24,7 @@ export type EditableContent = {
   downloadSources?: ExternalDownloadSource[]
   id: string; title: string; summary: string; description: string; status: string; slug: string; category: string
   schemaKey: string; tags: string[]; facts: Array<{ key: string; label: string; value: string }>
-  files: Array<{ assetId: string; label: string; role: string; mediaType: string }>
+  files: Array<ExistingContentFile & { label: string }>
 }
 
 export async function getEditableContentForActor(account: ContentActor | null, id: string): Promise<EditableContent | null> {
@@ -58,21 +59,23 @@ export async function updateContentForActor(account: ContentActor | null, input:
     }
     const schemaKey = String(current.metadata_schema_key)
     let files: Parameters<typeof updateContentStatements>[0]['files']
-    if (value.attachments) {
-      const fileError = validateContentFiles(schemaKey, value.attachments)
+    if (value.attachments?.length) {
+      const existing = current.files as EditableContent['files']
+      const replacedRoles = replacementRoles(schemaKey, value.attachments)
+      const fileError = validateContentReplacement(schemaKey, value.attachments, existing)
       if (fileError) return { error: fileError }
       const { bucket } = await requirePrivateStorage()
       const inspected = await inspectContentFiles(account.id, value.attachments)
       if ('error' in inspected) return { error: inspected.error }
-      const [existing] = await sql.query(currentAssetIdsQuery, [value.id])
       // Each replacement gets its own folder so generated names (thumbnail, pack.zip) never collide with the old files.
       const directory = itemStorageDirectory(String(current.category), value.id, randomUUID())
-      const { finalized, musicMetadata } = await finalizeContentFiles(schemaKey, inspected.attachments, directory)
+      const { finalized, musicMetadata } = await finalizeContentFiles(schemaKey, inspected.attachments, directory, true)
       pendingFiles = { directory, paths: finalized.map(asset => asset.path) }
       const metadata = schemaKey === CONTENT_SCHEMAS.asset
         ? parseCategoryMetadata(schemaKey, {})
         : musicMetadata
-      files = { oldAssetIds: existing.ids as string[], attachments: finalized, bucket, metadata }
+      files = { oldAssetIds: existing.filter(asset => replacedRoles.includes(asset.role)).map(asset => asset.assetId),
+        replacedRoles, attachments: finalized, bucket, metadata }
     }
     const results = await sql.transaction(txn => updateContentStatements({
       actor: account.id, id: value.id, editFacts: !usesAutomaticFacts(schemaKey), files,
@@ -84,7 +87,7 @@ export async function updateContentForActor(account: ContentActor | null, input:
     if (!row) return { error: 'Content was deleted or your admin access changed. Refresh the studio.' }
     committed = true
     let message = 'Content updated.'
-    if (value.attachments) {
+    if (files && value.attachments?.length) {
       try { await deleteStagingUploads(value.attachments.map(asset => asset.path)) }
       catch (error) { console.error('[content.staging-cleanup]', authDiagnostic(error)) }
       const replaced = results[1] as Array<{ provider: string; bucket: string | null; object_path: string | null }>

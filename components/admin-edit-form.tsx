@@ -11,6 +11,7 @@ import type { ContentResult } from '@/lib/admin/content'
 import type { EditableContent } from '@/server/services/content-edit.service'
 import { updateContent } from '@/app/actions/content'
 import { CONTENT_SCHEMAS, contentKind } from '@/lib/content-types'
+import { replacementRoles } from '@/lib/admin/content-replacement'
 import { ContentFileFields } from '@/components/content-file-fields'
 import { useContentUploads } from '@/components/use-content-uploads'
 import { GameTagsField } from './game-tags-field'
@@ -30,10 +31,10 @@ export function AdminEditForm({ content, factsEditable, downloadProviders }: Pro
   const { attachments, uploading, removing, progress, pendingUploads, saveInProgress, upload, removeUploads, editLabel, reset } =
     useContentUploads({ isMusic, isGame, isAssetPack }, setResult)
   const busy = saving || uploading || removing
+  const replacingRoles = replacing ? replacementRoles(content.schemaKey, attachments) : []
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (replacing && !attachments.length) { setResult({ error: 'Upload the new files or cancel the replacement.' }); return }
     const form = new FormData(event.currentTarget)
     const tags = String(form.get('tags') ?? '').split(',').map(x => x.trim()).filter(Boolean)
       .map(name => ({ name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }))
@@ -44,7 +45,7 @@ export function AdminEditForm({ content, factsEditable, downloadProviders }: Pro
       const response = await updateContent({ id: content.id, title: form.get('title'), downloadSources: downloadSourcesFromForm(form),
         noDirectDownload: form.get('noDirectDownload') === 'on',
         summary: form.get('summary'), description: form.get('description'),         tags, facts: factsEditable ? facts : content.facts,
-                ...(replacing ? { attachments } : {}) })
+                ...(replacing && attachments.length ? { attachments } : {}) })
               setResult(response)
               if (response.message) { pendingUploads.current.clear(); if (replacing) { reset(); setReplacing(false) } router.refresh() }
             } catch { setResult({ error: 'Could not save changes. Your entries are preserved; please retry.' }) }
@@ -75,9 +76,9 @@ export function AdminEditForm({ content, factsEditable, downloadProviders }: Pro
         <button type="button" className="account-text-link" disabled={facts.length >= CONTENT_LIMITS.facts} onClick={() => setFacts(current => [...current, { key: '', label: '', value: '' }])}><Plus size={16} aria-hidden="true" /> Add fact</button>
       </section>}
       <section className="workspace-panel"><h2>Files</h2>
-        <ul className="workspace-muted">{content.files.map((file, index) => <li key={index}>{file.label} · {file.role}</li>)}</ul>
+        <ul className="workspace-muted">{content.files.map((file, index) => <li key={index}>{file.label} · {file.role}{replacing && ` · ${replacingRoles.includes(file.role) ? 'Will be replaced' : 'Keep existing file'}`}</li>)}</ul>
         {replacing ? <>
-          <p className="account-notice" role="alert">The current files will be permanently deleted when you save.</p>
+          <p className="account-help">Upload only what you want to replace. Other files stay unchanged. New previews replace the current preview group; new download files replace the current download group.</p>
           <ContentFileFields kind={{ isMusic, isGame, isAssetPack }} attachments={attachments} ready={!busy} upload={upload} remove={removeUploads} editLabel={editLabel} />
           <div role="status" className="account-help">{progress}</div>
           <button type="button" className="account-text-link" onClick={() => void cancelReplace()}>Cancel replacement</button>

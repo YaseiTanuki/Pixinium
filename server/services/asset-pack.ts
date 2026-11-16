@@ -24,8 +24,8 @@ interface PackStorage {
 }
 
 /** Preserve the uploaded ZIP unchanged; cover and preview images are display-only. */
-export async function createAssetPack(attachments: InspectedPackFile[], directory: string, storage: PackStorage) {
-  const invalid = validateAssetPackFiles(attachments)
+export async function createAssetPack(attachments: InspectedPackFile[], directory: string, storage: PackStorage, partial = false) {
+  const invalid = validateAssetPackFiles(attachments, partial)
   if (invalid) throw new Error(invalid)
   const written: string[] = []
   const finalized: PackAttachment[] = []

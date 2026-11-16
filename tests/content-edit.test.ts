@@ -22,7 +22,8 @@ test('content update validation accepts text edits only', () => {
   assert.equal(parsed.attachments, undefined)
   const png = { path: `${admin}/${member}.png`, altText: 'Scene' }
   assert.equal(contentUpdateSchema.safeParse({ id: '12', ...base, attachments: [png] }).success, true)
-  assert.equal(contentUpdateSchema.safeParse({ id: '12', ...base, attachments: [] }).success, false)
+  assert.equal(contentUpdateSchema.safeParse({ id: '12', ...base, attachments: [] }).success, true)
+  assert.equal(contentUpdateSchema.safeParse({ id: '12', ...base, attachments: [{ ...png, path: png.path.replace('.png', '.zip') }] }).success, true)
   assert.equal(contentUpdateSchema.safeParse({ id: '12', ...base, attachments: [png, png] }).success, false)
   assert.equal(contentUpdateSchema.safeParse({ id: '12', ...base, attachments: [{ ...png, altText: '' }] }).success, false)
 })
@@ -31,7 +32,7 @@ test('content update diffs relations atomically and rechecks the admin role', { 
   const db = new PGlite()
   try {
     await db.exec('BEGIN')
-    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql', '0020_agent_draft_review.sql', '0022_download_sources.sql', '0023_remove_item_editorial_fields.sql', '0024_unify_agent_storage_paths.sql', '0025_no_direct_download.sql', '0026_public_collect_count.sql']) {
+    for (const file of ['0001_archive_items.sql', '0002_catalog_entities.sql', '0003_catalog_profiles_and_validation.sql', '0004_content_uses.sql', '0005_remove_legacy_catalog.sql', '0006_browse_uses.sql', '0007_s3_assets.sql', '0008_original_and_thumbnail.sql', '0009_publish_only.sql', '0011_asset_packs.sql', '0016_merge_uses_into_tags.sql', '0019_independent_agents.sql', '0020_agent_draft_review.sql', '0022_download_sources.sql', '0023_remove_item_editorial_fields.sql', '0024_unify_agent_storage_paths.sql', '0025_no_direct_download.sql', '0026_public_collect_count.sql']) {
       await db.exec(await readFile(`db/migrations/${file}`, 'utf8'))
     }
     await db.exec('COMMIT')
@@ -82,7 +83,7 @@ test('content update diffs relations atomically and rechecks the admin role', { 
     const run = (actor: string) => db.transaction(async tx => {
       const results = []
       for (const [text, values] of updateContentStatements({ actor, id: replaceable.id, text: edit, editFacts: false,
-        files: { oldAssetIds: ids, attachments: fresh, bucket: 'private-uploads', metadata: {} } })) results.push((await tx.query<Record<string, unknown>>(text, values)).rows)
+        files: { oldAssetIds: ids, replacedRoles: ['cover', 'download'], attachments: fresh, bucket: 'private-uploads', metadata: {} } })) results.push((await tx.query<Record<string, unknown>>(text, values)).rows)
       return results
     })
     const denied = await run(member)
@@ -96,5 +97,30 @@ test('content update diffs relations atomically and rechecks the admin role', { 
     assert.equal((await db.query(`SELECT 1 FROM catalog.assets WHERE object_path LIKE 'image/1/originals/%' OR object_path = 'image/1/thumbnail.webp'`)).rows.length, 0)
     assert.equal((await db.query(`SELECT 1 FROM catalog.item_assets WHERE item_id = $1`, [sibling.id])).rows.length, 1)
     assert.deepEqual((await db.query<{ metadata: unknown }>(`SELECT metadata FROM catalog.items WHERE id = $1`, [replaceable.id])).rows[0].metadata, {})
+
+    // Replacing one file group must preserve the other links, objects, and metadata.
+    const partial = await withFiles('partial', [file('partial/original.png', 'download'), file('partial/thumbnail.webp', 'cover'), file('partial/preview.webp', 'preview')])
+    const readLinks = async () => (await db.query<{ asset_id: string; role: string; object_path: string }>(`SELECT ia.asset_id::text, ia.role, a.object_path
+      FROM catalog.item_assets ia JOIN catalog.assets a ON a.id=ia.asset_id WHERE ia.item_id=$1 ORDER BY ia.id`, [partial.id])).rows
+    const before = await readLinks()
+    const musicMetadata = { track_count: 3, duration_seconds: 120, formats: ['MP3'] }
+    await db.query('UPDATE catalog.items SET metadata=$2::jsonb WHERE id=$1', [partial.id, JSON.stringify(musicMetadata)])
+    for (const role of ['cover', 'download', 'preview']) {
+      const previous = await readLinks()
+      const replacedIds = previous.filter(asset => asset.role === role).map(asset => asset.asset_id)
+      const result = await db.transaction(async tx => {
+        const results = []
+        for (const [text, values] of updateContentStatements({ actor: admin, id: partial.id, text: edit, editFacts: false,
+          files: { oldAssetIds: replacedIds, replacedRoles: [role], attachments: [file(`partial/new-${role}.webp`, role)], bucket: 'private-uploads', metadata: undefined } })) {
+          results.push((await tx.query<{ object_path: string }>(text, values)).rows)
+        }
+        return results
+      })
+      const after = await readLinks()
+      assert.deepEqual(after.filter(asset => asset.role !== role), previous.filter(asset => asset.role !== role))
+      assert.deepEqual(result[1].map(asset => asset.object_path), previous.filter(asset => asset.role === role).map(asset => asset.object_path))
+      assert.deepEqual((await db.query<{ metadata: unknown }>('SELECT metadata FROM catalog.items WHERE id=$1', [partial.id])).rows[0].metadata, musicMetadata)
+    }
+    assert.equal(before.length, 3)
   } finally { await db.close() }
 })
