@@ -1,5 +1,6 @@
 import type { CatalogDetail } from '@/lib/entities/catalog'
 import { ASSET_PACK_LIMITS } from '@/lib/admin/limits'
+import { ArtworkImage } from '@/components/artwork-image'
 
 export function AssetPackPreview({ item }: { item: CatalogDetail }) {
   const previews = item.media.filter(asset => asset.role === 'preview' && asset.mediaType === 'image')
@@ -13,8 +14,9 @@ export function AssetPackPreview({ item }: { item: CatalogDetail }) {
       <h2 id="asset-pack-preview-title">Preview</h2>
       <div className="asset-pack-preview-row" tabIndex={0} role="region" aria-label="Pack image previews">
         {previews.map((asset, index) => (
-          <img key={asset.id} src={asset.url} alt={asset.altText || `Pack image ${index + 1}`}
-            width={asset.width ?? 800} height={asset.height ?? 800} loading="lazy" />
+          <ArtworkImage key={`${asset.id}:${asset.url}`}
+            cover={{ ...asset, width: asset.width ?? 800, height: asset.height ?? 800 }}
+            title={`Pack image ${index + 1}`} />
         ))}
       </div>
     </section>
