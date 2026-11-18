@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import type { ReactNode } from 'react'
 import { ArrowLeft, ChevronDown, Plus } from 'lucide-react'
 import styles from './admin-studio.module.css'

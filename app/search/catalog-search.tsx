@@ -1,7 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { PageTransition } from '@/components/page-transition'
+
+import Link from '@/components/navigation-link'
+import { useNavigationRouter as useRouter } from '@/components/navigation-transition'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { CatalogCard } from '@/components/catalog-card'
@@ -47,7 +49,7 @@ export default function CatalogSearch({ items, categories, tags, total, page, to
     <div className="home-page archive-page">
       <a className="skip-home" href="#archive-main">Skip to content</a>
       <SiteHeader query={query} onQueryChange={setQuery} searchTag={initialTag} searchCategory={initialCategory} searchSort={initialSort} searchTagMatch={initialTagMatch} />
-      <main id="archive-main" className="page-shell catalog-layout">
+      <PageTransition id="archive-main" className="page-shell catalog-layout">
       <CategoryNavigation categories={categories} current="all" />
       <div className="search-content">
         <CatalogFilters categories={categories} tags={tags} applied={{ category: initialCategory, tag: initialTag, sort: initialSort, tagMatch: initialTagMatch }} pending={pending} onApply={changeFilters}>
@@ -73,7 +75,7 @@ export default function CatalogSearch({ items, categories, tags, total, page, to
           </nav>}
         </div>
       </div>
-      </main>
+      </PageTransition>
       <SiteFooter />
     </div>
   )

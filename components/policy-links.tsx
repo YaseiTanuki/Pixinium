@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { POLICIES, policyHref } from '@/lib/policies'
 
 const groups = [

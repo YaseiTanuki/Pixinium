@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Nunito } from 'next/font/google'
 import { MotionProvider } from '@/components/motion'
 import { CategoryNavigationProvider } from '@/components/category-navigation-state'
+import { NavigationTransitionProvider } from '@/components/navigation-transition'
 import './globals.css'
 import { SITE_DESCRIPTION, SITE_TITLE, pageMetadata, siteOrigin } from '@/lib/seo'
 
@@ -47,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${contentFont.variable} ${headingFont.variable}`}>
       <body className="antialiased">
-        <MotionProvider><CategoryNavigationProvider>{children}</CategoryNavigationProvider></MotionProvider>
+        <MotionProvider><NavigationTransitionProvider><CategoryNavigationProvider>{children}</CategoryNavigationProvider></NavigationTransitionProvider></MotionProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

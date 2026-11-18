@@ -2,7 +2,7 @@
 
 
 
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { Download, Eye, Gamepad2, Image as ImageIcon, Music2 } from 'lucide-react'
 import { categoryHref, itemHref } from '@/lib/catalog'
 import type { CatalogCard as Card } from '@/lib/entities/catalog'

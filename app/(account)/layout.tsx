@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { PageTransition } from '@/components/page-transition'
+import Link from '@/components/navigation-link'
 import { ArrowLeft, Gamepad2, ImageIcon, Music2, Sparkles } from 'lucide-react'
 import './account.css'
 import { BrandLogo } from '@/components/brand-logo'
@@ -12,7 +13,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
       <BrandLogo />
       <Link href="/" className="account-back"><ArrowLeft size={15} aria-hidden="true" /> Back to the Mine</Link>
     </header>
-    <main id="account-main" className="account-shell">
+    <PageTransition id="account-main" className="account-shell">
       <aside className="account-intro" aria-label="Your little mine">
         <p className="eyebrow"><span className="status-dot" /> Mine now. Regret later.</p>
         <p className="account-intro-title">Your own<br />little <span className="happy-underline">corner.</span></p>
@@ -25,7 +26,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
         <div className="account-interest-tags"><span><ImageIcon size={13} aria-hidden="true" /> Fresh screens</span><span><Music2 size={13} aria-hidden="true" /> Good sounds</span><span><Gamepad2 size={13} aria-hidden="true" /> Tiny escapes</span></div>
       </aside>
       <section className="account-card">{children}</section>
-    </main>
+    </PageTransition>
     <SiteFooter />
   </div>
 }

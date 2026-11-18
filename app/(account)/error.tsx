@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 
 export default function AccountError({ reset }: { reset: () => void }) {
   return <><p className="eyebrow">A LITTLE DETOUR</p><h1>Your account is temporarily unavailable.</h1>

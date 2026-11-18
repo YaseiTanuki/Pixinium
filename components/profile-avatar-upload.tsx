@@ -2,7 +2,7 @@
 
 import { Camera, ImagePlus, LoaderCircle, Minus, Plus, X } from 'lucide-react'
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigationRouter as useRouter } from '@/components/navigation-transition'
 import { discardAvatarUpload, prepareAvatarUpload, saveAvatar } from '@/app/actions/profile-avatar'
 
 const validTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])

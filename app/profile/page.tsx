@@ -1,4 +1,4 @@
-﻿import Link from 'next/link'
+﻿import Link from '@/components/navigation-link'
 import { ArrowUpRight, BadgeCheck, CalendarDays, LogOut, Mail, Upload, UserRound } from 'lucide-react'
 import { requireAccount } from '@/server/services/auth.service'
 import { hasPermission } from '@/lib/auth/permissions'

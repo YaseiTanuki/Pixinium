@@ -1,8 +1,8 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigationRouter as useRouter } from '@/components/navigation-transition'
 import { deleteContent } from '@/app/actions/content'
 import { AdminPublicationAction } from '@/components/admin-publication-action'
 import { Pencil, Trash2 } from 'lucide-react'

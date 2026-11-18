@@ -1,7 +1,7 @@
-import Link from 'next/link'
+import { PageTransition } from '@/components/page-transition'
+import Link from '@/components/navigation-link'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { MotionDiv, MotionNav, MotionSection } from '@/components/motion'
 import { SiteFooter } from '@/components/site-footer'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 import { contentKind, type ContentKind } from '@/lib/content-types'
@@ -39,32 +39,32 @@ export default function ItemDetail({ item, related }: ItemDetailProps) {
     <div className="home-page item-detail-page">
       <a className="skip-home" href="#item-main">Skip to content</a>
       <SiteHeader />
-      <main id="item-main" className="home-shell">
-        <MotionNav className="detail-breadcrumb" aria-label="Breadcrumb" initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45 }}>
+      <PageTransition id="item-main" className="home-shell">
+        <nav className="detail-breadcrumb" aria-label="Breadcrumb">
           <Link href="/search"><ArrowLeft size={14} aria-hidden="true" /> The Mine</Link>
           <ChevronRight size={12} aria-hidden="true" />
           <Link href={categoryHref(item.category.slug)}>{item.category.name}</Link>
           <ChevronRight size={12} aria-hidden="true" />
           <span aria-current="page">{item.item.title}</span>
-        </MotionNav>
+        </nav>
 
-        <MotionDiv className="detail-hero" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}>
+        <div className="detail-hero">
           <DetailMedia key={item.item.id} item={item} />
           <ItemInformation item={item} />
-        </MotionDiv>
+        </div>
 
         {contentKind(item.category.metadataSchemaKey) === 'asset' && <AssetPackPreview item={item} />}
 
-        <MotionSection className="detail-about" aria-labelledby="about-title" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}>
+        <section className="detail-about" aria-labelledby="about-title">
           <div>
             <h2 id="about-title">Description<span>.</span></h2>
           </div>
           <div>
             <p>{description || 'No description has been added yet.'}</p>
           </div>
-        </MotionSection>
+        </section>
         <RelatedItems items={related} schemaKey={item.category.metadataSchemaKey} />
-      </main>
+      </PageTransition>
       <SiteFooter />
     </div>
   )

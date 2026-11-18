@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { useState } from 'react'
 import { ArrowUpRight, Heart } from 'lucide-react'
 import { ItemArtwork } from '@/components/catalog-card'
