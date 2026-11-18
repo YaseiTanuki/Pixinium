@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { useActionState } from 'react'
 import { ArrowRight, LoaderCircle } from 'lucide-react'
 import { forgotPassword, resetPassword } from '@/app/actions/password'

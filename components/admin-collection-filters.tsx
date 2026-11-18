@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigationRouter as useRouter } from '@/components/navigation-transition'
 import { ChevronDown, SlidersHorizontal, X } from 'lucide-react'
 import { ContentTypeSelect } from './catalog-filters/content-type-select'
 import { FilterSelect } from './catalog-filters/filter-select'

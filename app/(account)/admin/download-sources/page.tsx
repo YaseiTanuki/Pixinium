@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { requireAccount } from '@/server/services/auth.service'
 import { listManagedDownloadProviders } from '@/server/services/download-sources.service'
 import { DownloadSourceManager } from '@/components/download-source-manager'

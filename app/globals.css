@@ -176,6 +176,35 @@
   font-family: var(--font-display);
 }
 
+/* Keep the header and navigation usable while route content is pending. */
+.page-surface {
+  transition: opacity 160ms ease;
+}
+html[data-navigating='true'] .page-surface { opacity: 0.72; }
+
+/* Crossfade snapshots without stretching between different page heights. */
+::view-transition-group(root) { animation: none; }
+::view-transition-old(root) { display: none; }
+::view-transition-new(root) { animation: none; }
+::view-transition-group(.page-crossfade) { animation: none; }
+::view-transition-old(.page-crossfade) { animation: page-fade-out 180ms ease both; }
+::view-transition-new(.page-crossfade) { animation: page-fade-in 220ms ease both; }
+::view-transition-image-pair(.page-crossfade) { isolation: isolate; }
+::view-transition-old(.page-crossfade),
+::view-transition-new(.page-crossfade) {
+  mix-blend-mode: normal;
+  height: 100%;
+  object-fit: none;
+  object-position: top left;
+}
+@keyframes page-fade-out { to { opacity: 0; } }
+@keyframes page-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-surface { transition: none; }
+  html[data-navigating='true'] .page-surface { opacity: 1; }
+}
+
 .home-page a:focus-visible {
   outline: 2px solid #e94343;
   outline-offset: 5px;

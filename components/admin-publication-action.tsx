@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigationRouter as useRouter } from '@/components/navigation-transition'
 import { setContentStatus } from '@/app/actions/content'
 import { Check, FileClock } from 'lucide-react'
 import styles from './admin-studio.module.css'

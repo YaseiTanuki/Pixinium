@@ -1,5 +1,5 @@
 import { listManagedDownloadProviders } from '@/server/services/download-sources.service'
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { notFound } from 'next/navigation'
 import { AdminEditForm } from '@/components/admin-edit-form'
 import { requireAccount } from '@/server/services/auth.service'

@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { notFound } from 'next/navigation'
 import { PolicyContent } from '@/components/policy-content'
 import { POLICIES, POLICY_CONTACT, POLICY_RELEASE, findPolicy, policyHref } from '@/lib/policies'

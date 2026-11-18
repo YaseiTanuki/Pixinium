@@ -2,7 +2,7 @@
 
 // @refresh reset
 
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { CircleUserRound, Heart, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useSavedItems } from '@/lib/saved-items'
