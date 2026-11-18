@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { MotionConfig, motion, type HTMLMotionProps, type Variants } from 'motion/react'
 import type { ReactNode } from 'react'
 
@@ -13,18 +13,18 @@ export const MotionNav = motion.nav
 const EASE = [0.22, 1, 0.36, 1] as const
 
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 28 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } },
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.24, ease: EASE } },
 }
 
 export const popIn: Variants = {
-  hidden: { opacity: 0, y: 20, scale: 0.94 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: EASE } },
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.24, ease: EASE } },
 }
 
-export const stagger = (step = 0.08, delay = 0): Variants => ({
+export const stagger = (step = 0.035, delay = 0): Variants => ({
   hidden: {},
-  show: { transition: { staggerChildren: step, delayChildren: delay } },
+  show: { transition: { staggerChildren: Math.min(step, 0.04), delayChildren: delay } },
 })
 
 export function MotionProvider({ children }: { children: ReactNode }) {

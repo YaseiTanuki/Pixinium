@@ -1,6 +1,7 @@
+import { PageTransition } from '@/components/page-transition'
 import type { Metadata } from 'next'
 import { cache } from 'react'
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Search, SearchX } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
@@ -64,7 +65,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     <SiteHeader searchCategory={slug} searchTag={tag} searchSort={sort} searchTagMatch={tagMatch} />
     <div className="page-shell catalog-layout">
     <CategoryNavigation categories={categories} current={slug} />
-    <main id="category-content">
+    <PageTransition id="category-content">
       <JsonLd value={breadcrumbData([{ name: 'Home', path: '/' }, { name: category.name, path: categoryHref(slug) }])} />
       <header className="category-banner">
         <div><p className="eyebrow">THE PIXINIUM COLLECTION</p><h1><Icon size={36} aria-hidden="true" />{category.name}<span>.</span></h1><p className="category-description">{category.description}</p></div>
@@ -90,7 +91,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
           {page < totalPages ? <Link className="archive-page-step" href={href(page + 1)} prefetch={false} aria-label="Next page"><span>Next</span><ArrowRight size={17} /></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Next page"><span>Next</span><ArrowRight size={17} /></span>}
         </div>
       </nav>}
-    </main>
+    </PageTransition>
     </div>
     <SiteFooter />
   </div>

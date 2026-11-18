@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigationRouter as useRouter } from '@/components/navigation-transition'
 import { ChevronDown, SlidersHorizontal, X } from 'lucide-react'
 import { categoryHref, searchHref } from '@/lib/catalog'
 import { SEARCH_SORT_OPTIONS, searchTags, searchCategories, type CatalogFilterValues } from '@/lib/search-filters'
