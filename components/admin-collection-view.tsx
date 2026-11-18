@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { ArrowLeft, ArrowRight, ArrowUpRight, FileClock, Globe } from 'lucide-react'
 import { AdminCollectionFilters } from '@/components/admin-collection-filters'
 import { AdminContentList } from '@/components/admin-content-list'

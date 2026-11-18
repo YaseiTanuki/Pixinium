@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { ArrowRight, Search, Sparkles } from 'lucide-react'
 import { FloatingPixels } from '@/components/motion'
 

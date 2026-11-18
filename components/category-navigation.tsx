@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { useLayoutEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { Grid2X2 } from 'lucide-react'

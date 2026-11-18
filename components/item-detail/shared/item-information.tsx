@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import type { CatalogDetail } from '@/lib/entities/catalog'
 import { ItemActions } from './item-actions'
 

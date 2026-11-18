@@ -1,4 +1,5 @@
-import Link from 'next/link'
+import { PageTransition } from '@/components/page-transition'
+import Link from '@/components/navigation-link'
 import { ArrowLeft, ArrowUpRight, ChevronRight, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import { CategoryNavigation } from '@/components/category-navigation'
 import { HomeIntro } from '@/components/home-intro'
@@ -15,7 +16,7 @@ function Block({ className = '' }: { className?: string }) {
 function HomeSkeleton() {
   return <div className="home-page">
     <SiteHeader />
-    <main className="home-shell">
+    <PageTransition className="home-shell">
       <HomeIntro loading />
       <div className="feature-grid" aria-hidden="true">
         <div className="feature-main navigation-feature-main"><Block className="navigation-short" /><Block className="navigation-feature-label" /></div>
@@ -26,7 +27,7 @@ function HomeSkeleton() {
       </div>
       <div className="category-grid" aria-hidden="true">{Array.from({ length: 4 }, (_, index) => <div className="category-door" key={index}><Block className="navigation-icon" /><div className="navigation-door-copy"><Block className="navigation-short" /><Block className="navigation-line" /></div></div>)}</div>
       <div className="discover-section"><div className="section-heading"><div><p className="eyebrow">UNEARTH SOMETHING NEW</p><h2>Fresh Finds<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the Mine <ArrowUpRight size={16} aria-hidden="true" /></Link></div><div className="masonry-grid discovery-grid navigation-home-results" aria-hidden="true">{Array.from({ length: 4 }, (_, index) => <Block className="navigation-search-card" key={index} />)}</div></div>
-    </main>
+    </PageTransition>
     <SiteFooter />
   </div>
 }
@@ -34,14 +35,14 @@ function HomeSkeleton() {
 function SearchSkeleton() {
   return <div className="home-page archive-page">
     <SiteHeader />
-    <main className="page-shell catalog-layout">
+    <PageTransition className="page-shell catalog-layout">
       <CategoryNavigation current="all" />
       <div className="search-content">
         <div className="search-filter-toolbar"><h1>Explore the Mine</h1><button type="button" className="search-filter-toggle" disabled><SlidersHorizontal size={16} aria-hidden="true" /> Filters <ChevronDown size={15} aria-hidden="true" /></button></div>
         <div className="archive-results-heading"><span>Finding your next favorite…</span></div>
         <div className="masonry-grid discovery-grid search-all-grid" aria-hidden="true">{Array.from({ length: 6 }, (_, index) => <Block className="navigation-search-card" key={index} />)}</div>
       </div>
-    </main>
+    </PageTransition>
     <SiteFooter />
   </div>
 }
@@ -49,14 +50,14 @@ function SearchSkeleton() {
 function DetailSkeleton() {
   return <div className="home-page item-detail-page">
     <SiteHeader />
-    <main className="home-shell">
+    <PageTransition className="home-shell">
       <nav className="detail-breadcrumb" aria-label="Breadcrumb"><Link href="/search"><ArrowLeft size={14} aria-hidden="true" /> The Mine</Link><ChevronRight size={12} aria-hidden="true" /><span aria-hidden="true"><Block className="navigation-breadcrumb" /></span></nav>
       <div className="detail-hero" aria-hidden="true">
         <div><Block className="artwork-stage navigation-detail-art" /><div className="artwork-caption"><Block className="navigation-short" /></div></div>
         <div className="detail-copy navigation-detail-copy"><Block className="navigation-short" /><Block className="navigation-title" /><Block className="navigation-line" /><Block className="navigation-line" /><Block className="navigation-input" /><Block className="navigation-input" /></div>
       </div>
       <div className="detail-about"><h2>Description<span>.</span></h2><span aria-hidden="true"><Block className="navigation-line" /></span></div>
-    </main>
+    </PageTransition>
     <SiteFooter />
   </div>
 }

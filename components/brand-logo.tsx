@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 
 export function BrandLogo({ className = '' }: { className?: string }) {
   return <Link href="/" className={`brand-logo ${className}`} aria-label="Pixinium home" translate="no">

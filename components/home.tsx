@@ -1,12 +1,10 @@
 'use client'
 
-
-
-import Link from 'next/link'
+import { PageTransition } from '@/components/page-transition'
+import Link from '@/components/navigation-link'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
-import { useRouter } from 'next/navigation'
-import { ViewTransition } from 'react'
+import { useNavigationRouter as useRouter } from '@/components/navigation-transition'
 import { ArrowDown, ArrowRight, ArrowUpRight, Heart, Moon, Music2, Shuffle, Sparkles, Sun, Zap } from 'lucide-react'
 import { CatalogCard } from '@/components/catalog-card'
 import { ArtworkImage } from '@/components/artwork-image'
@@ -15,10 +13,8 @@ import { CATALOG_DISPLAY, categoryHref, itemHref } from '@/lib/catalog'
 import { contentKind } from '@/lib/content-types'
 import type { CatalogDetail, Category } from '@/lib/entities/catalog'
 import { categoryIcon } from '@/lib/category-icons'
-import { MotionLink, Reveal, fadeUp, popIn, stagger } from '@/components/motion'
 import { HomeIntro } from '@/components/home-intro'
 import { useRememberCategories } from '@/components/category-navigation-state'
-import { motion } from 'motion/react'
 
 export default function Home({ items, categories, spotlightId, musicId, initialQuery = '' }: { items: CatalogDetail[]; categories: Category[]; spotlightId: string | null; musicId: string | null; initialQuery?: string }) {
   const router = useRouter()
@@ -36,7 +32,7 @@ export default function Home({ items, categories, spotlightId, musicId, initialQ
     <a className="skip-home" href="#main">Skip to content</a>
     <SiteHeader />
 
-    <main id="main" className="home-shell">
+    <PageTransition id="main" className="home-shell">
       <HomeIntro />
 
                             <section className="feature-grid" aria-label="Discoveries">
@@ -51,17 +47,17 @@ export default function Home({ items, categories, spotlightId, musicId, initialQ
         </div>
                                    </section>
 
-                                   <Reveal step={0.09} className="category-grid" aria-label="Explore by category" role="region">{categories.map(({ id, slug, name, iconKey, description }, index) => { const Icon = categoryIcon(iconKey); return <MotionLink key={id} variants={popIn} whileHover={{ y: -5 }} whileTap={{ scale: 0.98 }} href={categoryHref(slug)} aria-label={name} title={name} className={`category-door category-${slug}`}><span className="category-icon"><Icon size={23} strokeWidth={1.6} aria-hidden="true" /></span><div><h2>{name}<span>{String(items.filter((item) => item.category.slug === slug).length).padStart(2, '0')}</span></h2><p>{description}</p></div><ArrowUpRight className="category-arrow" size={19} aria-hidden="true" /><span className="category-number" aria-hidden="true">0{index + 1}</span></MotionLink> })}</Reveal>
+                                   <div className="category-grid" aria-label="Explore by category" role="region">{categories.map(({ id, slug, name, iconKey, description }, index) => { const Icon = categoryIcon(iconKey); return <Link key={id} href={categoryHref(slug)} aria-label={name} title={name} className={`category-door category-${slug}`}><span className="category-icon"><Icon size={23} strokeWidth={1.6} aria-hidden="true" /></span><div><h2>{name}<span>{String(items.filter((item) => item.category.slug === slug).length).padStart(2, '0')}</span></h2><p>{description}</p></div><ArrowUpRight className="category-arrow" size={19} aria-hidden="true" /><span className="category-number" aria-hidden="true">0{index + 1}</span></Link> })}</div>
 
       <section className="discover-section" id="discover" aria-labelledby="discover-title">
-        <motion.div className="section-heading" variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.5 }}><div><p className="eyebrow">UNEARTH SOMETHING NEW</p><h2 id="discover-title">Fresh Finds<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the Mine <ArrowUpRight size={16} aria-hidden="true" /></Link></motion.div>
+        <div className="section-heading"><div><p className="eyebrow">UNEARTH SOMETHING NEW</p><h2 id="discover-title">Fresh Finds<span>.</span></h2></div><Link href="/search" className="archive-link">Explore the Mine <ArrowUpRight size={16} aria-hidden="true" /></Link></div>
         <div className="discovery-toolbar"><p role="status">{visible.length} little {visible.length === 1 ? 'find' : 'finds'} <ArrowDown size={12} aria-hidden="true" /></p></div>
-        <MasonryGrid className="discovery-grid">{visible.map((item) => <ViewTransition key={item.item.id} enter="home-fade" exit="home-fade"><CatalogCard item={item} variant="detailed" /></ViewTransition>)}</MasonryGrid>
+        <MasonryGrid className="discovery-grid">{visible.map((item) => <CatalogCard key={item.item.id} item={item} variant="detailed" />)}</MasonryGrid>
         {visible.length === 0 && <div className="collection-empty"><Heart size={30} aria-hidden="true" /><h3>A little space for your favorites.</h3><p>Try another category or search.</p><Link className="primary-button" href="/search">Find something to love <ArrowRight size={16} aria-hidden="true" /></Link></div>}
       </section>
 
-      <ViewTransition><motion.section className="mood-section" aria-labelledby="mood-title" variants={stagger(0.1)} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.3 }}><motion.div variants={fadeUp}><p className="eyebrow">FOLLOW YOUR FEELING</p><h2 id="mood-title">There’s a find for every mood.</h2><p>No need to know exactly what you’re looking for.</p></motion.div><motion.div className="mood-links" variants={fadeUp}><Link href="/search?q=cozy"><Sun size={18} aria-hidden="true" /><span>A cozy moment<small>Slow down a little</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/search?q=night"><Moon size={18} aria-hidden="true" /><span>After hours<small>For the night owls</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/search?q=chaos"><Zap size={18} aria-hidden="true" /><span>A little chaos<small>Embrace the fun</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link></motion.div></motion.section></ViewTransition>
-    </main>
+      <section className="mood-section" aria-labelledby="mood-title"><div><p className="eyebrow">FOLLOW YOUR FEELING</p><h2 id="mood-title">There’s a find for every mood.</h2><p>No need to know exactly what you’re looking for.</p></div><div className="mood-links"><Link href="/search?q=cozy"><Sun size={18} aria-hidden="true" /><span>A cozy moment<small>Slow down a little</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/search?q=night"><Moon size={18} aria-hidden="true" /><span>After hours<small>For the night owls</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link><Link href="/search?q=chaos"><Zap size={18} aria-hidden="true" /><span>A little chaos<small>Embrace the fun</small></span><ArrowUpRight size={15} aria-hidden="true" /></Link></div></section>
+    </PageTransition>
     <SiteFooter />
   </div>
 }

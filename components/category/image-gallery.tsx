@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { ItemArtwork } from '@/components/catalog-card'
 import { MasonryGrid } from '@/components/masonry-grid'
 import { itemHref } from '@/lib/catalog'

@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { ArrowUpRight } from 'lucide-react'
 import { CategoryResults } from '@/components/category/category-results'
 import type { CatalogDetail } from '@/lib/entities/catalog'

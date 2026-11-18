@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigationRouter as useRouter } from '@/components/navigation-transition'
 import { saveDownloadProvider, deleteDownloadProvider } from '@/app/actions/download-sources'
 import type { ManagedDownloadProvider } from '@/lib/download-sources'
 import styles from './download-source-manager.module.css'

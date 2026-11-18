@@ -1,3 +1,4 @@
+import { PageTransition } from '@/components/page-transition'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { CategoryNavigation } from '@/components/category-navigation'
@@ -11,7 +12,7 @@ export default function CategoryLoading() {
     <span className="sr-only" role="status">Loading collection...</span>
     <div className="page-shell catalog-layout category-loading">
       <CategoryNavigation />
-      <main className="category-loading-main">
+      <PageTransition className="category-loading-main">
         <div className="category-banner category-loading-banner">
           <div className="category-loading-banner-copy"><p className="eyebrow">THE PIXINIUM COLLECTION</p>
             <span className="category-loading-block category-loading-title" aria-hidden="true" />
@@ -30,7 +31,7 @@ export default function CategoryLoading() {
         <div className="category-loading-results" aria-hidden="true">
           {Array.from({ length: 3 }, (_, index) => <span className="category-loading-block category-loading-row" key={index} />)}
         </div>
-      </main>
+      </PageTransition>
     </div>
     <SiteFooter />
   </div>

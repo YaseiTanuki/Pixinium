@@ -2,7 +2,6 @@
 
 import { Children, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { masonryLayout } from '@/lib/masonry-layout'
-import { motion } from 'motion/react'
 
 export function MasonryGrid({ children, className = '' }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -54,6 +53,6 @@ export function MasonryGrid({ children, className = '' }: { children: ReactNode;
   }, [children])
 
   return <div ref={ref} className={`masonry-grid ${className}`}>
-    {Children.map(children, child => child == null ? null : <motion.div className="masonry-item" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '0px 0px 120px 0px' }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>{child}</motion.div>)}
+    {Children.map(children, child => child == null ? null : <div className="masonry-item">{child}</div>)}
   </div>
 }

@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/navigation-link'
 import { DownloadSourceFields } from './download-source-fields'
 import { downloadSourcesFromForm, type DownloadProvider } from '@/lib/download-sources'
 import { useState, type FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useNavigationRouter as useRouter } from '@/components/navigation-transition'
 import { Plus, Trash2 } from 'lucide-react'
 import { CONTENT_LIMITS } from '@/lib/admin/limits'
 import type { ContentResult } from '@/lib/admin/content'
