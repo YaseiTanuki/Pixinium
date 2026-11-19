@@ -1,5 +1,6 @@
 'use client'
 
+import { NavigationResults } from '@/components/navigation-results'
 import { PageTransition } from '@/components/page-transition'
 
 import Link from '@/components/navigation-link'
@@ -60,17 +61,18 @@ export default function CatalogSearch({ items, categories, tags, total, page, to
             <p role="status">{pending ? 'Finding your next favorite…' : items.length ? <><span className="archive-result-dot" aria-hidden="true" /> Showing <strong>{first}–{first + items.length - 1}</strong> of {total} finds</> : 'Nothing unearthed yet'}</p>
             {items.length > 0 && <span>Page <strong>{page}</strong> of {totalPages}</span>}
           </div>
-          <MasonryGrid className="discovery-grid search-all-grid">{items.map(item => <CatalogCard key={item.item.id} item={item} variant="detailed" />)}</MasonryGrid>
+          <NavigationResults><MasonryGrid className="discovery-grid search-all-grid">{items.map(item => <CatalogCard key={item.item.id} item={item} variant="detailed" />)}</MasonryGrid>
           {!items.length && !pending && <div className="archive-empty"><SearchX size={30} aria-hidden="true" /><h2>Nothing unearthed yet.</h2><p>Try another search or take a look through the Mine.</p><Link href="/search">Show all finds <ArrowRight size={16} aria-hidden="true" /></Link></div>}
+          </NavigationResults>
           {totalPages > 1 && <nav className="archive-pagination" aria-label="Mine pages">
             <p className="archive-pagination-summary">Page <strong>{page}</strong> of <strong>{totalPages}</strong></p>
             <div className="archive-pagination-controls">
-            {page > 1 ? <Link className="archive-page-step" prefetch={false} href={searchHref({ category: initialCategory, tag: initialTag, sort: initialSort, tagMatch: initialTagMatch, query: initialQuery, page: page - 1 })} aria-label="Previous page"><ArrowLeft size={17} aria-hidden="true" /> <span>Previous</span></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Previous page"><ArrowLeft size={17} aria-hidden="true" /> <span>Previous</span></span>}
+            {page > 1 ? <Link className="archive-page-step" prefetch={false} scroll={false} href={searchHref({ category: initialCategory, tag: initialTag, sort: initialSort, tagMatch: initialTagMatch, query: initialQuery, page: page - 1 })} aria-label="Previous page"><ArrowLeft size={17} aria-hidden="true" /> <span>Previous</span></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Previous page"><ArrowLeft size={17} aria-hidden="true" /> <span>Previous</span></span>}
             <div className="archive-page-numbers">{pages.map((number, index) => <div key={number}>
               {index > 0 && number - pages[index - 1] > 1 && <span aria-hidden="true">…</span>}
-              <Link prefetch={false} href={searchHref({ category: initialCategory, tag: initialTag, sort: initialSort, tagMatch: initialTagMatch, query: initialQuery, page: number })} aria-label={`Page ${number}`} aria-current={number === page ? 'page' : undefined}>{number}</Link>
+              <Link prefetch={false} scroll={false} href={searchHref({ category: initialCategory, tag: initialTag, sort: initialSort, tagMatch: initialTagMatch, query: initialQuery, page: number })} aria-label={`Page ${number}`} aria-current={number === page ? 'page' : undefined}>{number}</Link>
             </div>)}</div>
-            {page < totalPages ? <Link className="archive-page-step" prefetch={false} href={searchHref({ category: initialCategory, tag: initialTag, sort: initialSort, tagMatch: initialTagMatch, query: initialQuery, page: page + 1 })} aria-label="Next page"><span>Next</span> <ArrowRight size={17} aria-hidden="true" /></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Next page"><span>Next</span> <ArrowRight size={17} aria-hidden="true" /></span>}
+            {page < totalPages ? <Link className="archive-page-step" prefetch={false} scroll={false} href={searchHref({ category: initialCategory, tag: initialTag, sort: initialSort, tagMatch: initialTagMatch, query: initialQuery, page: page + 1 })} aria-label="Next page"><span>Next</span> <ArrowRight size={17} aria-hidden="true" /></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Next page"><span>Next</span> <ArrowRight size={17} aria-hidden="true" /></span>}
             </div>
           </nav>}
         </div>
