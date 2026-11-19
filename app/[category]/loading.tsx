@@ -12,7 +12,7 @@ export default function CategoryLoading() {
     <span className="sr-only" role="status">Loading collection...</span>
     <div className="page-shell catalog-layout category-loading">
       <CategoryNavigation />
-      <PageTransition className="category-loading-main">
+      <PageTransition loading className="category-loading-main">
         <div className="category-banner category-loading-banner">
           <div className="category-loading-banner-copy"><p className="eyebrow">THE PIXINIUM COLLECTION</p>
             <span className="category-loading-block category-loading-title" aria-hidden="true" />

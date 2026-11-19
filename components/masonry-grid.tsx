@@ -45,9 +45,11 @@ export function MasonryGrid({ children, className = '' }: { children: ReactNode;
     // Image loads, font loads and text changes can all change a card's height.
     cards.forEach(card => observer.observe(card))
     window.addEventListener('resize', scheduleLayout)
+    window.addEventListener('pixinium:navigation-ready', layout)
     return () => {
       observer.disconnect()
       window.removeEventListener('resize', scheduleLayout)
+      window.removeEventListener('pixinium:navigation-ready', layout)
       cancelAnimationFrame(frame)
     }
   }, [children])

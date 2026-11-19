@@ -176,33 +176,44 @@
   font-family: var(--font-display);
 }
 
-/* Keep the header and navigation usable while route content is pending. */
-.page-surface {
-  transition: opacity 160ms ease;
+/* One immediate pending treatment for links, pagination and filters. */
+.page-surface { position: relative; }
+.route-pending-skeleton { display: none; }
+.navigation-results { display: flow-root; min-width: 0; }
+/* Retain only the compact skeleton's height, rather than the previous page's
+   full list, so pagination stays steady when the last page has fewer items. */
+.navigation-results[data-pagination-stable] { min-height: 352px; }
+html[data-pagination-anchor='true'] { overflow-anchor: none; }
+.list-pending-skeleton { display: none; padding-top: 16px; }
+html:is([data-navigation-effect='list-skeleton'], [data-navigation-effect='pagination-skeleton']) [data-navigation-results] > .list-ready-content { display: none; }
+html:is([data-navigation-effect='list-skeleton'], [data-navigation-effect='pagination-skeleton']) [data-navigation-results] > .list-pending-skeleton { display: block; }
+html[data-navigation-effect='skeleton'] .page-surface:not([data-route-skeleton]):not(:has(.navigation-skeleton)) > :not(.route-pending-skeleton):not(.category-navigation) {
+  display: none;
 }
-html[data-navigating='true'] .page-surface { opacity: 0.72; }
-
-/* Crossfade snapshots without stretching between different page heights. */
-::view-transition-group(root) { animation: none; }
-::view-transition-old(root) { display: none; }
-::view-transition-new(root) { animation: none; }
-::view-transition-group(.page-crossfade) { animation: none; }
-::view-transition-old(.page-crossfade) { animation: page-fade-out 180ms ease both; }
-::view-transition-new(.page-crossfade) { animation: page-fade-in 220ms ease both; }
-::view-transition-image-pair(.page-crossfade) { isolation: isolate; }
-::view-transition-old(.page-crossfade),
-::view-transition-new(.page-crossfade) {
-  mix-blend-mode: normal;
-  height: 100%;
-  object-fit: none;
-  object-position: top left;
+html[data-navigation-effect='skeleton'] .page-surface:not([data-route-skeleton]):not(:has(.navigation-skeleton)) > .route-pending-skeleton {
+  display: block;
+  min-width: 0;
+  grid-column: 1 / -1;
+  pointer-events: none;
 }
-@keyframes page-fade-out { to { opacity: 0; } }
-@keyframes page-fade-in { from { opacity: 0; } to { opacity: 1; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .page-surface { transition: none; }
-  html[data-navigating='true'] .page-surface { opacity: 1; }
+html[data-navigation-effect='skeleton'] .page-surface.catalog-layout > .route-pending-skeleton { grid-column: 2; grid-row: 1; padding: 24px 0 0 16px; }
+html[data-navigation-effect='skeleton'] .page-surface.catalog-layout > .category-navigation { grid-column: 1; grid-row: 1; }
+.route-skeleton-title, .route-skeleton-line, .route-skeleton-grid > span {
+  display: block;
+  background: #e8dfd8;
+  border-radius: 10px;
+}
+.route-skeleton-title { width: 42%; height: 32px; margin-bottom: 12px; }
+.route-skeleton-line { width: 64%; height: 14px; margin-bottom: 24px; }
+.route-skeleton-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.route-skeleton-grid > span { height: 160px; }
+@media (max-width: 800px) {
+  html[data-navigation-effect='skeleton'] .page-surface.catalog-layout > .route-pending-skeleton { grid-column: 1; grid-row: 2; padding: 20px 0 0; }
+}
+@media (max-width: 580px) {
+  .navigation-results[data-pagination-stable] { min-height: 378px; }
+  .route-skeleton-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .route-skeleton-grid > span { height: 110px; }
 }
 
 .home-page a:focus-visible {

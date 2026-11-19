@@ -90,6 +90,7 @@ test('header only includes an avatar request for a signed-in user', () => {
   const { SiteHeader } = loadClientModule('../components/site-header.tsx', {
     '@/lib/saved-items': { useSavedItems: () => ({ saved: [], error: '', userId }) },
     '@/components/brand-logo': { BrandLogo: () => null },
+    '@/components/navigation-form': { NavigationForm: ({ children, ...props }) => require('react').createElement('form', props, children) },
     'next/link': { default: ({ children }) => children },
   })
   assert.ok(!renderToStaticMarkup(require('react').createElement(SiteHeader)).includes('/api/profile/avatar'))
