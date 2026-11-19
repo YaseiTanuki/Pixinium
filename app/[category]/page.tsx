@@ -1,3 +1,5 @@
+import { NavigationResults } from '@/components/navigation-results'
+import { NavigationForm } from '@/components/navigation-form'
 import { PageTransition } from '@/components/page-transition'
 import type { Metadata } from 'next'
 import { cache } from 'react'
@@ -74,21 +76,22 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       <CatalogFilters categories={categories} tags={tags} scope={slug} query={query} applied={{ category: slug, tag, sort, tagMatch }}>
       <div className="category-toolbar">
         <div><h2>{query ? `Results for “${query}”` : `Explore ${category.name.toLowerCase()}`}</h2><p>{total.toLocaleString('en')} {total === 1 ? 'find' : 'finds'}{items.length > 0 && ` · Showing ${first}–${first + items.length - 1}`}</p></div>
-        <form action={categoryHref(slug)} method="get" role="search" className="category-search">
+        <NavigationForm action={categoryHref(slug)} role="search" className="category-search">
           {tag && <input type="hidden" name="tag" value={tag} />}
           {sort && <input type="hidden" name="sort" value={sort} />}
           {tag && tagMatch === 'any' && <input type="hidden" name="match" value="any" />}
           <Search size={17} aria-hidden="true" /><input key={query} type="search" name="q" defaultValue={query} aria-label={`Search ${category.name}`} placeholder={`Search ${category.name.toLowerCase()}…`} /><button type="submit" aria-label={`Search ${category.name}`}><ArrowRight size={18} aria-hidden="true" /></button>
-        </form>
+        </NavigationForm>
       </div>
       </CatalogFilters>
-      {items.length ? <CategoryResults items={items} schemaKey={category.metadataSchemaKey} /> : <div className="archive-empty"><SearchX size={30} aria-hidden="true" /><h2>{filtered ? 'Nothing unearthed yet.' : 'Good things are on their way.'}</h2><p>{filtered ? 'Try another search or clear the filters in this collection.' : 'Check back for new additions to this collection.'}</p><Link href={filtered ? categoryHref(slug) : '/search'}>{filtered ? `Browse all ${category.name.toLowerCase()}` : 'Explore all finds'}<ArrowRight size={16} aria-hidden="true" /></Link></div>}
+      <NavigationResults>{items.length ? <CategoryResults items={items} schemaKey={category.metadataSchemaKey} /> : <div className="archive-empty"><SearchX size={30} aria-hidden="true" /><h2>{filtered ? 'Nothing unearthed yet.' : 'Good things are on their way.'}</h2><p>{filtered ? 'Try another search or clear the filters in this collection.' : 'Check back for new additions to this collection.'}</p><Link href={filtered ? categoryHref(slug) : '/search'}>{filtered ? `Browse all ${category.name.toLowerCase()}` : 'Explore all finds'}<ArrowRight size={16} aria-hidden="true" /></Link></div>}
+      </NavigationResults>
       {totalPages > 1 && <nav className="archive-pagination" aria-label={`${category.name} pages`}>
         <p className="archive-pagination-summary">Page <strong>{page}</strong> of <strong>{totalPages}</strong></p>
         <div className="archive-pagination-controls">
-          {page > 1 ? <Link className="archive-page-step" href={href(page - 1)} prefetch={false} aria-label="Previous page"><ArrowLeft size={17} /><span>Previous</span></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Previous page"><ArrowLeft size={17} /><span>Previous</span></span>}
-          <div className="archive-page-numbers">{pages.map((number, index) => <div key={number}>{index > 0 && number - pages[index - 1] > 1 && <span aria-hidden="true">…</span>}<Link href={href(number)} prefetch={false} aria-current={number === page ? 'page' : undefined} aria-label={`Page ${number}`}>{number}</Link></div>)}</div>
-          {page < totalPages ? <Link className="archive-page-step" href={href(page + 1)} prefetch={false} aria-label="Next page"><span>Next</span><ArrowRight size={17} /></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Next page"><span>Next</span><ArrowRight size={17} /></span>}
+          {page > 1 ? <Link className="archive-page-step" href={href(page - 1)} prefetch={false} scroll={false} aria-label="Previous page"><ArrowLeft size={17} /><span>Previous</span></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Previous page"><ArrowLeft size={17} /><span>Previous</span></span>}
+          <div className="archive-page-numbers">{pages.map((number, index) => <div key={number}>{index > 0 && number - pages[index - 1] > 1 && <span aria-hidden="true">…</span>}<Link href={href(number)} prefetch={false} scroll={false} aria-current={number === page ? 'page' : undefined} aria-label={`Page ${number}`}>{number}</Link></div>)}</div>
+          {page < totalPages ? <Link className="archive-page-step" href={href(page + 1)} prefetch={false} scroll={false} aria-label="Next page"><span>Next</span><ArrowRight size={17} /></Link> : <span className="archive-page-step" aria-disabled="true" aria-label="Next page"><span>Next</span><ArrowRight size={17} /></span>}
         </div>
       </nav>}
     </PageTransition>

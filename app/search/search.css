@@ -154,7 +154,8 @@
 .archive-page-numbers > div > span { width: 20px; text-align: center; color: #827062; }
 .archive-page-numbers a { display: grid; place-items: center; min-width: 44px; height: 44px; padding-inline: 8px; border: 1px solid transparent; border-radius: 10px; color: #6d5d51; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .archive-page-numbers a:hover { background: #f2e9df; }
-.archive-page-numbers a[aria-current="page"] { background: #ac343f; border-color: #ac343f; color: #fff; box-shadow: 0 2px 4px #862b3414; }
+.archive-page-numbers a[aria-current="page"], .archive-page-numbers a[data-pagination-target="true"] { background: #ac343f; border-color: #ac343f; color: #fff; box-shadow: 0 2px 4px #862b3414; }
+.archive-pagination[data-pagination-pending="true"] .archive-page-numbers a[aria-current="page"]:not([data-pagination-target]) { background: transparent; border-color: transparent; color: #6d5d51; box-shadow: none; }
 .archive-pagination a:focus-visible, .archive-empty a:focus-visible { outline: 2px solid #a8323c; outline-offset: 4px; }
 @media (prefers-reduced-motion: reduce) { .archive-pagination a { transition: none; } }
 @media (max-width: 800px) {

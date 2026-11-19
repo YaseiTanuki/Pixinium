@@ -16,7 +16,7 @@ function Block({ className = '' }: { className?: string }) {
 function HomeSkeleton() {
   return <div className="home-page">
     <SiteHeader />
-    <PageTransition className="home-shell">
+    <PageTransition loading className="home-shell">
       <HomeIntro loading />
       <div className="feature-grid" aria-hidden="true">
         <div className="feature-main navigation-feature-main"><Block className="navigation-short" /><Block className="navigation-feature-label" /></div>
@@ -35,7 +35,7 @@ function HomeSkeleton() {
 function SearchSkeleton() {
   return <div className="home-page archive-page">
     <SiteHeader />
-    <PageTransition className="page-shell catalog-layout">
+    <PageTransition loading className="page-shell catalog-layout">
       <CategoryNavigation current="all" />
       <div className="search-content">
         <div className="search-filter-toolbar"><h1>Explore the Mine</h1><button type="button" className="search-filter-toggle" disabled><SlidersHorizontal size={16} aria-hidden="true" /> Filters <ChevronDown size={15} aria-hidden="true" /></button></div>
@@ -50,7 +50,7 @@ function SearchSkeleton() {
 function DetailSkeleton() {
   return <div className="home-page item-detail-page">
     <SiteHeader />
-    <PageTransition className="home-shell">
+    <PageTransition loading className="home-shell">
       <nav className="detail-breadcrumb" aria-label="Breadcrumb"><Link href="/search"><ArrowLeft size={14} aria-hidden="true" /> The Mine</Link><ChevronRight size={12} aria-hidden="true" /><span aria-hidden="true"><Block className="navigation-breadcrumb" /></span></nav>
       <div className="detail-hero" aria-hidden="true">
         <div><Block className="artwork-stage navigation-detail-art" /><div className="artwork-caption"><Block className="navigation-short" /></div></div>
