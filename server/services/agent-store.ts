@@ -10,7 +10,7 @@ export function agentDatabase() {
 
 // Function names are an application allowlist, never interpolated from a request.
 const functions = ['authenticate', 'catalog', 'category', 'reserve_upload', 'discard_uploads', 'start_job',
-  'claim_uploads', 'content_slugs', 'job_state', 'fail_job', 'publish_job'] as const
+  'claim_uploads', 'content_slugs', 'job_state', 'fail_job', 'publish_job', 'drafts', 'draft', 'update_draft'] as const
 export async function agentCall<T>(actor: Pick<AgentActor, 'keyId' | 'tokenHash'>,
   name: typeof functions[number], args: unknown[] = []): Promise<T> {
   if (!functions.includes(name)) throw new Error('Unknown agent operation')
@@ -33,7 +33,7 @@ export function agentError(error: unknown): { status: number; message: string } 
   const errors: Record<string, { status: number; message: string }> = {
     P0401: { status: 401, message: 'Invalid, expired or revoked agent key.' },
     P0403: { status: 403, message: 'This agent does not have permission for that operation or resource.' },
-    P0409: { status: 409, message: 'The job is already running, the idempotency key conflicts, or its lease has expired.' },
+    P0409: { status: 409, message: 'The content changed, the idempotency key conflicts, or the job is already running or expired. Read the latest draft before editing again.' },
     P0422: { status: 422, message: 'Invalid agent operation input.' },
     P0429: { status: 429, message: 'Agent request, upload or job quota exceeded. Try again after the quota window resets.' },
     P0503: { status: 503, message: 'Agent API is not configured.' },
