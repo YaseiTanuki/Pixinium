@@ -10,7 +10,7 @@ export function agentDatabase() {
 
 // Function names are an application allowlist, never interpolated from a request.
 const functions = ['authenticate', 'catalog', 'category', 'reserve_upload', 'discard_uploads', 'start_job',
-  'claim_uploads', 'content_slugs', 'job_state', 'fail_job', 'publish_job', 'drafts', 'draft', 'update_draft'] as const
+  'claim_uploads', 'content_slugs', 'job_state', 'fail_job', 'publish_job', 'drafts', 'draft', 'update_draft', 'draft_image'] as const
 export async function agentCall<T>(actor: Pick<AgentActor, 'keyId' | 'tokenHash'>,
   name: typeof functions[number], args: unknown[] = []): Promise<T> {
   if (!functions.includes(name)) throw new Error('Unknown agent operation')

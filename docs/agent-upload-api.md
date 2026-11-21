@@ -104,9 +104,19 @@ localhost. Never include API keys in URLs or forward them to object storage.
 | POST | `/api/agent/content` | Idempotent draft submission using staged files |
 | GET | `/api/agent/drafts?before=<id>` | Up to 20 owned private drafts and nextCursor |
 | GET | `/api/agent/content/<id>` | Owned draft text, metadata, file information and exact updatedAt |
+| GET | `/api/agent/content/<id>/image?assetId=<asset-id>` | Private WebP preview of an owned draft image; content:edit required |
 | PATCH | `/api/agent/content/<id>` | Update only owned draft content; requires content:edit |
 
 ## Editing an existing draft
+
+For visual review, the image endpoint streams an actual private preview without
+redirecting to storage or exposing a signed URL. Omit assetId to select the cover
+(then the first available image), or pass an image assetId from the draft detail.
+The DB checks the item owner, active category/key and image attachment membership;
+published/archived items and non-image or unrelated asset IDs are denied. Input
+is bounded to the normal 50 MiB upload limit and 64 million decoded pixels. Output
+is a still WebP up to 800 × 800 pixels and 2 MiB, preserving the original ratio
+and files. Responses use private, no-store caching. No public API gains access.
 
 Read the draft first, then PATCH with `Idempotency-Key: <stable-edit-request-id>`:
 
