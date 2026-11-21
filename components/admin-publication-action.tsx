@@ -6,13 +6,13 @@ import { setContentStatus } from '@/app/actions/content'
 import { Check, FileClock } from 'lucide-react'
 import styles from './admin-studio.module.css'
 
-export function AdminPublicationAction({ id, status, label }: { id: string; status: string; label?: string }) {
+export function AdminPublicationAction({ id, status, label, disabled = false }: { id: string; status: string; label?: string; disabled?: boolean }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
   if (!['draft', 'published'].includes(status)) return null
   return <div className={styles.publication}>
-    <button type="button" className={styles.statusAction} data-status={status} disabled={pending} onClick={() => {
+    <button type="button" className={styles.statusAction} data-status={status} disabled={pending || disabled} onClick={() => {
       setError('')
       startTransition(async () => {
         try {
