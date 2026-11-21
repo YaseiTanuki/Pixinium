@@ -73,6 +73,49 @@ test('owned draft listing uses bounded cursor pages with no duplicates',async()=
   }finally{await f.db.close()}
 })
 
+test('private draft images require ownership, an allowed image attachment and a live scoped key',async()=>{
+  const f=await fixture()
+  try{
+    const job=await f.start(),doc=f.document(job)
+    await f.call('publish_job',[job.id,job.leaseToken,'images.v1',JSON.stringify(doc),'assets'])
+    const image=await f.call<{assetId:string;path:string;bucket:string}>('draft_image',[job.itemId,null])
+    assert.equal(image.path,doc.attachments[0].path);assert.equal(image.bucket,'assets')
+    assert.deepEqual(await f.call('draft_image',[job.itemId,image.assetId]),image)
+    await f.db.exec('RESET ROLE')
+    const file=(await f.db.query<{id:string}>("INSERT INTO catalog.assets(provider,bucket,object_path,media_type,mime_type,byte_size) VALUES('s3','assets','test/non-image.zip','file','application/zip',32) RETURNING id::text")).rows[0]
+    await f.db.query("INSERT INTO catalog.item_assets(item_id,asset_id,role,alt_text) VALUES($1,$2,'download','ZIP')",[job.itemId,file.id])
+    await f.db.exec('SET ROLE pixinium_agent')
+    await assert.rejects(f.call('draft_image',[job.itemId,file.id]),(e:{code:string})=>e.code==='P0403')
+    const second=await f.start()
+    await f.call('publish_job',[second.id,second.leaseToken,'images.v1',JSON.stringify(f.document(second)),'assets'])
+    await assert.rejects(f.call('draft_image',[second.itemId,image.assetId]),(e:{code:string})=>e.code==='P0403')
+    await f.db.exec('RESET ROLE')
+    const other=randomUUID(),key=newAgentCredential()
+    await f.db.query("INSERT INTO automation.agents(id,name,allowed_categories) VALUES($1,'other',$2)",[other,[f.category]])
+    await f.db.query("INSERT INTO automation.api_keys(id,agent_id,label,secret_hash,scopes,expires_at) VALUES($1,$2,'other',$3,ARRAY['content:edit'],now()+interval '1 day')",[key.keyId,other,key.tokenHash])
+    await f.db.exec('SET ROLE pixinium_agent')
+    await assert.rejects(f.call('draft_image',[job.itemId,null],key),(e:{code:string})=>e.code==='P0403')
+    await f.db.exec('RESET ROLE')
+    await f.db.query('UPDATE automation.agents SET allowed_categories=$1 WHERE id=$2',[[f.otherCategory],f.agent])
+    await f.db.exec('SET ROLE pixinium_agent')
+    await assert.rejects(f.call('draft_image',[job.itemId,null]),(e:{code:string})=>e.code==='P0403')
+    await f.db.exec('RESET ROLE')
+    await f.db.query('UPDATE automation.agents SET allowed_categories=$1 WHERE id=$2',[[f.category],f.agent])
+    await f.db.query("UPDATE automation.api_keys SET scopes=ARRAY['catalog:read'] WHERE id=$1",[f.key.keyId])
+    await f.db.exec('SET ROLE pixinium_agent')
+    await assert.rejects(f.call('draft_image',[job.itemId,null]),(e:{code:string})=>e.code==='P0403')
+    await f.db.exec('RESET ROLE')
+    await f.db.query("UPDATE automation.api_keys SET scopes=ARRAY['content:edit'],revoked_at=now() WHERE id=$1",[f.key.keyId])
+    await f.db.exec('SET ROLE pixinium_agent')
+    await assert.rejects(f.call('draft_image',[job.itemId,null]),(e:{code:string})=>e.code==='P0401')
+    await f.db.exec('RESET ROLE')
+    await f.db.query('UPDATE automation.api_keys SET revoked_at=NULL WHERE id=$1',[f.key.keyId])
+    await f.db.query("UPDATE catalog.items SET status='published',published_at=now() WHERE id=$1",[job.itemId])
+    await f.db.exec('SET ROLE pixinium_agent')
+    await assert.rejects(f.call('draft_image',[job.itemId,null]),(e:{code:string})=>e.code==='P0403')
+  }finally{await f.db.close()}
+})
+
 test('draft brokers reject other owners, missing scopes, revoked keys, disallowed categories and published items', async () => {
   const f = await fixture()
   try {
