@@ -23,6 +23,92 @@ test('agent secrets are opaque, independently identified and hashed; payload has
   assert.notEqual(agentContentPayloadHash({ ...oldRequest, noDirectDownload: true }), agentPayloadHash(oldRequest))
 })
 
+test('owned draft edits preserve omitted fields, files and draft visibility, reject stale writes and replay exactly once', async () => {
+  const f = await fixture()
+  try {
+    const job = await f.start()
+    const doc = { ...f.document(job), description: 'Original description', summary: 'Keep summary' }
+    await f.call('publish_job', [job.id, job.leaseToken, 'images.v1', JSON.stringify(doc), 'assets'])
+    const before = await f.call<{ updatedAt: string; files: unknown[] }>('draft', [job.itemId])
+    const changes = { title: 'Updated title', description: 'Updated description', tags: [{ slug: 'cozy', name: 'Cozy' }], downloadSources: [{provider:'github',url:'https://github.com/pixinium/updated'}] }
+    const hash = agentPayloadHash(changes)
+    const args = [job.itemId, 'edit-1', hash, before.updatedAt, JSON.stringify(changes)]
+    const saved = await f.call<{ updatedAt: string; status: string; summary: string; files: unknown[]; title: string }>('update_draft', args)
+    assert.equal(saved.title, 'Updated title')
+    assert.equal(saved.summary, 'Keep summary')
+    assert.equal(saved.status, 'draft')
+    assert.deepEqual(saved.files, before.files)
+    assert.deepEqual(await f.call('update_draft', args), saved)
+    await assert.rejects(f.call('update_draft', [job.itemId,'edit-1',agentPayloadHash({title:'Different'}),saved.updatedAt,'{"title":"Different"}']), (e: {code:string}) => e.code==='P0409')
+    await assert.rejects(f.call('update_draft', [job.itemId,'edit-2',hash,before.updatedAt,JSON.stringify(changes)]), (e: {code:string}) => e.code==='P0409')
+    for (const patch of [{status:'published'}, {categoryId:f.otherCategory}, {slug:'new-slug'}, {attachments:[]}, {metadata:{}}, {facts:[]}, {title:null}, {tags:[{slug:'bad slug',name:'Invalid'}]}]) {
+      await assert.rejects(f.call('update_draft', [job.itemId,randomUUID(),agentPayloadHash(patch),saved.updatedAt,JSON.stringify(patch)]), (e: {code:string}) => ['P0422','P0403'].includes(e.code))
+    }
+    const drafts = await f.call<{drafts:Array<{id:string}>;nextCursor:string|null}>('drafts', [null])
+    assert.deepEqual(drafts.drafts.map(d=>d.id), [job.itemId])
+    await f.db.exec('RESET ROLE')
+    assert.equal((await f.db.query<{n:number}>("SELECT count(*)::int AS n FROM automation.audit_events WHERE action='draft_updated'")).rows[0].n, 1)
+    assert.deepEqual((await f.db.query('SELECT status,published_at,slug FROM catalog.items WHERE id=$1',[job.itemId])).rows[0], {status:'draft',published_at:null,slug:doc.slug})
+    const rotated=newAgentCredential()
+    await f.db.query("INSERT INTO automation.api_keys(id,agent_id,label,secret_hash,scopes,expires_at) VALUES($1,$2,'rotated',$3,ARRAY['content:edit'],now()+interval '1 day')",[rotated.keyId,f.agent,rotated.tokenHash])
+    await f.db.exec('SET ROLE pixinium_agent')
+    assert.deepEqual(await f.call('update_draft',args,rotated),saved)
+  } finally { await f.db.close() }
+})
+
+test('owned draft listing uses bounded cursor pages with no duplicates',async()=>{
+  const f=await fixture({jobs:30})
+  try{
+    for(let index=0;index<23;index++){
+      const job=await f.start()
+      await f.call('publish_job',[job.id,job.leaseToken,'images.v1',JSON.stringify(f.document(job)),'assets'])
+    }
+    type Page={drafts:Array<{id:string}>;nextCursor:string|null}
+    const first=await f.call<Page>('drafts',[null])
+    assert.equal(first.drafts.length,20)
+    assert.equal(first.nextCursor,first.drafts[19].id)
+    const second=await f.call<Page>('drafts',[first.nextCursor])
+    assert.equal(second.drafts.length,3);assert.equal(second.nextCursor,null)
+    assert.equal(new Set([...first.drafts,...second.drafts].map(d=>d.id)).size,23)
+  }finally{await f.db.close()}
+})
+
+test('draft brokers reject other owners, missing scopes, revoked keys, disallowed categories and published items', async () => {
+  const f = await fixture()
+  try {
+    const job = await f.start()
+    await f.call('publish_job', [job.id,job.leaseToken,'images.v1',JSON.stringify(f.document(job)),'assets'])
+    const draft = await f.call<{updatedAt:string}>('draft',[job.itemId])
+    const edit = (key=f.key) => f.call('update_draft',[job.itemId,randomUUID(),agentPayloadHash({title:'Denied'}),draft.updatedAt,'{"title":"Denied"}'],key)
+    const other = randomUUID(), otherKey = newAgentCredential()
+    await f.db.exec('RESET ROLE')
+    await f.db.query("INSERT INTO automation.agents(id,name,allowed_categories) VALUES($1,'other',$2)",[other,[f.category]])
+    await f.db.query("INSERT INTO automation.api_keys(id,agent_id,label,secret_hash,scopes,expires_at) VALUES($1,$2,'other',$3,ARRAY['content:edit'],now()+interval '1 day')",[otherKey.keyId,other,otherKey.tokenHash])
+    await f.db.exec('SET ROLE pixinium_agent')
+    await assert.rejects(edit(otherKey),(e:{code:string})=>e.code==='P0403')
+    await assert.rejects(f.call('draft',[job.itemId],otherKey),(e:{code:string})=>e.code==='P0403')
+    assert.deepEqual(await f.call('drafts',[null],otherKey),{drafts:[],nextCursor:null})
+    for(const statement of ["UPDATE automation.api_keys SET scopes=ARRAY['content:create'] WHERE id=$1",'UPDATE automation.api_keys SET revoked_at=now() WHERE id=$1']) {
+      await f.db.exec('RESET ROLE'); await f.db.query(statement,[f.key.keyId]); await f.db.exec('SET ROLE pixinium_agent')
+      await assert.rejects(edit(),(e:{code:string})=>['P0403','P0401'].includes(e.code))
+    }
+    await f.db.exec('RESET ROLE')
+    await f.db.query("UPDATE automation.api_keys SET scopes=ARRAY['content:edit'],revoked_at=NULL WHERE id=$1",[f.key.keyId])
+    await f.db.query('UPDATE automation.agents SET allowed_categories=$1 WHERE id=$2',[[f.otherCategory],f.agent])
+    await f.db.exec('SET ROLE pixinium_agent')
+    await assert.rejects(edit(),(e:{code:string})=>e.code==='P0403')
+    await f.db.exec('RESET ROLE')
+    await f.db.query('UPDATE automation.agents SET allowed_categories=$1 WHERE id=$2',[[f.category],f.agent])
+    await f.db.query("UPDATE catalog.items SET status='published',published_at=now() WHERE id=$1",[job.itemId])
+    await f.db.exec('SET ROLE pixinium_agent')
+    await assert.rejects(edit(),(e:{code:string})=>e.code==='P0403')
+    await assert.rejects(f.call('draft',[job.itemId]),(e:{code:string})=>e.code==='P0403')
+    assert.deepEqual(await f.call('drafts',[null]),{drafts:[],nextCursor:null})
+    await assert.rejects(f.db.query('UPDATE catalog.items SET status=\'published\' WHERE id=$1',[job.itemId]),(e:{code:string})=>e.code==='42501')
+    await assert.rejects(f.call('authenticate',['content:publish']),(e:{code:string})=>e.code==='P0403')
+  } finally { await f.db.close() }
+})
+
 async function fixture(limits: { bytes?: number; jobs?: number; concurrent?: number } = {}) {
   const db = new PGlite()
   await migrate({ query: async (sql, values) => values ? db.query(sql, values) : (await db.exec(sql)).at(-1) })
@@ -33,7 +119,7 @@ async function fixture(limits: { bytes?: number; jobs?: number; concurrent?: num
   const key = newAgentCredential()
   await db.query(`INSERT INTO automation.agents(id,name,allowed_categories,upload_bytes_per_day,jobs_per_day,concurrent_jobs) VALUES($1,'fixture',$2,$3,$4,$5)`,
     [agent, [category], limits.bytes ?? 1024, limits.jobs ?? 10, limits.concurrent ?? 2])
-  await db.query(`INSERT INTO automation.api_keys(id,agent_id,label,secret_hash,scopes,expires_at) VALUES($1,$2,'fixture',$3,ARRAY['catalog:read','uploads:write','content:create','content:publish'],now()+interval '1 day')`,
+  await db.query(`INSERT INTO automation.api_keys(id,agent_id,label,secret_hash,scopes,expires_at) VALUES($1,$2,'fixture',$3,ARRAY['catalog:read','uploads:write','content:create','content:edit'],now()+interval '1 day')`,
     [key.keyId, agent, key.tokenHash])
   await db.exec('SET ROLE pixinium_agent')
   const call = async <T = unknown>(name: string, args: unknown[] = [], credential = key) => {
@@ -78,7 +164,7 @@ test('keys expire, revoke and restrict scopes independently from admin profiles'
   const f = await fixture()
   try {
     await f.db.exec('RESET ROLE')
-    await f.db.query("UPDATE automation.api_keys SET scopes=ARRAY['content:create'] WHERE id=$1", [f.key.keyId])
+    await f.db.query("UPDATE automation.api_keys SET scopes=ARRAY['uploads:write'] WHERE id=$1", [f.key.keyId])
     await f.db.exec('SET ROLE pixinium_agent')
     await assert.rejects(f.start(), (e: { code: string }) => e.code === 'P0403')
     await f.db.exec('RESET ROLE')

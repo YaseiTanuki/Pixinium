@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 
-export const AGENT_SCOPES = ['catalog:read', 'uploads:write', 'content:create', 'content:publish'] as const
+export const AGENT_SCOPES = ['catalog:read', 'uploads:write', 'content:create', 'content:edit'] as const
 export type AgentScope = typeof AGENT_SCOPES[number]
 export type AgentActor = {
   kind: 'agent'; id: string; keyId: string; tokenHash: string
