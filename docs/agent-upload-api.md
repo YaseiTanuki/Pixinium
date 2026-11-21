@@ -33,25 +33,26 @@ Keys have the form `pxa_<key-uuid>_<256-bit-random-secret>`. The database stores
 SHA-256 digest of the random secret, not the secret. Each key has independent
 scopes, expiry, revocation and last-used timestamps. Account disablement,
 category restrictions and key permissions are checked again in database entry
-points, including final publication.
+points, including final draft submission and edits.
 
 | Scope | Operation |
 | --- | --- |
 | `catalog:read` | Read allowed category IDs, tags and upload rules |
 | `uploads:write` | Reserve uploads or discard the agent's unclaimed staging |
-| `content:create` + `content:publish` | Submit a new private draft for admin review |
+| `content:create` | Submit a new private draft for admin review |
+| `content:edit` | List, read and update only drafts owned by the same agent |
 
-The existing `content:publish` scope name is retained for deployed keys, but it
-does not approve public visibility. `automation.publish_job` also retains its
-broker signature; its write now always uses `status = draft` and a null
-`published_at`. Existing public items and completed historical jobs are not
-changed by the migration.
+Migration `0027_agent_draft_edits.sql` removes the obsolete `content:publish`
+scope from existing keys. Creation now requires only `content:create`.
+`automation.publish_job` retains its historical broker signature, always writing
+`status = draft` and a null `published_at`. No agent scope permits public visibility.
+Existing public items and completed historical jobs are unchanged.
 
-Agent access does not include editing/deleting existing items, reading profiles
+Agent access does not include editing published items, deleting items, reading profiles
 or saved collections, changing permissions or accessing the Admin UI. Catalog
 categories are restricted to those explicitly assigned to the machine account.
 
-The creation command defaults to all four scopes and a 90-day key. Use
+The creation command defaults to the four scopes above and a 90-day key. Use
 `--scopes catalog:read,uploads:write` or another explicit subset and `--days 30`
 where appropriate. An upload-only key cannot publish. At least one allowed
 category must be selected when creating the account.
@@ -101,6 +102,35 @@ localhost. Never include API keys in URLs or forward them to object storage.
 | POST | `/api/agent/uploads` | Reserve bytes and return a signed PUT URL |
 | DELETE | `/api/agent/uploads` | Discard only owned, unclaimed temporary files |
 | POST | `/api/agent/content` | Idempotent draft submission using staged files |
+| GET | `/api/agent/drafts?before=<id>` | Up to 20 owned private drafts and nextCursor |
+| GET | `/api/agent/content/<id>` | Owned draft text, metadata, file information and exact updatedAt |
+| PATCH | `/api/agent/content/<id>` | Update only owned draft content; requires content:edit |
+
+## Editing an existing draft
+
+Read the draft first, then PATCH with `Idempotency-Key: <stable-edit-request-id>`:
+
+```json
+{
+  "expectedUpdatedAt": "2026-11-21T00:00:00.123456+00:00",
+  "changes": { "description": "Revised description", "tags": [{ "slug": "cozy", "name": "Cozy" }] }
+}
+```
+
+Pass the exact `updatedAt` string returned by GET; do not round it through a
+JavaScript Date. Editable fields are title, summary, description, tags, manual
+facts and downloadSources. Omitted fields retain their saved values; explicit
+empty arrays clear their respective lists. Image facts are generated and cannot
+be edited. Files, category, slug, metadata and publication state are immutable
+through this endpoint. The DB verifies ownership via `automation.item_origins`,
+active category access, key validity and draft state, and locks the row against
+concurrent admin publication. It never grants direct table access.
+
+An exact retry with the same idempotency key returns its original result without
+another update/audit event. A changed request with the same key or a stale
+updatedAt returns 409. Read the draft again before preparing a new edit with a
+new key. Revoked keys, other owners, published/archived items and forbidden
+categories cannot be read or edited. Key rotation keeps ownership at agent level.
 
 For category-specific metadata examples and generation rules, see the
 [AI category metadata template](ai-category-metadata-template.md).
