@@ -1,6 +1,6 @@
 import type { CatalogCard } from './entities/catalog'
 
-export const CATALOG_DISPLAY = { relatedItems: 9, homeItems: 9, archivePageSize: 18 } as const
+export const CATALOG_DISPLAY = { relatedItems: 9, homeItems: 20, archivePageSize: 50 } as const
 
 export function categoryHref(slug: string, { query, page, tag, sort, tagMatch }: { query?: string; page?: number; tag?: string; sort?: string; tagMatch?: string } = {}): string {
   const params = new URLSearchParams()
